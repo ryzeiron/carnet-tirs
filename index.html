@@ -265,6 +265,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
+      <span class="status" id="appVersion">Version 6</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1002,7 +1003,12 @@ function start(){
   S.matches=lsGet("hb-matches",[]);S.cur=lsGet("hb-curMatch","");migrateMatches();
   const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match"].includes(t0)?t0:"entry");updateStatus();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
-  if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+  if("serviceWorker" in navigator){
+    const hadCtrl=!!navigator.serviceWorker.controller;let reloaded=false;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtrl&&!reloaded){reloaded=true;location.reload()}});
+    navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{r.update().catch(()=>{});
+      document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")r.update().catch(()=>{})})}).catch(()=>{});
+  }
 }
 start();
 })();

@@ -1,5 +1,5 @@
 // Carnet de tirs : fonctionne hors ligne. Change VERSION à chaque mise à jour des fichiers.
-const VERSION = "carnet-tirs-v5";
+const VERSION = "carnet-tirs-v6";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -13,7 +13,7 @@ self.addEventListener("fetch", e => {
   if (req.method !== "GET") return;
   if (req.mode === "navigate") {
     // Page : réseau d'abord (pour les mises à jour), sinon la copie hors ligne
-    e.respondWith(fetch(req).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return r; })
+    e.respondWith(fetch(req,{cache:"no-store"}).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return r; })
       .catch(() => caches.match("./index.html").then(r => r || caches.match("./"))));
     return;
   }
