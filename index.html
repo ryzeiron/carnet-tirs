@@ -132,6 +132,13 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .sheet{width:100%;max-width:440px;display:flex;flex-direction:column;gap:12px;box-shadow:0 10px 40px rgba(0,0,0,.3)}
 .fld{display:flex;flex-direction:column;gap:5px}
 .fld input{font-size:16px}
+.sheet{max-height:calc(100vh - 32px);overflow:auto}
+.sqtools{display:flex;gap:6px;flex-wrap:wrap}
+.sqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:6px}
+.sqgrid .pcheck{min-height:54px;padding:6px 4px}
+.sqgrid .pcheck .jn{font-size:20px}
+#sqCount{font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink);margin-left:6px}
+#sqCount.warn{color:var(--accent)}
 .sheet-actions{display:flex;gap:8px;justify-content:flex-end}
 .season{margin-bottom:16px}
 .mlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));gap:14px}
@@ -306,7 +313,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 9</span>
+      <span class="status" id="appVersion">Version 10</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -345,6 +352,7 @@ img{max-width:100%}
             <button class="btn primary" type="submit">Ajouter</button>
           </form>
         </details>
+        <div class="exnote" id="squadNote" hidden></div>
         <div class="exnote" id="exNote" hidden>Les joueurs « exemple » servent de démonstration. <button class="btn small" id="clearEx" type="button">Effacer les exemples</button></div>
       </div>
 
@@ -467,6 +475,9 @@ img{max-width:100%}
     <div class="fld"><span class="lbl">Lieu</span><div class="chipwrap" id="mLieu">
       <button type="button" class="chip" data-lieu="dom" aria-pressed="true">Domicile</button><button type="button" class="chip" data-lieu="ext" aria-pressed="false">Extérieur</button></div></div>
     <label class="fld"><span class="lbl">Compétition (facultatif)</span><input type="text" id="mComp" placeholder="ex. Championnat, Coupe"></label>
+    <div class="fld"><span class="lbl">Joueurs du match <span id="sqCount"></span></span>
+      <div class="sqtools"><button type="button" class="btn small" data-sq="all">Tous</button><button type="button" class="btn small" data-sq="none">Aucun</button><button type="button" class="btn small" data-sq="last" id="sqLast">Comme le dernier match</button></div>
+      <div class="sqgrid" id="sqGrid"></div></div>
     <div class="sheet-actions"><button class="btn" type="button" id="matchCancel">Annuler</button><button class="btn primary" type="submit" id="matchSubmit">Créer le match</button></div>
   </form>
 </div>
@@ -625,10 +636,13 @@ function renderEntry(){
   $("entryTeam").innerHTML=teamSwitch(E.team,"eteam");
   $("pnlPlayer").classList.toggle("advmode",adv);
   $("playerTitle").textContent=adv?"Poste adverse":"Joueur";
-  const sorted=roster(E.team);
+  const curM=matchById(S.cur),sq=squadOf(curM);
+  const sorted=E.team==="nous"&&sq?roster("nous").filter(p=>sq.includes(p.id)):roster(E.team);
   $("pgrid").innerHTML=sorted.length?sorted.map(p=>`<button type="button" class="pcheck" data-p="${esc(p.id)}" aria-pressed="${E.p===p.id}"><span class="jn">${p.num??"–"}</span><span class="nm">${esc(p.name)}</span></button>`).join("")
     :`<div class="empty">Aucun joueur. Ouvre « Ajouter un joueur » ci-dessous.</div>`;
   $("exNote").hidden=adv||!S.players.some(p=>p.ex);
+  $("squadNote").hidden=adv||!sq;
+  if(sq)$("squadNote").innerHTML=`Feuille de match : ${sorted.length} joueur${sorted.length>1?"s":""} sur ${S.players.length}. <button class="btn small" type="button" id="editSquad">Modifier</button>`;
   $("addDetails").hidden=adv;
   if(!sorted.length)$("addDetails").open=true;
   // actions & phases
@@ -661,7 +675,7 @@ function renderEntry(){
   $("styleChips").innerHTML=chipList(allStyles(),E.style,"style",(S.cfg.styles||[]).filter(x=>!DEFAULT_STYLES.includes(x)));
   $("styleBlock").hidden=perte;
   // gardien (tirs adverses)
-  const gks=S.players.filter(isGK);
+  const gks=S.players.filter(g=>isGK(g)&&(!sq||sq.includes(g.id)));
   const showGk=E.team==="adv"&&!!E.res&&E.res!=="perte";
   $("gkBlock").hidden=!showGk;
   if(showGk){
@@ -936,7 +950,7 @@ function renderMatches(){
     const arm=mDelArm===m.id;
     return `<article class="panel mcard${m.id===S.cur?" current":""}">
       <div class="mtop"><div><div class="mdate">${esc(fmtDate(m.date))}${m.comp?" · "+esc(m.comp):""}${m.id===S.cur?" · match en cours":""}</div>
-        <div class="mname">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</div><div class="mmeta">${m.lieu==="ext"?"Extérieur":"Domicile"} · ${l.length} action${l.length>1?"s":""}</div></div>
+        <div class="mname">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</div><div class="mmeta">${m.lieu==="ext"?"Extérieur":"Domicile"}${squadOf(m)?` · ${squadOf(m).length} joueurs`:""} · ${l.length} action${l.length>1?"s":""}</div></div>
         <div><div class="score">${sc.any?`${sc.n}<span style="color:var(--muted)">-</span>${sc.a}`:"–"}</div><div style="text-align:right"><span class="res-pill res-${sc.r}">${lab}</span></div></div></div>
       ${sc.any?`<div class="mstats"><span></span><span class="h">Nous</span><span class="h">Adversaire</span>
         <span>Tirs</span><span>${a.g}/${a.t} · ${pct(a.g,a.t)} %</span><span>${b.g}/${b.t} · ${pct(b.g,b.t)} %</span>
@@ -952,11 +966,22 @@ function renderMatches(){
         <button class="btn small danger" data-mdel="${esc(m.id)}" type="button">${arm?`Confirmer : supprimer avec ${l.length} action${l.length>1?"s":""}`:"Supprimer"}</button>
       </div></article>`}).join("");
 }
+let sqSel=new Set();
+function lastSquad(){const m=sortedMatches().find(x=>Array.isArray(x.squad)&&x.id!==editId);return m?m.squad.filter(id=>S.players.some(p=>p.id===id)):null}
+function renderSquad(){
+  const all=roster("nous");
+  $("sqGrid").innerHTML=all.length?all.map(p=>`<button type="button" class="pcheck" data-sqp="${esc(p.id)}" aria-pressed="${sqSel.has(p.id)}"><span class="jn">${p.num??"–"}</span><span class="nm">${esc(p.name)}${isGK(p)?" (GB)":""}</span></button>`).join("")
+    :`<div class="hint">Aucun joueur dans ta liste. Ajoute-les dans Saisie, côté « Nous ».</div>`;
+  const n=sqSel.size;$("sqCount").textContent=`· ${n} sélectionné${n>1?"s":""}${n>16?" (max. 16 sur une feuille de match)":""}`;$("sqCount").classList.toggle("warn",n>16);
+  $("sqLast").disabled=!lastSquad();
+}
+function squadOf(m){return m&&Array.isArray(m.squad)?m.squad:null}
 function openMatchForm(id){
   editId=id||null;const m=id?matchById(id):null;
   $("matchFormTitle").textContent=m?"Modifier le match":"Nouveau match";$("matchSubmit").textContent=m?"Enregistrer":"Créer le match";
   $("mAdv").value=m?m.adv:"";$("mDate").value=m?m.date:today();$("mComp").value=m?(m.comp||""):"";mLieu=m?m.lieu:"dom";
   $("mLieu").querySelectorAll("[data-lieu]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lieu===mLieu));
+  const sq=m?squadOf(m):lastSquad();sqSel=new Set(sq||S.players.map(p=>p.id));renderSquad();
   $("matchSheet").hidden=false;setTimeout(()=>$("mAdv").focus(),50);
 }
 function bindMatches(){
@@ -967,10 +992,15 @@ function bindMatches(){
   $("mLieu").addEventListener("click",e=>{const b=e.target.closest("[data-lieu]");if(!b)return;mLieu=b.dataset.lieu;$("mLieu").querySelectorAll("[data-lieu]").forEach(x=>x.setAttribute("aria-pressed",x===b))});
   $("matchForm").addEventListener("submit",e=>{e.preventDefault();
     const adv=$("mAdv").value.trim().slice(0,60);if(!adv)return;
-    const data={adv,date:$("mDate").value||today(),lieu:mLieu,comp:$("mComp").value.trim().slice(0,40)};
+    if(S.players.length&&!sqSel.size){toast("Coche au moins un joueur pour ce match.",false);return}
+    const data={adv,date:$("mDate").value||today(),lieu:mLieu,comp:$("mComp").value.trim().slice(0,40),squad:roster("nous").map(p=>p.id).filter(id=>sqSel.has(id))};
     if(editId){const m=matchById(editId);Object.assign(m,data);toast("Match modifié",false)}
     else{const m={id:"m"+rid(),...data,t:Date.now()};S.matches.push(m);S.cur=m.id;lsSet("hb-curMatch",S.cur);toast(`Match créé : ${matchLabel(m.id)}`,false)}
     saveLocal();$("matchSheet").hidden=true;render()});
+  $("pnlPlayer").addEventListener("click",e=>{if(e.target.closest("#editSquad")&&S.cur)openMatchForm(S.cur)});
+  $("sqGrid").addEventListener("click",e=>{const b=e.target.closest("[data-sqp]");if(!b)return;const id=b.dataset.sqp;sqSel.has(id)?sqSel.delete(id):sqSel.add(id);renderSquad()});
+  document.querySelectorAll("[data-sq]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.sq;
+    sqSel=new Set(k==="all"?S.players.map(p=>p.id):k==="none"?[]:(lastSquad()||[]));renderSquad()}));
   $("matchSel").addEventListener("change",e=>{S.cur=e.target.value;lsSet("hb-curMatch",S.cur);render()});
   $("matchCards").addEventListener("click",e=>{
     const t=e.target.closest("button");if(!t)return;
@@ -1046,7 +1076,7 @@ function bind(){
   };
   $("addForm").addEventListener("submit",async e=>{e.preventDefault();const name=$("pName").value.trim();if(!name)return;
     const n=$("pNum").value;const p={name,num:n===""?null:Math.max(0,Math.min(99,parseInt(n,10))),pos:$("pPos").value};
-    try{const id=await addPlayer(p);E.p=id;$("pName").value="";$("pNum").value="";render()}catch(err){toast(saveError(err),false)}});
+    try{const id=await addPlayer(p);const cm=matchById(S.cur);if(cm&&Array.isArray(cm.squad)){cm.squad.push(id);saveLocal()}E.p=id;$("pName").value="";$("pNum").value="";render()}catch(err){toast(saveError(err),false)}});
   $("clearEx").onclick=async()=>{for(const p of S.players.filter(p=>p.ex))await removePlayer(p.id)};
 
   $("plist").addEventListener("click",e=>{const b=e.target.closest("[data-ap]");if(!b)return;A.sel=b.dataset.ap||null;delArm=null;render()});
