@@ -67,9 +67,32 @@ svg{display:block;width:100%;height:auto;max-width:100%;touch-action:manipulatio
 .empty{color:var(--muted);font-size:14px;padding:10px 2px}
 
 /* ---------- SAISIE ---------- */
-.entry-grid{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr) minmax(0,1.4fr) minmax(0,1.1fr);gap:14px;align-items:start}
-@media (max-width:1200px){.entry-grid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}}
-@media (max-width:640px){.entry-grid{grid-template-columns:1fr}}
+.entry-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,270px),1fr));gap:14px;align-items:start}
+.wizcol{display:contents}
+.wizbar{display:none}
+/* --- mode pas à pas --- */
+.entry-grid.wizard{grid-template-columns:minmax(240px,300px) minmax(0,1fr)}
+.entry-grid.wizard .wizcol{display:flex;flex-direction:column;gap:14px;min-width:0}
+.entry-grid.wizard .wizcol>.panel,.entry-grid.wizard .wizcol>.col4{display:none}
+.entry-grid.wizard .wizcol>.active{display:flex;flex-direction:column}
+.entry-grid.wizard .wizcol>.panel.active{display:block}
+.entry-grid.wizard .wizbar{display:flex;gap:6px;flex-wrap:wrap}
+.wizstep{display:flex;flex-direction:column;align-items:flex-start;gap:1px;border:1.5px solid var(--line);background:var(--panel);border-radius:8px;padding:6px 12px;text-align:left;min-width:0;flex:1 1 120px}
+.wizstep .wl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-weight:700}
+.wizstep .wv{font-weight:700;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.wizstep.done{border-color:var(--ink)}
+.wizstep.cur{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.wizstep.cur .wl{color:inherit;opacity:.75}
+.wizstep:disabled{opacity:.45;cursor:default}
+.entry-grid.wizard #resChecks,.entry-grid.wizard #phaseChecks{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.entry-grid.wizard .checks.sanc{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.entry-grid.wizard .check{padding:14px 14px;font-size:16px}
+.entry-grid.wizard #courtIn{height:min(calc(100vh - 380px),760px);min-height:280px;width:auto;max-width:100%;margin:0 auto}
+.entry-grid.wizard .col4.active{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:14px;align-items:start}
+.entry-grid.wizard .col4.active.nogoal{grid-template-columns:1fr}
+.entry-grid.wizard #pnlGoal.skip{display:none}
+@media (max-width:760px){.entry-grid.wizard{grid-template-columns:1fr}.entry-grid.wizard .col4.active{grid-template-columns:1fr}.entry-grid.wizard #courtIn{height:auto;width:100%}}
+.btn.primary.ready{box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
 .stepn{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);font-family:var(--display);font-weight:700;font-size:14px;color:var(--muted);margin-right:8px;vertical-align:1px}
 .panel.done .stepn{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
 .panel.off{opacity:.45}
@@ -265,7 +288,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 6</span>
+      <span class="status" id="appVersion">Version 7</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -286,7 +309,7 @@ img{max-width:100%}
         <form id="clkForm" class="clk-form" hidden autocomplete="off"><input type="text" id="clkInput" inputmode="numeric" placeholder="mm:ss" aria-label="Temps de jeu (mm:ss)"><button class="btn small primary" type="submit">OK</button></form>
       </div>
     </div>
-    <div class="entry-grid">
+    <div class="entry-grid" id="entryGrid">
       <div class="panel" id="pnlPlayer">
         <div class="panel-head"><h2><span class="stepn">1</span><span id="playerTitle">Joueur</span></h2><span id="entryTeam"></span></div>
         <div class="pgrid" id="pgrid"></div>
@@ -306,12 +329,17 @@ img{max-width:100%}
         <div class="exnote" id="exNote" hidden>Les joueurs « exemple » servent de démonstration. <button class="btn small" id="clearEx" type="button">Effacer les exemples</button></div>
       </div>
 
+      <div class="wizcol">
+      <nav class="wizbar" id="wizbar" aria-label="Étapes de la saisie"></nav>
       <div class="panel" id="pnlAction">
-        <div class="panel-head"><h2><span class="stepn">2</span>Action</h2></div>
+        <div class="panel-head"><h2><span class="stepn">2</span>Action</h2><button class="btn small" type="button" id="wizToggle">Tout afficher</button></div>
         <div class="checks" id="resChecks"></div>
         <div class="subhead">Sanction</div>
         <div class="checks sanc" id="sancChecks"></div>
-        <div class="subhead" id="phaseHead"><span class="stepn" id="phaseN">3</span>Phase de jeu</div>
+      </div>
+
+      <div class="panel" id="pnlPhase">
+        <div class="panel-head" id="phaseHead"><h2><span class="stepn" id="phaseN">3</span>Phase de jeu</h2></div>
         <div class="checks" id="phaseChecks"></div>
       </div>
 
@@ -338,6 +366,7 @@ img{max-width:100%}
           <div class="chipwrap" id="styleChips"></div>
           <form class="addopt" data-list="styles" autocomplete="off"><input type="text" id="newStyle" placeholder="Autre style" aria-label="Ajouter un style de tir"><button class="btn small" type="submit">Ajouter</button></form>
         </div>
+      </div>
       </div>
       </div>
     </div>
@@ -576,7 +605,7 @@ function renderEntry(){
   $("resChecks").innerHTML=RESULTS.map(r=>`<button type="button" class="check" data-res="${r.id}" aria-pressed="${E.res===r.id}"><span class="box"></span>${r.label}<span class="sw" style="background:${r.c}"></span></button>`).join("");
   $("sancChecks").innerHTML=SANCTIONS.map(r=>`<button type="button" class="check sanc-item" data-res="${r.id}" aria-pressed="${E.res===r.id}"><span class="box"></span>${r.label}<span class="card-ico" style="background:${r.c}"></span></button>`).join("");
   const sanc=isSancId(E.res);
-  $("phaseHead").hidden=sanc;$("phaseChecks").hidden=sanc;
+  $("pnlPhase").classList.toggle("off",sanc);
   $("pnlCourt").classList.toggle("off",sanc);$("pnlExtra").hidden=sanc;
   if(E.mt==null&&(E.p||E.res)){const mm=matchById(S.cur);if(mm)E.mt=Math.floor(matchTime(mm))}
   $("phaseChecks").innerHTML=PHASES.map(p=>`<button type="button" class="check" data-phase="${p.id}" aria-pressed="${E.phase===p.id}"><span class="box"></span>${p.label}</button>`).join("");
@@ -610,17 +639,45 @@ function renderEntry(){
     $("gkChips").innerHTML=gks.map(g=>`<button type="button" class="chip" data-gk="${esc(g.id)}" aria-pressed="${E.gk===g.id}">${g.num!=null?"#"+g.num+" ":""}${esc(g.name)}</button>`).join("");
     $("gkHint").textContent=gks.length?"":"Ajoute ton gardien dans « Nous » avec le poste « Gardien » pour suivre ses arrêts.";
   }
-  // étapes
+  // étapes (mode pas à pas)
+  renderWizard();
   $("pnlPlayer").classList.toggle("done",!!E.p);
-  $("pnlAction").classList.toggle("done",!!E.res&&(!!E.phase||sanc));
+  $("pnlAction").classList.toggle("done",!!E.res);
+  $("pnlPhase").classList.toggle("done",!!E.phase);
   $("pnlCourt").classList.toggle("done",E.x!=null);
   $("pnlGoal").classList.toggle("done",E.gx!=null);
   // récap
   const miss=missing();
   const parts=[E.mt!=null&&`<span class="tmark">${fmtT(E.mt)}</span>`,E.p&&`<b>${esc(pName(E.p))}</b>`,E.res&&RES[E.res].label,E.phase&&PH[E.phase].label,E.play,E.style,E.team==="adv"&&E.gk&&E.res!=="perte"&&("GB "+pName(E.gk)),E.zone&&zoneName(E.zone),E.gx!=null&&cellName(E.cell)].filter(Boolean);
   $("recap").innerHTML=(parts.length?parts.join(" · "):"<span class='hint'>Coche un joueur pour commencer.</span>")+(miss.length&&parts.length?` <span class="miss">· manque : ${miss.join(", ")}</span>`:"");
-  $("saveBtn").disabled=!!miss.length||S.mode==="loading";
+  $("saveBtn").disabled=!!miss.length||S.mode==="loading";$("saveBtn").classList.toggle("ready",!$("saveBtn").disabled);
   renderLog();
+}
+let WIZ=lsGet("hb-wiz",true);
+function scrollWiz(){if(!WIZ||window.innerWidth>760)return;const w=$("wizbar");if(w&&w.getBoundingClientRect().top<0)w.scrollIntoView({block:"start",behavior:"smooth"})}
+function wizSteps(){
+  if(isSancId(E.res))return ["action"];
+  const st=["action","phase"];
+  if(E.phase!=="7m")st.push("court");
+  st.push(E.res&&!impactAllowed(E.res)?"details":"impact");
+  return st;
+}
+function stepDone(k){return k==="action"?!!E.res:k==="phase"?!!E.phase:k==="court"?E.x!=null:k==="impact"?E.gx!=null:false}
+function curStep(){const st=wizSteps();if(E.step&&st.includes(E.step))return E.step;return st.find(k=>!stepDone(k))||st[st.length-1]}
+function renderWizard(){
+  const grid=$("entryGrid");grid.classList.toggle("wizard",WIZ);$("wizToggle").textContent=WIZ?"Tout afficher":"Pas à pas";
+  const panels={action:"pnlAction",phase:"pnlPhase",court:"pnlCourt",impact:"col4",details:"col4"};
+  const col4=document.querySelector(".col4");
+  const cur=curStep(),st=wizSteps();
+  ["pnlAction","pnlPhase","pnlCourt"].forEach(id=>$(id).classList.remove("active"));col4.classList.remove("active");
+  if(WIZ){const el=panels[cur]==="col4"?col4:$(panels[cur]);el.classList.add("active")}
+  const noGoal=E.res&&!impactAllowed(E.res);
+  $("pnlGoal").classList.toggle("skip",WIZ&&!!noGoal);col4.classList.toggle("nogoal",!!noGoal);
+  const names={action:"Action",phase:"Phase de jeu",court:E.res==="perte"?"Endroit":"Déclenchement",impact:"Impact & détails",details:"Détails"};
+  const val=k=>k==="action"?(E.res?(TL_LABEL[E.res]||RES[E.res].label):""):k==="phase"?(E.phase?PH[E.phase].label:""):k==="court"?(E.zone?zoneName(E.zone)+(E.zone!=="7m"?" · "+(E.dist==="9m"?"9 m+":"6-9 m"):""):""):k==="impact"?(E.gx!=null?cellName(E.cell):""):"facultatif";
+  const firstOpen=st.findIndex(k=>!stepDone(k));
+  $("wizbar").innerHTML=st.map((k,i)=>{const done=stepDone(k),reach=firstOpen<0||i<=firstOpen||done;
+    return `<button type="button" class="wizstep${k===cur?" cur":""}${done?" done":""}" data-step="${k}" ${reach?"":"disabled"}><span class="wl">${i+2}. ${names[k]}</span><span class="wv">${esc(val(k)||"—")}</span></button>`}).join("");
 }
 function missing(){const m=[];if(!S.cur)m.push("match");if(!E.p)m.push("joueur");if(!E.res)m.push("action");if(isSancId(E.res))return m;if(!E.phase)m.push("phase");if(E.x==null)m.push(E.res==="perte"?"endroit":"déclenchement");if(impactRequired(E.res)&&E.gx==null)m.push("impact");return m}
 function renderLog(){
@@ -876,7 +933,9 @@ function bind(){
   $("tabEntry").onclick=()=>setTab("entry");$("tabAna").onclick=()=>setTab("ana");
 
   $("pgrid").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(!b)return;E.p=E.p===b.dataset.p?null:b.dataset.p;render()});
-  const resClick=e=>{const b=e.target.closest("[data-res]");if(!b)return;
+  $("wizbar").addEventListener("click",e=>{const b=e.target.closest("[data-step]");if(!b||b.disabled)return;E.step=b.dataset.step;render();scrollWiz()});
+  $("wizToggle").onclick=()=>{WIZ=!WIZ;lsSet("hb-wiz",WIZ);render()};
+  const resClick=e=>{const b=e.target.closest("[data-res]");if(!b)return;E.step=null;
     E.res=E.res===b.dataset.res?null:b.dataset.res;
     if(isSancId(E.res))Object.assign(E,{phase:null,x:null,y:null,zone:null,dist:null,gx:null,gy:null,cell:null,play:null,style:null,gk:null});
     if(!impactAllowed(E.res))Object.assign(E,{gx:null,gy:null,cell:null});
@@ -884,15 +943,15 @@ function bind(){
     if(E.res==="perte"&&E.phase==="7m")Object.assign(E,{phase:null,x:null,y:null,zone:null,dist:null});
     render()};
   ["resChecks","sancChecks"].forEach(id=>$(id).addEventListener("click",resClick));
-  $("phaseChecks").addEventListener("click",e=>{const b=e.target.closest("[data-phase]");if(!b)return;
+  $("phaseChecks").addEventListener("click",e=>{const b=e.target.closest("[data-phase]");if(!b)return;E.step=null;
     const v=b.dataset.phase;E.phase=E.phase===v?null:v;
     if(E.phase==="7m"){Object.assign(E,{x:10,y:7,zone:"7m",dist:"6m"});if(E.res==="perte")E.res=null}
     else if(E.zone==="7m")Object.assign(E,{x:null,y:null,zone:null,dist:null});
     render()});
-  $("courtIn").addEventListener("click",e=>{if(isSancId(E.res))return;const p=svgPoint($("courtIn"),e);if(p.y<0||p.y>YMAX||p.x<0||p.x>20)return;
+  $("courtIn").addEventListener("click",e=>{if(isSancId(E.res))return;const p=svgPoint($("courtIn"),e);if(p.y<0||p.y>YMAX||p.x<0||p.x>20)return;E.step=null;
     const x=+p.x.toFixed(2),y=+p.y.toFixed(2);if(E.phase==="7m")E.phase=null;
     Object.assign(E,{x,y,zone:zoneOf(x,y),dist:distOf(x,y)});render()});
-  $("goalIn").addEventListener("click",e=>{if(E.res&&!impactAllowed(E.res))return;
+  $("goalIn").addEventListener("click",e=>{if(E.res&&!impactAllowed(E.res))return;E.step="impact";
     const p=svgPoint($("goalIn"),e),gx=+p.x.toFixed(3),gy=+p.y.toFixed(3);const inside=gx>=0&&gx<=3&&gy>=0&&gy<=2;
     Object.assign(E,{gx,gy,cell:inside?Math.min(2,Math.floor(gy/(2/3)))*3+Math.min(2,Math.floor(gx)):null});
     if(!inside&&E.res!=="poteau")E.res="hors";

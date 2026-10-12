@@ -1,5 +1,5 @@
 // Carnet de tirs : fonctionne hors ligne. Change VERSION à chaque mise à jour des fichiers.
-const VERSION = "carnet-tirs-v6";
+const VERSION = "carnet-tirs-v7";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
