@@ -313,7 +313,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 10</span>
+      <span class="status" id="appVersion">Version 11</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -449,6 +449,7 @@ img{max-width:100%}
         </div>
         <div class="lower">
           <section class="panel"><div class="panel-head"><h2>Par intervalle</h2></div><div class="tbl-wrap"><table id="zoneTable"></table></div></section>
+          <section class="panel"><div class="panel-head"><h2>Par mi-temps</h2></div><div class="tbl-wrap"><table id="halfTable"></table></div></section>
           <section class="panel"><div class="panel-head"><h2>Par phase de jeu</h2></div><div class="tbl-wrap"><table id="phaseTable"></table></div></section>
           <section class="panel"><div class="panel-head"><h2>Par enclenchement</h2></div><div class="tbl-wrap"><table id="playTable"></table></div></section>
           <section class="panel"><div class="panel-head"><h2>Par style de tir</h2></div><div class="tbl-wrap"><table id="styleTable"></table></div></section>
@@ -486,7 +487,7 @@ img{max-width:100%}
     <h2>Exporter en CSV</h2>
     <label class="fld"><span class="lbl">Match</span><select id="xMatch"></select></label>
     <div class="fld"><span class="lbl">Contenu</span><div class="chipwrap" id="xKind">
-      <button type="button" class="chip" data-xk="players" aria-pressed="true">Stats par joueur</button><button type="button" class="chip" data-xk="actions" aria-pressed="false">Détail des actions</button></div></div>
+      <button type="button" class="chip" data-xk="players" aria-pressed="true">Stats par joueur</button><button type="button" class="chip" data-xk="actions" aria-pressed="false">Détail des actions</button><button type="button" class="chip" data-xk="pdf" aria-pressed="false">Rapport PDF (terrain + cage)</button></div></div>
     <label class="fld" id="xPlayerFld" hidden><span class="lbl">Joueur</span><select id="xPlayer"></select></label>
     <p class="hint" id="xHint"></p>
     <div class="sheet-actions"><button class="btn" type="button" id="exportCancel">Annuler</button><button class="btn primary" type="submit">Exporter</button></div>
@@ -786,6 +787,9 @@ function renderAnalysis(){
     zr.map(r=>{const a=stats(r.l),n=stats(r.l.filter(s=>s.dist==="6m"&&isShot(s))),fa=stats(r.l.filter(s=>s.dist==="9m"&&isShot(s)));
       return `<tr><td>${r.n}</td><td>${a.t}<span class="bar" style="width:${Math.round(36*a.t/maxT)}px"></span></td><td>${a.g}</td><td>${a.t?pct(a.g,a.t)+" %":"–"}</td><td>${n.t?n.g+"/"+n.t:"–"}</td><td>${fa.t?fa.g+"/"+fa.t:"–"}</td><td>${a.perte||"–"}</td></tr>`}).join("")+"</tbody>";
   const pl=GK?gkShots(A.sel).filter(s=>!A.match||s.match===A.match):S.shots.filter(s=>teamOf(s)===A.team&&(!A.sel||s.p===A.sel)&&(!A.match||s.match===A.match));
+  const halfRows=[["1re mi-temps",s=>s.mt!=null&&s.mt<HALF],["2e mi-temps",s=>s.mt!=null&&s.mt>=HALF],["Sans temps",s=>s.mt==null]];
+  $("halfTable").innerHTML=`<thead><tr><th>Mi-temps</th>${TH()}${GK?"":"<th>Pertes</th><th>2 min</th>"}</tr></thead><tbody>`+halfRows.map(([n,f])=>{const l=list.filter(f);if(n==="Sans temps"&&!l.length)return "";const a=stats(l);
+    return `<tr><td>${n}</td><td>${a.t}</td><td>${a.g}</td><td>${a.t?pct(a.g,a.t)+" %":"–"}</td>${GK?"":`<td>${a.perte||"–"}</td><td>${l.filter(s=>s.res==="s2min").length||"–"}</td>`}</tr>`}).join("")+"</tbody>";
   $("phaseTable").innerHTML=`<thead><tr><th>Phase</th>${TH()}<th>Pertes</th></tr></thead><tbody>`+
     PHASES.map(ph=>{const a=stats(pl.filter(s=>s.kind===ph.id));return `<tr><td>${ph.label}</td><td>${a.t}</td><td>${a.g}</td><td>${a.t?pct(a.g,a.t)+" %":"–"}</td><td>${a.perte||"–"}</td></tr>`}).join("")+"</tbody>";
   // enclenchements & styles (hors filtre correspondant)
@@ -1095,7 +1099,7 @@ function bind(){
   $("exportCancel").onclick=()=>{$("exportSheet").hidden=true};
   $("exportSheet").addEventListener("click",e=>{if(e.target===$("exportSheet"))$("exportSheet").hidden=true});
   $("exportForm").addEventListener("submit",async e=>{e.preventDefault();const mid=$("xMatch").value;$("exportSheet").hidden=true;
-    if(xKind==="players")await exportPlayers(mid);else await exportCSV(mid,$("xPlayer").value)});
+    if(xKind==="players")await exportPlayers(mid);else if(xKind==="pdf")await exportReport(mid,$("xPlayer").value);else await exportCSV(mid,$("xPlayer").value)});
 
 }
 function saveError(err){const c=err&&err.code;
@@ -1120,17 +1124,103 @@ function openExport(){
   $("xPlayer").innerHTML=`<option value="">Tous les joueurs</option><optgroup label="Nous">`+ours.map(p=>`<option value="${esc(p.id)}">${p.num!=null?"#"+p.num+" ":""}${esc(p.name)}</option>`).join("")+`</optgroup><optgroup label="Adversaire">`+ADV.map(a=>`<option value="${esc(a.id)}">Adv. ${esc(a.name)}</option>`).join("")+`</optgroup>`;
   setXKind(xKind);$("exportSheet").hidden=false;
 }
-function setXKind(k){xKind=k;$("xKind").querySelectorAll("[data-xk]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.xk===k));$("xPlayerFld").hidden=k!=="actions";
-  $("xHint").textContent=k==="players"?"Une ligne par joueur (nous, postes adverses et gardiens) : tirs, buts, efficacité, arrêts, pertes, 7 m, sanctions…":"Une ligne par action, avec la minute, la phase, la zone et l'impact."}
+function setXKind(k){xKind=k;$("xKind").querySelectorAll("[data-xk]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.xk===k));$("xPlayerFld").hidden=k==="players";
+  $("xHint").textContent=k==="players"?"Une ligne par joueur (nous, postes adverses et gardiens) : tirs, buts, efficacité, arrêts, pertes, 7 m, sanctions…":k==="pdf"?"Une page par joueur avec le terrain chiffré par intervalle, la cage avec les impacts, et les stats par intervalle, mi-temps et phase. Choisis un joueur ou laisse « Tous ».":"Une ligne par action, avec la minute, la phase, la zone et l'impact."}
+function loadJsPDF(){if(window.jspdf)return Promise.resolve();return new Promise((res,rej)=>{const sc=document.createElement("script");sc.src="jspdf.umd.min.js";sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+async function svgToImg(svg,w){
+  const vb=svg.viewBox.baseVal,h=Math.round(w*vb.height/vb.width),cs=getComputedStyle(document.documentElement);
+  let str=new XMLSerializer().serializeToString(svg).replace(/var\((--[\w-]+)\)/g,(m,n)=>(cs.getPropertyValue(n).trim()||"#000").replace(/"/g,"'"));
+  if(!/xmlns="http:\/\/www.w3.org\/2000\/svg"/.test(str))str=str.replace("<svg",'<svg xmlns="http://www.w3.org/2000/svg"');
+  str=str.replace("<svg",`<svg width="${w}" height="${h}"`);
+  const img=new Image();img.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(str);
+  await (img.decode?img.decode():new Promise(r=>img.onload=r));
+  const c=document.createElement("canvas");c.width=w;c.height=h;const x=c.getContext("2d");x.fillStyle="#ffffff";x.fillRect(0,0,w,h);x.drawImage(img,0,0,w,h);
+  return {data:c.toDataURL("image/jpeg",.9),ratio:h/w};
+}
+function tableRows(id,maxCols){const t=$(id);if(!t)return [];return [...t.querySelectorAll("tr")].map(tr=>[...tr.children].slice(0,maxCols).map(td=>td.textContent.trim()))}
+function pdfTable(doc,x,y,title,rows,widths){
+  if(!rows.length)return y;
+  doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(17,32,42);doc.text(title.toUpperCase(),x,y);y+=4;
+  rows.forEach((r,i)=>{if(i===0){doc.setFont("helvetica","bold");doc.setFontSize(7);doc.setTextColor(90,106,116)}else{doc.setFont("helvetica","normal");doc.setFontSize(8);doc.setTextColor(17,32,42)}
+    let cx=x;r.forEach((c,j)=>{const w=widths[j]||14;if(j===0)doc.text(String(c),cx,y);else doc.text(String(c),cx+w-1,y,{align:"right"});cx+=w});
+    y+=i===0?3.6:4.2;doc.setDrawColor(211,220,225);doc.setLineWidth(.15);doc.line(x,y-2.9,cx,y-2.9)});
+  return y+3;
+}
+async function exportReport(mid,pid){
+  toast("Création du rapport PDF…",false);
+  try{await loadJsPDF()}catch(e){toast("Le rapport PDF n'a pas pu se charger. Ouvre l'appli une fois avec du réseau puis réessaie.",false);return}
+  const {jsPDF}=window.jspdf;
+  const root=document.documentElement,prevTheme=root.getAttribute("data-theme"),savedA={...A};
+  root.setAttribute("data-theme","light");
+  const vAna=$("viewAna"),wasHidden=vAna.hidden;vAna.hidden=false;vAna.style.position="absolute";vAna.style.left="-9999px";vAna.style.width="1200px";
+  try{
+    const inScope=s=>!mid||s.match===mid;
+    const pages=[];
+    const nousShots=id=>S.shots.some(s=>inScope(s)&&teamOf(s)==="nous"&&s.p===id&&!isSanc(s));
+    const gkShotsIn=id=>S.shots.some(s=>inScope(s)&&teamOf(s)==="adv"&&s.gk===id);
+    if(pid){pages.push({team:pid.startsWith("adv:")?"adv":"nous",sel:pid})}
+    else{
+      pages.push({team:"nous",sel:null});
+      roster("nous").forEach(p=>{if(nousShots(p.id)||(isGK(p)&&gkShotsIn(p.id)))pages.push({team:"nous",sel:p.id})});
+      pages.push({team:"adv",sel:null});
+      ADV.forEach(a=>{if(S.shots.some(s=>inScope(s)&&teamOf(s)==="adv"&&s.p===a.id&&!isSanc(s)))pages.push({team:"adv",sel:a.id})});
+    }
+    const doc=new jsPDF({unit:"mm",format:"a4"});
+    const mm=mid?matchById(mid):null,sc=mid?matchScore(mid):null;
+    const sub=mm?`${matchLabel(mid)}${sc.any?` · score ${sc.n}-${sc.a}`:""}${mm.comp?" · "+mm.comp:""}`:`Toute la saison · ${S.matches.length} match${S.matches.length>1?"s":""}`;
+    for(let i=0;i<pages.length;i++){
+      const pg=pages[i];Object.assign(A,{team:pg.team,sel:pg.sel,match:mid||"",phase:"",play:"",style:"",view:"tirs"});
+      GK=false;renderAnalysis();
+      if(i>0)doc.addPage();
+      // en-tête
+      doc.setFillColor(17,32,42);doc.rect(0,0,210,24,"F");doc.setTextColor(255,255,255);
+      doc.setFont("helvetica","bold");doc.setFontSize(17);doc.text($("whoName").textContent.toUpperCase(),12,11);
+      doc.setFont("helvetica","normal");doc.setFontSize(9);doc.text(sub,12,18);
+      doc.setFontSize(8);doc.text("Carnet de tirs",198,18,{align:"right"});
+      // chiffres clés
+      const kp=[...document.querySelectorAll("#kpis .kpi")].map(k=>[k.querySelector(".v").textContent,k.querySelector(".k").textContent]);
+      let kx=12;const kw=(186)/Math.max(1,kp.length);
+      kp.forEach(([v,k])=>{doc.setTextColor(17,32,42);doc.setFont("helvetica","bold");doc.setFontSize(13);doc.text(v,kx,33);doc.setFont("helvetica","normal");doc.setFontSize(6.5);doc.setTextColor(90,106,116);doc.text(doc.splitTextToSize(k.toUpperCase(),kw-2),kx,37);kx+=kw});
+      // terrain + cage
+      const court=await svgToImg($("courtA"),900),goal=await svgToImg($("goalA"),900);
+      const cw=104,ch=cw*court.ratio;doc.addImage(court.data,"JPEG",10,44,cw,ch);
+      doc.setFont("helvetica","bold");doc.setFontSize(9);doc.setTextColor(17,32,42);
+      doc.text(GK?"TIRS ADVERSES REÇUS (ARRÊTS / CADRÉS)":"ZONES DE TIR (BUTS / TIRS)",12,43);
+      doc.text("IMPACT DANS LA CAGE (VUE DU TIREUR)",120,43);
+      const gw=80,gh=gw*goal.ratio;doc.addImage(goal.data,"JPEG",119,45,gw,gh);
+      let y=45+gh+8;
+      y=pdfTable(doc,120,y,"Par intervalle",tableRows("zoneTable",4),[30,15,15,16]);
+      y=pdfTable(doc,120,y,"Par mi-temps",tableRows("halfTable",4),[30,15,15,16]);
+      let y2=44+ch+7;
+      y2=pdfTable(doc,12,y2,"Par phase de jeu",tableRows("phaseTable",5),[34,16,16,16,16]);
+      if(!GK)pdfTable(doc,12,y2,"Par enclenchement",tableRows("playTable",5),[34,16,16,16,16]);
+      doc.setFontSize(7);doc.setTextColor(90,106,116);doc.setFont("helvetica","normal");
+      doc.text(GK?"Couleurs : vert = bon % d'arrêts, rouge = beaucoup de buts encaissés. Points : vert arrêt, rouge but encaissé.":"Couleurs : vert = bonne efficacité, rouge = faible. Points : vert but, rouge arrêt, gris hors cadre, jaune poteau, violet contré.",12,290);
+      doc.text(`${i+1} / ${pages.length}`,198,290,{align:"right"});
+    }
+    const fname=`rapport-${mm?mm.date+"-"+mm.adv.replace(/[^\w-]+/g,"-"):"saison-"+stamp()}${pid?"-"+pName(pid).replace(/[^\w-]+/g,"-").replace(/^-+|-+$/g,""):""}.pdf`;
+    const blob=doc.output("blob");
+    restore();
+    await saveFile(fname,blob,"application/pdf");
+  }catch(e){restore();toast("Le rapport n'a pas pu être créé.",false);console.error(e)}
+  function restore(){Object.keys(A).forEach(k=>delete A[k]);Object.assign(A,savedA);
+    if(prevTheme==null)root.removeAttribute("data-theme");else root.setAttribute("data-theme",prevTheme);
+    vAna.hidden=wasHidden;vAna.style.position="";vAna.style.left="";vAna.style.width="";render()}
+}
 const csvQ=v=>`"${String(v??"").replace(/"/g,'""')}"`;
 async function exportPlayers(mid){
   const gkPrev=GK;GK=false;try{
   const src=S.shots.filter(s=>!mid||s.match===mid);
-  const head=["equipe","numero","joueur","poste","tirs","buts","efficacite_%","arretes_par_GB","hors_cadre","poteau","contres","pertes","7m_buts","7m_tirs","buts_pres_6-9m","tirs_pres_6-9m","buts_loin_9m+","tirs_loin_9m+","contre_attaque_buts/tirs","montee_buts/tirs","transition_buts/tirs","attaque_placee_buts/tirs","exclusions_2min","cartons_jaunes","cartons_rouges","cartons_bleus","GB_tirs_cadres_recus","GB_arrets","GB_buts_encaisses","GB_%_arrets"];
+  const head=["equipe","numero","joueur","poste","tirs","buts","efficacite_%","arretes_par_GB","hors_cadre","poteau","contres","pertes","7m_buts","7m_tirs","buts_pres_6-9m","tirs_pres_6-9m","buts_loin_9m+","tirs_loin_9m+","contre_attaque_buts/tirs","montee_buts/tirs","transition_buts/tirs","attaque_placee_buts/tirs","exclusions_2min","cartons_jaunes","cartons_rouges","cartons_bleus","GB_tirs_cadres_recus","GB_arrets","GB_buts_encaisses","GB_%_arrets",
+    ...ZONES.map(z=>`zone_${z.name.replace(/[^\wÀ-ÿ-]+/g,"_")}_buts/tirs`),"zone_7m_buts/tirs",
+    ...Array.from({length:9},(_,i)=>`impact_${cellName(i).replace(/ /g,"_")}_buts/tirs`),"impact_hors_cadre"];
   const row=(team,num,name,pos,l,gkList)=>{const st=stats(l),sh=l.filter(isShot),c=k=>l.filter(s=>s.res===k).length;
     const sub=f=>stats(sh.filter(f)),s7=sub(s=>s.zone==="7m"),ne=sub(s=>s.zone!=="7m"&&s.dist==="6m"),fa=sub(s=>s.zone!=="7m"&&s.dist==="9m"),ph=k=>{const x=sub(s=>s.kind===k);return x.t?`${x.g}/${x.t}`:""};
     let gk=["","","",""];if(gkList){const sv=gkList.filter(s=>s.res==="arret").length,gl=gkList.filter(s=>s.res==="but").length;gk=[sv+gl,sv,gl,pct(sv,sv+gl)]}
-    return [team,num,name,pos,st.t,st.g,pct(st.g,st.t),st.arret,st.hors,st.poteau,st.contre,st.perte,s7.g,s7.t,ne.g,ne.t,fa.g,fa.t,ph("ca"),ph("montee"),ph("transi"),ph("place"),c("s2min"),c("sjaune"),c("srouge"),c("sbleu"),...gk].map(csvQ).join(";")};
+    const fr=x=>x.t?`${x.g}/${x.t}`:"";
+    const zc=[...ZONES.map(z=>fr(sub(s=>s.zone===z.id))),fr(s7)];
+    const cc=[...Array.from({length:9},(_,i)=>fr(sub(s=>s.cell===i))),sh.filter(s=>s.res==="hors").length||""];
+    return [team,num,name,pos,st.t,st.g,pct(st.g,st.t),st.arret,st.hors,st.poteau,st.contre,st.perte,s7.g,s7.t,ne.g,ne.t,fa.g,fa.t,ph("ca"),ph("montee"),ph("transi"),ph("place"),c("s2min"),c("sjaune"),c("srouge"),c("sbleu"),...gk,...zc,...cc].map(csvQ).join(";")};
   const rows=[];
   roster("nous").forEach(p=>{const l=src.filter(s=>teamOf(s)==="nous"&&s.p===p.id);const gl=isGK(p)?src.filter(s=>teamOf(s)==="adv"&&s.gk===p.id):null;
     if(l.length||(gl&&gl.length)||!mid)rows.push(row("Nous",p.num,p.name,POS[p.pos],l,gl))});
