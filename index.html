@@ -167,6 +167,24 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .xt .xbar i{display:block;height:100%;background:var(--accent)}
 .xl.adv .xt .xbar i{background:var(--r-perte)}
 .clk{display:flex;flex-direction:column;align-items:center;gap:2px}
+.tmbtn{display:inline-flex;flex-direction:column;align-items:center;gap:3px;border:1.5px solid var(--line);background:var(--panel-2);border-radius:8px;padding:5px 9px;font-family:var(--display);font-weight:700;font-size:15px;letter-spacing:.05em;line-height:1}
+.tmbtn:disabled{opacity:.35;cursor:not-allowed}
+.tmdots{display:flex;gap:3px}
+.tmdots i{width:7px;height:7px;border-radius:50%;background:var(--ink)}
+.tmdots i.used{background:transparent;box-shadow:inset 0 0 0 1.5px var(--muted)}
+.tmbtn.adv .tmdots i{background:var(--r-perte)}
+.tmbtn.adv .tmdots i.used{background:transparent}
+.tmbanner{flex:1 1 100%;display:grid;grid-template-columns:auto auto 1fr auto;align-items:center;gap:8px 14px;background:var(--ink);color:var(--bg);border-radius:8px;padding:8px 12px}
+.tmbanner.adv{background:var(--r-perte);color:#fff}
+.tmbanner .tmt{font-family:var(--display);font-weight:700;font-size:17px;letter-spacing:.06em;text-transform:uppercase}
+.tmbanner b{font-family:var(--display);font-size:30px;font-variant-numeric:tabular-nums;line-height:1}
+.tmbanner .tmbar{height:6px;border-radius:3px;background:rgba(255,255,255,.25);overflow:hidden}
+.tmbanner .tmbar i{display:block;height:100%;background:currentColor}
+.tmbanner .btn{background:transparent;color:inherit;border-color:currentColor}
+.tmbanner.over{animation:blink 1s steps(2) infinite}
+@keyframes blink{50%{opacity:.55}}
+@media (prefers-reduced-motion:reduce){.tmbanner.over{animation:none}}
+@media (max-width:640px){.tmbanner{grid-template-columns:auto 1fr;}.tmbanner .tmbar{grid-column:1/-1}.tmbanner .btn{grid-column:1/-1}.tmbtn{padding:4px 6px;font-size:13px}}
 .clk .half{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
 .clk .time{font-family:var(--display);font-weight:700;font-size:38px;line-height:1;font-variant-numeric:tabular-nums;min-width:4.2ch}
 .clockbar.running .time{color:var(--accent)}
@@ -288,7 +306,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 7</span>
+      <span class="status" id="appVersion">Version 8</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -297,11 +315,12 @@ img{max-width:100%}
   <section id="viewEntry">
     <div class="panel clockbar" id="clockbar">
       <div class="sb">
-        <div class="sbteam"><span class="tn">Nous</span><span class="ts" id="sbN">0</span></div>
+        <div class="sbteam"><button class="tmbtn" type="button" data-tm="nous" id="tmN" aria-label="Temps mort pour nous">TM<span class="tmdots"></span></button><span class="tn">Nous</span><span class="ts" id="sbN">0</span></div>
         <div class="clk"><span class="time" id="clkTime">00:00</span><span class="half" id="clkHalf">1re mi-temps</span></div>
-        <div class="sbteam adv"><span class="ts" id="sbA">0</span><span class="tn" id="sbAName">Adv.</span></div>
+        <div class="sbteam adv"><span class="ts" id="sbA">0</span><span class="tn" id="sbAName">Adv.</span><button class="tmbtn adv" type="button" data-tm="adv" id="tmA" aria-label="Temps mort pour l'adversaire">TM<span class="tmdots"></span></button></div>
         <div class="xl" id="exN"></div><div></div><div class="xl adv" id="exA"></div>
       </div>
+      <div class="tmbanner" id="tmBanner" hidden><span class="tmt" id="tmTitle">Temps mort</span><b id="tmLeft">01:00</b><span class="tmbar"><i id="tmBar"></i></span><button class="btn small" type="button" id="tmCancel">Annuler le temps mort</button></div>
       <div class="clk-btns">
         <button class="btn primary" id="clkToggle" type="button">▶ Démarrer</button>
         <button class="btn" id="clkHalfBtn" type="button">2e mi-temps</button>
@@ -806,9 +825,29 @@ function clk(m){if(!m.clock)m.clock={half:1,base:0,run:null};return m.clock}
 function halfElapsed(m){const c=clk(m);return Math.min(HALF,c.base+(c.run?(Date.now()-c.run)/1000:0))}
 function matchTime(m){if(!m)return null;return (clk(m).half-1)*HALF+halfElapsed(m)}
 function setClock(m,patch){Object.assign(clk(m),patch);saveLocal()}
+const TM_LIMIT={1:1,2:2},TM_LEN=60;
+let audioCtx=null;
+function beep(){try{if(!audioCtx)return;const t=audioCtx.currentTime;[0,0.35,0.7].forEach(d=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.4,t+d+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d+.28);o.start(t+d);o.stop(t+d+.3)})}catch(e){}}
+function tmUsed(m,team,half){return (m.tms||[]).filter(x=>x.team===team&&x.half===half).length}
+function renderTM(m){
+  const half=m?clk(m).half:1;
+  [["nous","tmN"],["adv","tmA"]].forEach(([team,id])=>{const b=$(id);if(!m){b.disabled=true;b.querySelector(".tmdots").innerHTML="";return}
+    const lim=TM_LIMIT[half],used=tmUsed(m,team,half);
+    b.querySelector(".tmdots").innerHTML=Array.from({length:lim},(_,i)=>`<i class="${i<used?"used":""}"></i>`).join("");
+    b.disabled=used>=lim||!!m.tmActive;b.title=`${lim-used} temps mort${lim-used>1?"s":""} restant${lim-used>1?"s":""} dans cette mi-temps`});
+  const ban=$("tmBanner"),a=m&&m.tmActive;
+  ban.hidden=!a;if(!a)return;
+  const left=Math.max(0,(a.until-Date.now())/1000);
+  ban.classList.toggle("adv",a.team==="adv");ban.classList.toggle("over",left<=0);
+  $("tmTitle").textContent=left>0?`Temps mort · ${a.team==="adv"?m.adv:"Nous"}`:"Fin du temps mort · relance le match";
+  $("tmLeft").textContent=fmtT(Math.ceil(left));$("tmBar").style.width=(left/TM_LEN*100).toFixed(1)+"%";
+  $("tmCancel").textContent=left>0?"Annuler le temps mort":"Fermer";
+  if(left<=0&&!a.beeped){a.beeped=true;saveLocal();beep();toast("Fin du temps mort : touche Reprendre pour relancer le match.",false)}
+}
 function tickClock(){
   const m=matchById(S.cur),bar=$("clockbar");if(!bar)return;
   bar.classList.toggle("off",!m);
+  renderTM(m);
   if(!m){$("clkTime").textContent="00:00";$("clkHalf").textContent="Pas de match";$("clkToggle").disabled=true;$("clkHalfBtn").disabled=true;$("clkEdit").disabled=true;$("exN").innerHTML="";$("exA").innerHTML="";$("sbN").textContent="0";$("sbA").textContent="0";$("sbAName").textContent="Adv.";bar.classList.remove("running");return}
   // tableau d'affichage
   const sc=matchScore(m.id);
@@ -831,8 +870,17 @@ function tickClock(){
   $("exA").innerHTML=ex.filter(s=>teamOf(s)==="adv").map(xt).join("");
 }
 function bindClock(){
+  document.querySelectorAll("[data-tm]").forEach(b=>b.addEventListener("click",()=>{const m=matchById(S.cur);if(!m)return;
+    try{if(!audioCtx){const AC=window.AudioContext||window.webkitAudioContext;if(AC)audioCtx=new AC()}audioCtx&&audioCtx.resume&&audioCtx.resume()}catch(e){}
+    const team=b.dataset.tm,c=clk(m);if(tmUsed(m,team,c.half)>=TM_LIMIT[c.half]||m.tmActive)return;
+    if(c.run)Object.assign(c,{base:halfElapsed(m),run:null});
+    const mt=Math.floor(matchTime(m));m.tms=[...(m.tms||[]),{team,half:c.half,mt,t:Date.now()}];
+    m.tmActive={team,until:Date.now()+TM_LEN*1000};saveLocal();tickClock();if(tab==="match")renderMatches()}));
+  $("tmCancel").onclick=()=>{const m=matchById(S.cur);if(!m||!m.tmActive)return;
+    if(m.tmActive.until>Date.now()){const last=(m.tms||[]).map((x,i)=>[x,i]).reverse().find(([x])=>x.team===m.tmActive.team);if(last)m.tms.splice(last[1],1);toast("Temps mort annulé",false)}
+    m.tmActive=null;saveLocal();tickClock()};
   $("clkToggle").onclick=()=>{const m=matchById(S.cur);if(!m)return;const c=clk(m);
-    if(c.run)setClock(m,{base:halfElapsed(m),run:null});else{if(halfElapsed(m)>=HALF)return toast("Mi-temps terminée : passe en 2e mi-temps ou corrige le temps.",false);setClock(m,{run:Date.now()})}tickClock()};
+    if(c.run)setClock(m,{base:halfElapsed(m),run:null});else{if(m.tmActive){m.tmActive=null}if(halfElapsed(m)>=HALF)return toast("Mi-temps terminée : passe en 2e mi-temps ou corrige le temps.",false);setClock(m,{run:Date.now()})}tickClock()};
   $("clkHalfBtn").onclick=()=>{const m=matchById(S.cur);if(!m)return;const c=clk(m);
     setClock(m,c.half===1?{half:2,base:0,run:null}:{half:1,base:HALF,run:null});tickClock()};
   $("clkEdit").onclick=()=>{const f=$("clkForm");f.hidden=!f.hidden;if(!f.hidden){const m=matchById(S.cur);$("clkInput").value=m?fmtT(matchTime(m)):"";$("clkInput").focus()}};
@@ -844,15 +892,16 @@ function bindClock(){
 }
 
 /* ---------- DÉROULÉ ---------- */
-const TL_LABEL={but:"But",arret:"Tir manqué · arrêt GB",hors:"Tir manqué · hors cadre",poteau:"Tir manqué · poteau",contre:"Tir contré",perte:"Perte de balle",s2min:"Exclusion 2 min",sjaune:"Carton jaune",srouge:"Carton rouge",sbleu:"Carton bleu"};
+const TL_LABEL={tm:"Temps mort",but:"But",arret:"Tir manqué · arrêt GB",hors:"Tir manqué · hors cadre",poteau:"Tir manqué · poteau",contre:"Tir contré",perte:"Perte de balle",s2min:"Exclusion 2 min",sjaune:"Carton jaune",srouge:"Carton rouge",sbleu:"Carton bleu"};
 function timeline(id){
-  const l=S.shots.filter(s=>s.match===id).sort((a,b)=>((a.mt??1e9)-(b.mt??1e9))||((a.t||0)-(b.t||0)));
+  const mm=matchById(id)||{};
+  const l=[...S.shots.filter(s=>s.match===id),...(mm.tms||[]).map(x=>({res:"tm",team:x.team,mt:x.mt,t:x.t,p:null}))].sort((a,b)=>((a.mt??1e9)-(b.mt??1e9))||((a.t||0)-(b.t||0)));
   let n=0,a=0,lastHalf=0,h="";
   l.forEach(s=>{const adv=teamOf(s)==="adv";if(s.res==="but"){if(adv)a++;else n++}
     const half=s.mt==null?0:(s.mt<HALF?1:2);
     if(half!==lastHalf){h+=`<li><span class="ht">${half===1?"1re mi-temps":half===2?"2e mi-temps":"Sans temps"}</span></li>`;lastHalf=half}
-    h+=`<li class="${adv?"adv":""}"><span class="tm">${s.mt!=null?fmtT(s.mt):"–"}</span><span class="dot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span>
-      <span><span class="lab"><b>${TL_LABEL[s.res]||s.res}</b></span> <span class="who">· ${esc(pName(s.p))}${s.kind==="7m"?" · 7 m":""}</span></span>
+    h+=`<li class="${adv?"adv":""}"><span class="tm">${s.mt!=null?fmtT(s.mt):"–"}</span><span class="dot" style="background:${s.res==="tm"?"var(--muted)":(RES[s.res]?.c||"var(--r-hors)")}"></span>
+      <span><span class="lab"><b>${TL_LABEL[s.res]||s.res}</b></span> <span class="who">· ${s.res==="tm"?(s.team==="adv"?esc(mm.adv||"Adversaire"):"Nous"):esc(pName(s.p))}${s.kind==="7m"?" · 7 m":""}</span></span>
       <span class="sc">${s.res==="but"?`${n}-${a}`:""}</span></li>`});
   return l.length?`<ul class="tl">${h}</ul>`:`<div class="empty">Aucune action dans ce match.</div>`;
 }
