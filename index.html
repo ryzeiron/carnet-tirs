@@ -124,6 +124,31 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .mstats .h{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600}
 .mactions{display:flex;gap:6px;flex-wrap:wrap}
 .mcard.current{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.clockbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;margin-bottom:14px;position:sticky;top:env(safe-area-inset-top,0px);z-index:3}
+.clk{display:flex;align-items:baseline;gap:10px}
+.clk .half{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+.clk .time{font-family:var(--display);font-weight:700;font-size:38px;line-height:1;font-variant-numeric:tabular-nums;min-width:4.2ch}
+.clockbar.running .time{color:var(--accent)}
+.clockbar.off{opacity:.55}
+@media (max-width:640px){.clockbar{padding:8px 12px;gap:6px 10px}.clk .time{font-size:28px}.clk-btns .btn{padding:5px 9px;font-size:13px}.excl{justify-content:flex-start}}
+.clk-btns{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.clk-form{display:flex;gap:6px}
+.clk-form input{width:84px;font-size:16px}
+.excl{display:flex;gap:6px;flex-wrap:wrap;flex:1 1 auto;justify-content:flex-end}
+.xchip{font-size:13px;font-weight:700;border-radius:6px;padding:4px 8px;background:var(--ink);color:var(--bg);font-variant-numeric:tabular-nums}
+.xchip.adv{background:var(--r-perte);color:#fff}
+.check.sanc-item{padding:7px 11px}
+.checks.sanc{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.card-ico{display:inline-block;width:10px;height:14px;border-radius:2px;margin-left:auto}
+.tl{list-style:none;margin:0;padding:0;border-top:1px solid var(--line)}
+.tl li{display:grid;grid-template-columns:48px 10px 1fr auto;gap:10px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:13.5px}
+.tl .tm{font-family:var(--display);font-weight:700;font-size:16px;font-variant-numeric:tabular-nums}
+.tl .dot{width:10px;height:10px;border-radius:50%}
+.tl .sc{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums}
+.tl .ht{grid-column:1/-1;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:700;padding-top:8px}
+.tl .who{color:var(--muted)}
+.tl li.adv .lab{color:var(--r-perte)}
+.tmark{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;margin-right:6px}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -228,6 +253,16 @@ img{max-width:100%}
 
   <!-- ================= SAISIE ================= -->
   <section id="viewEntry">
+    <div class="panel clockbar" id="clockbar">
+      <div class="clk"><span class="half" id="clkHalf">1re mi-temps</span><span class="time" id="clkTime">00:00</span></div>
+      <div class="clk-btns">
+        <button class="btn primary" id="clkToggle" type="button">▶ Démarrer</button>
+        <button class="btn" id="clkHalfBtn" type="button">2e mi-temps</button>
+        <button class="btn" id="clkEdit" type="button">Corriger</button>
+        <form id="clkForm" class="clk-form" hidden autocomplete="off"><input type="text" id="clkInput" inputmode="numeric" placeholder="mm:ss" aria-label="Temps de jeu (mm:ss)"><button class="btn small primary" type="submit">OK</button></form>
+      </div>
+      <div class="excl" id="exclus"></div>
+    </div>
     <div class="entry-grid">
       <div class="panel" id="pnlPlayer">
         <div class="panel-head"><h2><span class="stepn">1</span><span id="playerTitle">Joueur</span></h2><span id="entryTeam"></span></div>
@@ -251,6 +286,8 @@ img{max-width:100%}
       <div class="panel" id="pnlAction">
         <div class="panel-head"><h2><span class="stepn">2</span>Action</h2></div>
         <div class="checks" id="resChecks"></div>
+        <div class="subhead">Sanction</div>
+        <div class="checks sanc" id="sancChecks"></div>
         <div class="subhead" id="phaseHead"><span class="stepn" id="phaseN">3</span>Phase de jeu</div>
         <div class="checks" id="phaseChecks"></div>
       </div>
@@ -383,7 +420,15 @@ const RESULTS=[
   {id:"contre",label:"Contré",c:"var(--r-contre)"},
   {id:"perte",label:"Perte de balle",c:"var(--r-perte)"}
 ];
-const RES=Object.fromEntries(RESULTS.map(r=>[r.id,r]));
+const SANCTIONS=[
+  {id:"s2min",label:"2 minutes",c:"var(--ink)"},
+  {id:"sjaune",label:"Carton jaune",c:"#e3b505"},
+  {id:"srouge",label:"Carton rouge",c:"#d23b3b"},
+  {id:"sbleu",label:"Carton bleu",c:"#2f6fd6"}
+];
+const RES=Object.fromEntries([...RESULTS,...SANCTIONS].map(r=>[r.id,r]));
+const isSancId=r=>!!r&&r[0]==="s"&&!!RES[r]&&SANCTIONS.some(x=>x.id===r);
+const isSanc=s=>isSancId(s.res);
 const PHASES=[{id:"ca",label:"Contre-attaque"},{id:"montee",label:"Montée de balle"},{id:"transi",label:"Transition"},{id:"place",label:"Attaque placée"},{id:"7m",label:"Jet de 7 m"}];
 const PH=Object.fromEntries(PHASES.map(p=>[p.id,p]));
 const ROWS=["Haut","Mi-hauteur","Bas"], COLS=["gauche","centre","droite"];
@@ -405,20 +450,20 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const pct=(a,b)=>b?Math.round(a*100/b):0;
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-function blankEntry(){return {team:arguments[0]||"nous",gk:null,p:null,res:null,phase:null,x:null,y:null,zone:null,dist:null,gx:null,gy:null,cell:null,play:null,style:null}}
+function blankEntry(){return {team:arguments[0]||"nous",mt:null,gk:null,p:null,res:null,phase:null,x:null,y:null,zone:null,dist:null,gx:null,gy:null,cell:null,play:null,style:null}}
 
 function zoneOf(x,y){const t=Math.atan2(Math.max(y,0.001),x-10)*180/Math.PI;return (ZONES.find(z=>t>=z.a[0]&&t<=z.a[1])||ZONES[3]).id}
 function distOf(x,y){const dx=x<8.5?8.5-x:x>11.5?x-11.5:0;return Math.hypot(dx,y)>9?"9m":"6m"}
 const zoneName=id=>id==="7m"?"Jet de 7 m":(ZONES.find(z=>z.id===id)||{}).name||id||"";
 const distName=d=>d==="9m"?"loin (9 m+)":"près (6-9 m)";
 const cellName=c=>c==null?"hors cadre":ROWS[Math.floor(c/3)]+" "+COLS[c%3];
-const isShot=s=>s.res!=="perte";
+const isShot=s=>s.res!=="perte"&&!isSanc(s);
 const ADV=[["ALG","AG","Ailier gauche"],["ARG","ArG","Arrière gauche"],["DC","DC","Demi-centre"],["ARD","ArD","Arrière droit"],["ALD","AD","Ailier droit"],["PIV","Piv","Pivot"],["GB","GB","Gardien"]].map(([k,s,n])=>({id:"adv:"+k,num:s,name:n,adv:true}));
 const teamOf=s=>s.team==="adv"?"adv":"nous";
 function roster(team){return team==="adv"?ADV:[...S.players].sort((a,b)=>(a.num??999)-(b.num??999)||String(a.name).localeCompare(b.name))}
 const pName=id=>{if(String(id).startsWith("adv:")){const a=ADV.find(x=>x.id===id);return "Adv. "+(a?a.name:"?")}const p=S.players.find(x=>x.id===id);return p?(p.num!=null?"#"+p.num+" ":"")+p.name:"Joueur supprimé"};
 const teamSwitch=(cur,attr)=>`<div class="tabs teamsw">${[["nous","Nous"],["adv","Adversaire"]].map(([v,l])=>`<button type="button" class="tab" data-${attr}="${v}" aria-selected="${cur===v}">${l}</button>`).join("")}</div>`;
-const impactAllowed=r=>r!=="perte"&&r!=="contre";
+const impactAllowed=r=>r!=="perte"&&r!=="contre"&&!isSancId(r);
 const impactRequired=r=>r==="but"||r==="arret";
 
 /* ---------- Données ---------- */
@@ -506,6 +551,11 @@ function renderEntry(){
   if(!sorted.length)$("addDetails").open=true;
   // actions & phases
   $("resChecks").innerHTML=RESULTS.map(r=>`<button type="button" class="check" data-res="${r.id}" aria-pressed="${E.res===r.id}"><span class="box"></span>${r.label}<span class="sw" style="background:${r.c}"></span></button>`).join("");
+  $("sancChecks").innerHTML=SANCTIONS.map(r=>`<button type="button" class="check sanc-item" data-res="${r.id}" aria-pressed="${E.res===r.id}"><span class="box"></span>${r.label}<span class="card-ico" style="background:${r.c}"></span></button>`).join("");
+  const sanc=isSancId(E.res);
+  $("phaseHead").hidden=sanc;$("phaseChecks").hidden=sanc;
+  $("pnlCourt").classList.toggle("off",sanc);$("pnlExtra").hidden=sanc;
+  if(E.mt==null&&(E.p||E.res)){const mm=matchById(S.cur);if(mm)E.mt=Math.floor(matchTime(mm))}
   $("phaseChecks").innerHTML=PHASES.map(p=>`<button type="button" class="check" data-phase="${p.id}" aria-pressed="${E.phase===p.id}"><span class="box"></span>${p.label}</button>`).join("");
   const perte=E.res==="perte";
   $("courtTitle").textContent=perte?"Endroit de la perte":"Déclenchement du tir";
@@ -539,17 +589,17 @@ function renderEntry(){
   }
   // étapes
   $("pnlPlayer").classList.toggle("done",!!E.p);
-  $("pnlAction").classList.toggle("done",!!E.res&&!!E.phase);
+  $("pnlAction").classList.toggle("done",!!E.res&&(!!E.phase||sanc));
   $("pnlCourt").classList.toggle("done",E.x!=null);
   $("pnlGoal").classList.toggle("done",E.gx!=null);
   // récap
   const miss=missing();
-  const parts=[E.p&&`<b>${esc(pName(E.p))}</b>`,E.res&&RES[E.res].label,E.phase&&PH[E.phase].label,E.play,E.style,E.team==="adv"&&E.gk&&E.res!=="perte"&&("GB "+pName(E.gk)),E.zone&&zoneName(E.zone),E.gx!=null&&cellName(E.cell)].filter(Boolean);
+  const parts=[E.mt!=null&&`<span class="tmark">${fmtT(E.mt)}</span>`,E.p&&`<b>${esc(pName(E.p))}</b>`,E.res&&RES[E.res].label,E.phase&&PH[E.phase].label,E.play,E.style,E.team==="adv"&&E.gk&&E.res!=="perte"&&("GB "+pName(E.gk)),E.zone&&zoneName(E.zone),E.gx!=null&&cellName(E.cell)].filter(Boolean);
   $("recap").innerHTML=(parts.length?parts.join(" · "):"<span class='hint'>Coche un joueur pour commencer.</span>")+(miss.length&&parts.length?` <span class="miss">· manque : ${miss.join(", ")}</span>`:"");
   $("saveBtn").disabled=!!miss.length||S.mode==="loading";
   renderLog();
 }
-function missing(){const m=[];if(!S.cur)m.push("match");if(!E.p)m.push("joueur");if(!E.res)m.push("action");if(!E.phase)m.push("phase");if(E.x==null)m.push(E.res==="perte"?"endroit":"déclenchement");if(impactRequired(E.res)&&E.gx==null)m.push("impact");return m}
+function missing(){const m=[];if(!S.cur)m.push("match");if(!E.p)m.push("joueur");if(!E.res)m.push("action");if(isSancId(E.res))return m;if(!E.phase)m.push("phase");if(E.x==null)m.push(E.res==="perte"?"endroit":"déclenchement");if(impactRequired(E.res)&&E.gx==null)m.push("impact");return m}
 function renderLog(){
   const m=S.cur;
   let list=[...S.shots].sort((a,b)=>(b.t||0)-(a.t||0));
@@ -559,7 +609,7 @@ function renderLog(){
   $("logList").innerHTML=actItems(list.slice(0,25),true)||`<li class="empty" style="display:block">Rien de saisi${m?" pour ce match":""} pour l'instant.</li>`;
 }
 function actItems(list,withPlayer){
-  return list.map(s=>`<li><span class="rdot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span><span><b>${RES[s.res]?.label||s.res}</b>${withPlayer?" · "+esc(pName(s.p)):""}<small>${PH[s.kind]?.label||""}${s.play?" · "+esc(s.play):""}${s.style?" · "+esc(s.style):""}${s.zone?" · "+zoneName(s.zone)+(s.zone!=="7m"&&s.dist?" "+distName(s.dist):""):""}${isShot(s)&&s.res!=="contre"?" · "+cellName(s.cell):""}${s.match&&!S.cur?" · "+esc(matchLabel(s.match)):(s.match&&tab==="ana"?" · "+esc(matchLabel(s.match)):"")}</small></span><button class="x" data-del="${esc(s.id)}" aria-label="Supprimer cette action">×</button></li>`).join("");
+  return list.map(s=>`<li><span class="rdot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span><span>${s.mt!=null?`<span class="tmark">${fmtT(s.mt)}</span>`:""}<b>${TL_LABEL[s.res]||RES[s.res]?.label||s.res}</b>${withPlayer?" · "+esc(pName(s.p)):""}<small>${PH[s.kind]?.label||""}${s.play?" · "+esc(s.play):""}${s.style?" · "+esc(s.style):""}${s.zone?" · "+zoneName(s.zone)+(s.zone!=="7m"&&s.dist?" "+distName(s.dist):""):""}${isShot(s)&&s.res!=="contre"?" · "+cellName(s.cell):""}${s.match&&!S.cur?" · "+esc(matchLabel(s.match)):(s.match&&tab==="ana"?" · "+esc(matchLabel(s.match)):"")}</small></span><button class="x" data-del="${esc(s.id)}" aria-label="Supprimer cette action">×</button></li>`).join("");
 }
 
 /* ---------- ANALYSE ---------- */
@@ -567,7 +617,7 @@ function commonF(s){return (!A.match||s.match===A.match)&&(!A.phase||s.kind===A.
 function baseFiltered(){return S.shots.filter(s=>teamOf(s)===A.team&&commonF(s))}
 function gkShots(id,src){return (src||S.shots).filter(s=>teamOf(s)==="adv"&&s.gk===id)}
 function scoped(){if(GK)return gkShots(A.sel).filter(commonF);const f=baseFiltered();return A.sel?f.filter(s=>s.p===A.sel):f}
-function stats(list){if(GK){const o={t:0,g:0,but:0,arret:0,poteau:0,hors:0,contre:0,perte:0};list.forEach(s=>{if(s.res==="arret"){o.t++;o.g++;o.arret++}else if(s.res==="but"){o.t++;o.but++}else if(o[s.res]!=null)o[s.res]++});return o}
+function stats(list){list=list.filter(s=>!isSanc(s));if(GK){const o={t:0,g:0,but:0,arret:0,poteau:0,hors:0,contre:0,perte:0};list.forEach(s=>{if(s.res==="arret"){o.t++;o.g++;o.arret++}else if(s.res==="but"){o.t++;o.but++}else if(o[s.res]!=null)o[s.res]++});return o}
   const o={t:0,g:0,arret:0,poteau:0,hors:0,contre:0,perte:0};list.forEach(s=>{if(s.res==="perte"){o.perte++;return}o.t++;if(s.res==="but")o.g++;else if(o[s.res]!=null)o[s.res]++});return o}
 
 function renderAnalysis(){
@@ -594,7 +644,7 @@ function renderAnalysis(){
   $("whoName").textContent=ap?"Adv. · "+ap.name:p?`${p.num!=null?"#"+p.num+" ":""}${p.name}`:adv?"Équipe adverse":"Toute l'équipe";
   $("whoSub").textContent=[ap?"Adversaire":GK?"Gardien · tirs adverses reçus":p?POS[p.pos]:adv?"Tous les postes":"Tous les joueurs",A.match?matchLabel(A.match):"toute la saison",A.phase?PH[A.phase].label:"toutes les phases",A.play&&(A.play==="-"?"sans enclenchement":A.play),A.style&&(A.style==="-"?"sans style":A.style)].filter(Boolean).join(" · ");
   const st=stats(list),s7=stats(list.filter(s=>s.zone==="7m"));
-  $("kpis").innerHTML=(GK?[["Tirs cadrés reçus",st.t],["Arrêts",st.g,"eff"],["Buts encaissés",st.but],["% d'arrêts",pct(st.g,st.t)+" %","eff"],["HC + poteau adv.",st.hors+st.poteau],["7 m arrêtés",`${s7.g}/${s7.t}`]]:[["Tirs",st.t],["Buts",st.g],["Efficacité",pct(st.g,st.t)+" %","eff"],["Arrêts GB",st.arret],["HC + poteau",st.hors+st.poteau],["Contrés",st.contre],["Pertes",st.perte,"perte"],["7 m",`${s7.g}/${s7.t}`]])
+  $("kpis").innerHTML=(GK?[["Tirs cadrés reçus",st.t],["Arrêts",st.g,"eff"],["Buts encaissés",st.but],["% d'arrêts",pct(st.g,st.t)+" %","eff"],["HC + poteau adv.",st.hors+st.poteau],["7 m arrêtés",`${s7.g}/${s7.t}`]]:[["Tirs",st.t],["Buts",st.g],["Efficacité",pct(st.g,st.t)+" %","eff"],["Arrêts GB",st.arret],["HC + poteau",st.hors+st.poteau],["Contrés",st.contre],["Pertes",st.perte,"perte"],["7 m",`${s7.g}/${s7.t}`],["2 min",list.filter(s=>s.res==="s2min").length],["Cartons",list.filter(s=>s.res==="sjaune"||s.res==="srouge"||s.res==="sbleu").length]])
     .map(([k,v,c])=>`<div class="kpi ${c||""}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
   const del=$("delPlayer");del.hidden=!p;if(p&&delArm!==p.id)del.textContent="Supprimer le joueur";
   // filtres
@@ -615,7 +665,7 @@ function renderAnalysis(){
   $("phaseTable").innerHTML=`<thead><tr><th>Phase</th>${TH()}<th>Pertes</th></tr></thead><tbody>`+
     PHASES.map(ph=>{const a=stats(pl.filter(s=>s.kind===ph.id));return `<tr><td>${ph.label}</td><td>${a.t}</td><td>${a.g}</td><td>${a.t?pct(a.g,a.t)+" %":"–"}</td><td>${a.perte||"–"}</td></tr>`}).join("")+"</tbody>";
   // enclenchements & styles (hors filtre correspondant)
-  const pp=pl.filter(s=>!A.phase||s.kind===A.phase);
+  const pp=pl.filter(s=>!isSanc(s)&&(!A.phase||s.kind===A.phase));
   const usedPlays=[...new Set([...allPlays(),...S.shots.map(s=>s.play).filter(Boolean)])];
   const usedStyles=[...new Set([...allStyles(),...S.shots.map(s=>s.style).filter(Boolean)])];
   const opt=(v,l,cur)=>`<option value="${esc(v)}" ${v===cur?"selected":""}>${esc(l)}</option>`;
@@ -669,8 +719,60 @@ function render(){
 function setTab(t){tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("savebar").hidden=t!=="entry";
   $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");render()}
 
+/* ---------- CHRONO ---------- */
+const HALF=1800;
+const fmtT=sec=>{sec=Math.max(0,Math.floor(sec));return `${String(Math.floor(sec/60)).padStart(2,"0")}:${String(sec%60).padStart(2,"0")}`};
+function clk(m){if(!m.clock)m.clock={half:1,base:0,run:null};return m.clock}
+function halfElapsed(m){const c=clk(m);return Math.min(HALF,c.base+(c.run?(Date.now()-c.run)/1000:0))}
+function matchTime(m){if(!m)return null;return (clk(m).half-1)*HALF+halfElapsed(m)}
+function setClock(m,patch){Object.assign(clk(m),patch);saveLocal()}
+function tickClock(){
+  const m=matchById(S.cur),bar=$("clockbar");if(!bar)return;
+  bar.classList.toggle("off",!m);
+  if(!m){$("clkTime").textContent="00:00";$("clkHalf").textContent="Pas de match";$("clkToggle").disabled=true;$("clkHalfBtn").disabled=true;$("clkEdit").disabled=true;$("exclus").innerHTML="";bar.classList.remove("running");return}
+  $("clkToggle").disabled=false;$("clkHalfBtn").disabled=false;$("clkEdit").disabled=false;
+  const c=clk(m);
+  if(c.run&&halfElapsed(m)>=HALF){setClock(m,{base:HALF,run:null});toast(c.half===1?"Fin de la 1re mi-temps":"Fin du match",false)}
+  $("clkTime").textContent=fmtT(matchTime(m));
+  $("clkHalf").textContent=c.half===1?"1re mi-temps":"2e mi-temps";
+  $("clkToggle").textContent=c.run?"⏸ Pause":(c.base>0?"▶ Reprendre":"▶ Démarrer");
+  $("clkHalfBtn").textContent=c.half===1?"2e mi-temps":"1re mi-temps";
+  bar.classList.toggle("running",!!c.run);
+  // exclusions en cours (le temps ne descend que chrono en marche)
+  const now=matchTime(m);
+  const ex=S.shots.filter(s=>s.match===m.id&&s.res==="s2min"&&s.mt!=null&&now-s.mt>=0&&now-s.mt<120);
+  $("exclus").innerHTML=ex.map(s=>`<span class="xchip${teamOf(s)==="adv"?" adv":""}">${esc(pName(s.p))} · ${fmtT(120-(now-s.mt))}</span>`).join("");
+}
+function bindClock(){
+  $("clkToggle").onclick=()=>{const m=matchById(S.cur);if(!m)return;const c=clk(m);
+    if(c.run)setClock(m,{base:halfElapsed(m),run:null});else{if(halfElapsed(m)>=HALF)return toast("Mi-temps terminée : passe en 2e mi-temps ou corrige le temps.",false);setClock(m,{run:Date.now()})}tickClock()};
+  $("clkHalfBtn").onclick=()=>{const m=matchById(S.cur);if(!m)return;const c=clk(m);
+    setClock(m,c.half===1?{half:2,base:0,run:null}:{half:1,base:HALF,run:null});tickClock()};
+  $("clkEdit").onclick=()=>{const f=$("clkForm");f.hidden=!f.hidden;if(!f.hidden){const m=matchById(S.cur);$("clkInput").value=m?fmtT(matchTime(m)):"";$("clkInput").focus()}};
+  $("clkForm").addEventListener("submit",e=>{e.preventDefault();const m=matchById(S.cur);if(!m)return;
+    const v=$("clkInput").value.trim(),mm=v.match(/^(\d{1,2})(?::(\d{1,2}))?$/);if(!mm)return toast("Écris le temps sous la forme 12:39.",false);
+    let sec=Math.min(2*HALF,parseInt(mm[1],10)*60+parseInt(mm[2]||"0",10));const half=sec>HALF||(sec===HALF&&clk(m).half===2)?2:1;
+    const running=!!clk(m).run;setClock(m,{half,base:sec-(half-1)*HALF,run:running?Date.now():null});$("clkForm").hidden=true;tickClock()});
+  setInterval(tickClock,500);
+}
+
+/* ---------- DÉROULÉ ---------- */
+const TL_LABEL={but:"But",arret:"Tir manqué · arrêt GB",hors:"Tir manqué · hors cadre",poteau:"Tir manqué · poteau",contre:"Tir contré",perte:"Perte de balle",s2min:"Exclusion 2 min",sjaune:"Carton jaune",srouge:"Carton rouge",sbleu:"Carton bleu"};
+function timeline(id){
+  const l=S.shots.filter(s=>s.match===id).sort((a,b)=>((a.mt??1e9)-(b.mt??1e9))||((a.t||0)-(b.t||0)));
+  let n=0,a=0,lastHalf=0,h="";
+  l.forEach(s=>{const adv=teamOf(s)==="adv";if(s.res==="but"){if(adv)a++;else n++}
+    const half=s.mt==null?0:(s.mt<HALF?1:2);
+    if(half!==lastHalf){h+=`<li><span class="ht">${half===1?"1re mi-temps":half===2?"2e mi-temps":"Sans temps"}</span></li>`;lastHalf=half}
+    h+=`<li class="${adv?"adv":""}"><span class="tm">${s.mt!=null?fmtT(s.mt):"–"}</span><span class="dot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span>
+      <span><span class="lab"><b>${TL_LABEL[s.res]||s.res}</b></span> <span class="who">· ${esc(pName(s.p))}${s.kind==="7m"?" · 7 m":""}</span></span>
+      <span class="sc">${s.res==="but"?`${n}-${a}`:""}</span></li>`});
+  return l.length?`<ul class="tl">${h}</ul>`:`<div class="empty">Aucune action dans ce match.</div>`;
+}
+
 /* ---------- MATCHS ---------- */
-let mDelArm=null,editId=null,mLieu="dom";
+let mDelArm=null,editId=null,mLieu="dom";const openTL=new Set();
+function sancTxt(l){const c=k=>l.filter(s=>s.res===k).length;const parts=[[c("s2min"),"× 2'"],[c("sjaune"),"J"],[c("srouge"),"R"],[c("sbleu"),"B"]].filter(x=>x[0]).map(x=>x[0]+" "+x[1]);return parts.join(" · ")||"–"}
 function renderMatches(){
   const ms=sortedMatches();
   const played=ms.filter(m=>matchScore(m.id).any),rec={V:0,N:0,D:0};let bp=0,bc=0;
@@ -692,10 +794,13 @@ function renderMatches(){
       ${sc.any?`<div class="mstats"><span></span><span class="h">Nous</span><span class="h">Adversaire</span>
         <span>Tirs</span><span>${a.g}/${a.t} · ${pct(a.g,a.t)} %</span><span>${b.g}/${b.t} · ${pct(b.g,b.t)} %</span>
         <span>Arrêts GB</span><span>${b.arret}/${b.arret+b.g} · ${pct(b.arret,b.arret+b.g)} %</span><span>${a.arret}/${a.arret+a.g} · ${pct(a.arret,a.arret+a.g)} %</span>
-        <span>Pertes</span><span>${a.perte}</span><span>${b.perte}</span></div>`:""}
+        <span>Pertes</span><span>${a.perte}</span><span>${b.perte}</span>
+        <span>Sanctions</span><span>${sancTxt(l.filter(s=>teamOf(s)==="nous"))}</span><span>${sancTxt(l.filter(s=>teamOf(s)==="adv"))}</span></div>`:""}
+      ${openTL.has(m.id)?timeline(m.id):""}
       <div class="mactions">
         <button class="btn small primary" data-mstats="${esc(m.id)}" type="button">Voir les stats</button>
         <button class="btn small" data-mcur="${esc(m.id)}" type="button">${m.id===S.cur?"Continuer la saisie":"Saisir dans ce match"}</button>
+        <button class="btn small" data-mtl="${esc(m.id)}" type="button">${openTL.has(m.id)?"Masquer le déroulé":"Déroulé du match"}</button>
         <button class="btn small" data-medit="${esc(m.id)}" type="button">Modifier</button>
         <button class="btn small danger" data-mdel="${esc(m.id)}" type="button">${arm?`Confirmer : supprimer avec ${l.length} action${l.length>1?"s":""}`:"Supprimer"}</button>
       </div></article>`}).join("");
@@ -725,6 +830,7 @@ function bindMatches(){
     if(t.dataset.mstats){A.match=t.dataset.mstats;A.sel=null;setTab("ana");window.scrollTo(0,0);return}
     if(t.dataset.mcur){S.cur=t.dataset.mcur;lsSet("hb-curMatch",S.cur);setTab("entry");window.scrollTo(0,0);return}
     if(t.dataset.medit){openMatchForm(t.dataset.medit);return}
+    if(t.dataset.mtl){const id=t.dataset.mtl;openTL.has(id)?openTL.delete(id):openTL.add(id);renderMatches();return}
     if(t.dataset.mdel){const id=t.dataset.mdel;
       if(mDelArm!==id){mDelArm=id;renderMatches();setTimeout(()=>{if(mDelArm===id){mDelArm=null;if(tab==="match")renderMatches()}},5000);return}
       mDelArm=null;S.shots=S.shots.filter(s=>s.match!==id);S.matches=S.matches.filter(m=>m.id!==id);if(S.cur===id)S.cur="";if(A.match===id)A.match="";
@@ -740,18 +846,20 @@ function bind(){
   $("tabEntry").onclick=()=>setTab("entry");$("tabAna").onclick=()=>setTab("ana");
 
   $("pgrid").addEventListener("click",e=>{const b=e.target.closest("[data-p]");if(!b)return;E.p=E.p===b.dataset.p?null:b.dataset.p;render()});
-  $("resChecks").addEventListener("click",e=>{const b=e.target.closest("[data-res]");if(!b)return;
+  const resClick=e=>{const b=e.target.closest("[data-res]");if(!b)return;
     E.res=E.res===b.dataset.res?null:b.dataset.res;
+    if(isSancId(E.res))Object.assign(E,{phase:null,x:null,y:null,zone:null,dist:null,gx:null,gy:null,cell:null,play:null,style:null,gk:null});
     if(!impactAllowed(E.res))Object.assign(E,{gx:null,gy:null,cell:null});
     if(E.res==="perte")E.style=null;
     if(E.res==="perte"&&E.phase==="7m")Object.assign(E,{phase:null,x:null,y:null,zone:null,dist:null});
-    render()});
+    render()};
+  ["resChecks","sancChecks"].forEach(id=>$(id).addEventListener("click",resClick));
   $("phaseChecks").addEventListener("click",e=>{const b=e.target.closest("[data-phase]");if(!b)return;
     const v=b.dataset.phase;E.phase=E.phase===v?null:v;
     if(E.phase==="7m"){Object.assign(E,{x:10,y:7,zone:"7m",dist:"6m"});if(E.res==="perte")E.res=null}
     else if(E.zone==="7m")Object.assign(E,{x:null,y:null,zone:null,dist:null});
     render()});
-  $("courtIn").addEventListener("click",e=>{const p=svgPoint($("courtIn"),e);if(p.y<0||p.y>YMAX||p.x<0||p.x>20)return;
+  $("courtIn").addEventListener("click",e=>{if(isSancId(E.res))return;const p=svgPoint($("courtIn"),e);if(p.y<0||p.y>YMAX||p.x<0||p.x>20)return;
     const x=+p.x.toFixed(2),y=+p.y.toFixed(2);if(E.phase==="7m")E.phase=null;
     Object.assign(E,{x,y,zone:zoneOf(x,y),dist:distOf(x,y)});render()});
   $("goalIn").addEventListener("click",e=>{if(E.res&&!impactAllowed(E.res))return;
@@ -782,9 +890,9 @@ function bind(){
     if(missing().length)return;
     if(!S.cur){toast("Choisis ou crée d'abord le match en bas de l'écran.",false);return}
     const m=S.cur;
-    const s={team:E.team,p:E.p,res:E.res,kind:E.phase,x:E.x,y:E.y,zone:E.zone,dist:E.dist,gx:E.gx,gy:E.gy,cell:E.cell,play:E.play||null,style:E.res==="perte"?null:(E.style||null),gk:E.team==="adv"&&E.res!=="perte"?(E.gk||null):null,match:m,t:Date.now()};
+    const s={team:E.team,p:E.p,res:E.res,kind:E.phase,x:E.x,y:E.y,zone:E.zone,dist:E.dist,gx:E.gx,gy:E.gy,cell:E.cell,play:E.play||null,style:E.res==="perte"?null:(E.style||null),gk:E.team==="adv"&&E.res!=="perte"&&!isSancId(E.res)?(E.gk||null):null,mt:E.mt,match:m,t:Date.now()};
     $("saveBtn").disabled=true;
-    try{await addShot(s);E=blankEntry(E.team);render();toast(`${RES[s.res].label} enregistré${s.res==="perte"?"e":""} · ${pName(s.p)}`,false)}
+    try{await addShot(s);E=blankEntry(E.team);render();toast(`${s.mt!=null?fmtT(s.mt)+" · ":""}${TL_LABEL[s.res]||RES[s.res].label} · ${pName(s.p)}`,false)}
     catch(err){toast(saveError(err),false);render()}
   };
   $("addForm").addEventListener("submit",async e=>{e.preventDefault();const name=$("pName").value.trim();if(!name)return;
@@ -822,9 +930,9 @@ async function saveFile(name,text,mime){
 const stamp=()=>new Date().toISOString().slice(0,10);
 async function exportCSV(){
   const pl=id=>S.players.find(x=>x.id===id)||{};
-  const head=["date","match","adversaire","lieu","competition","equipe","numero","joueur","poste","action","phase","enclenchement","style","notre_gardien","intervalle","distance","impact"];
+  const head=["date","temps_de_jeu","match","adversaire","lieu","competition","equipe","numero","joueur","poste","action","phase","enclenchement","style","notre_gardien","intervalle","distance","impact"];
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  const rows=[...S.shots].sort((a,b)=>(a.t||0)-(b.t||0)).map(s=>{const adv=teamOf(s)==="adv",p=adv?(ADV.find(x=>x.id===s.p)||{}):pl(s.p);const mm=matchById(s.match)||{};return [new Date(s.t||0).toLocaleString("fr-FR"),fmtDate(mm.date),mm.adv,mm.lieu==="ext"?"Extérieur":mm.lieu?"Domicile":"",mm.comp,adv?"Adversaire":"Nous",adv?"":p.num,adv?"":p.name,adv?p.name:POS[p.pos],RES[s.res]?.label,PH[s.kind]?.label,s.play,s.style,s.gk?pName(s.gk):"",zoneName(s.zone),s.zone==="7m"?"7 m":(s.dist?distName(s.dist):""),isShot(s)&&s.res!=="contre"?cellName(s.cell):""].map(q).join(";")});
+  const rows=[...S.shots].sort((a,b)=>(a.t||0)-(b.t||0)).map(s=>{const adv=teamOf(s)==="adv",p=adv?(ADV.find(x=>x.id===s.p)||{}):pl(s.p);const mm=matchById(s.match)||{};return [new Date(s.t||0).toLocaleString("fr-FR"),s.mt!=null?fmtT(s.mt):"",fmtDate(mm.date),mm.adv,mm.lieu==="ext"?"Extérieur":mm.lieu?"Domicile":"",mm.comp,adv?"Adversaire":"Nous",adv?"":p.num,adv?"":p.name,adv?p.name:POS[p.pos],TL_LABEL[s.res]||RES[s.res]?.label,PH[s.kind]?.label,s.play,s.style,s.gk?pName(s.gk):"",zoneName(s.zone),s.zone==="7m"?"7 m":(s.dist?distName(s.dist):""),isShot(s)&&s.res!=="contre"?cellName(s.cell):""].map(q).join(";")});
   await saveFile(`actions-handball-${stamp()}.csv`,"﻿"+head.join(";")+"\n"+rows.join("\n"),"text/csv");
 }
 async function backup(){
@@ -859,7 +967,7 @@ function start(){
   bind();
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
-  bindMatches();
+  bindMatches();bindClock();
   S.mode="local";
   const d=lsGet("hb-data",{players:[],shots:[]});S.players=d.players||[];S.shots=d.shots||[];S.cfg=lsGet("hb-cfg",{plays:[],styles:[]});
   S.matches=lsGet("hb-matches",[]);S.cur=lsGet("hb-curMatch","");migrateMatches();
