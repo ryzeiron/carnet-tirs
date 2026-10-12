@@ -306,7 +306,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 8</span>
+      <span class="status" id="appVersion">Version 9</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -468,6 +468,17 @@ img{max-width:100%}
       <button type="button" class="chip" data-lieu="dom" aria-pressed="true">Domicile</button><button type="button" class="chip" data-lieu="ext" aria-pressed="false">Extérieur</button></div></div>
     <label class="fld"><span class="lbl">Compétition (facultatif)</span><input type="text" id="mComp" placeholder="ex. Championnat, Coupe"></label>
     <div class="sheet-actions"><button class="btn" type="button" id="matchCancel">Annuler</button><button class="btn primary" type="submit" id="matchSubmit">Créer le match</button></div>
+  </form>
+</div>
+<div class="sheet-bg" id="exportSheet" hidden>
+  <form class="sheet panel" id="exportForm" autocomplete="off">
+    <h2>Exporter en CSV</h2>
+    <label class="fld"><span class="lbl">Match</span><select id="xMatch"></select></label>
+    <div class="fld"><span class="lbl">Contenu</span><div class="chipwrap" id="xKind">
+      <button type="button" class="chip" data-xk="players" aria-pressed="true">Stats par joueur</button><button type="button" class="chip" data-xk="actions" aria-pressed="false">Détail des actions</button></div></div>
+    <label class="fld" id="xPlayerFld" hidden><span class="lbl">Joueur</span><select id="xPlayer"></select></label>
+    <p class="hint" id="xHint"></p>
+    <div class="sheet-actions"><button class="btn" type="button" id="exportCancel">Annuler</button><button class="btn primary" type="submit">Exporter</button></div>
   </form>
 </div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo">Annuler</button></div>
@@ -1049,7 +1060,12 @@ function bind(){
   const delHandler=e=>{const b=e.target.closest("[data-del]");if(b)removeShot(b.dataset.del).catch(err=>toast(saveError(err),false))};
   $("logList").addEventListener("click",delHandler);$("actList").addEventListener("click",delHandler);
   $("toastUndo").onclick=async()=>{if(!lastDeleted)return;const d=lastDeleted;lastDeleted=null;hideToast();await addShot(d.data,d.id)};
-  $("exportBtn").onclick=exportCSV;
+  $("exportBtn").onclick=openExport;
+  $("xKind").addEventListener("click",e=>{const b=e.target.closest("[data-xk]");if(b)setXKind(b.dataset.xk)});
+  $("exportCancel").onclick=()=>{$("exportSheet").hidden=true};
+  $("exportSheet").addEventListener("click",e=>{if(e.target===$("exportSheet"))$("exportSheet").hidden=true});
+  $("exportForm").addEventListener("submit",async e=>{e.preventDefault();const mid=$("xMatch").value;$("exportSheet").hidden=true;
+    if(xKind==="players")await exportPlayers(mid);else await exportCSV(mid,$("xPlayer").value)});
 
 }
 function saveError(err){const c=err&&err.code;
@@ -1066,12 +1082,44 @@ async function saveFile(name,text,mime){
   const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),4000);return true;
 }
 const stamp=()=>new Date().toISOString().slice(0,10);
-async function exportCSV(){
+let xKind="players";
+function openExport(){
+  const ms=sortedMatches();
+  $("xMatch").innerHTML=`<option value="">Toute la saison (${ms.length} match${ms.length>1?"s":""})</option>`+ms.map(m=>{const sc=matchScore(m.id);return `<option value="${esc(m.id)}">${esc(matchLabel(m.id))}${sc.any?` (${sc.n}-${sc.a})`:""}</option>`}).join("");
+  const ours=roster("nous");
+  $("xPlayer").innerHTML=`<option value="">Tous les joueurs</option><optgroup label="Nous">`+ours.map(p=>`<option value="${esc(p.id)}">${p.num!=null?"#"+p.num+" ":""}${esc(p.name)}</option>`).join("")+`</optgroup><optgroup label="Adversaire">`+ADV.map(a=>`<option value="${esc(a.id)}">Adv. ${esc(a.name)}</option>`).join("")+`</optgroup>`;
+  setXKind(xKind);$("exportSheet").hidden=false;
+}
+function setXKind(k){xKind=k;$("xKind").querySelectorAll("[data-xk]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.xk===k));$("xPlayerFld").hidden=k!=="actions";
+  $("xHint").textContent=k==="players"?"Une ligne par joueur (nous, postes adverses et gardiens) : tirs, buts, efficacité, arrêts, pertes, 7 m, sanctions…":"Une ligne par action, avec la minute, la phase, la zone et l'impact."}
+const csvQ=v=>`"${String(v??"").replace(/"/g,'""')}"`;
+async function exportPlayers(mid){
+  const gkPrev=GK;GK=false;try{
+  const src=S.shots.filter(s=>!mid||s.match===mid);
+  const head=["equipe","numero","joueur","poste","tirs","buts","efficacite_%","arretes_par_GB","hors_cadre","poteau","contres","pertes","7m_buts","7m_tirs","buts_pres_6-9m","tirs_pres_6-9m","buts_loin_9m+","tirs_loin_9m+","contre_attaque_buts/tirs","montee_buts/tirs","transition_buts/tirs","attaque_placee_buts/tirs","exclusions_2min","cartons_jaunes","cartons_rouges","cartons_bleus","GB_tirs_cadres_recus","GB_arrets","GB_buts_encaisses","GB_%_arrets"];
+  const row=(team,num,name,pos,l,gkList)=>{const st=stats(l),sh=l.filter(isShot),c=k=>l.filter(s=>s.res===k).length;
+    const sub=f=>stats(sh.filter(f)),s7=sub(s=>s.zone==="7m"),ne=sub(s=>s.zone!=="7m"&&s.dist==="6m"),fa=sub(s=>s.zone!=="7m"&&s.dist==="9m"),ph=k=>{const x=sub(s=>s.kind===k);return x.t?`${x.g}/${x.t}`:""};
+    let gk=["","","",""];if(gkList){const sv=gkList.filter(s=>s.res==="arret").length,gl=gkList.filter(s=>s.res==="but").length;gk=[sv+gl,sv,gl,pct(sv,sv+gl)]}
+    return [team,num,name,pos,st.t,st.g,pct(st.g,st.t),st.arret,st.hors,st.poteau,st.contre,st.perte,s7.g,s7.t,ne.g,ne.t,fa.g,fa.t,ph("ca"),ph("montee"),ph("transi"),ph("place"),c("s2min"),c("sjaune"),c("srouge"),c("sbleu"),...gk].map(csvQ).join(";")};
+  const rows=[];
+  roster("nous").forEach(p=>{const l=src.filter(s=>teamOf(s)==="nous"&&s.p===p.id);const gl=isGK(p)?src.filter(s=>teamOf(s)==="adv"&&s.gk===p.id):null;
+    if(l.length||(gl&&gl.length)||!mid)rows.push(row("Nous",p.num,p.name,POS[p.pos],l,gl))});
+  rows.push(row("Nous","","TOTAL ÉQUIPE","",src.filter(s=>teamOf(s)==="nous"),src.filter(s=>teamOf(s)==="adv")));
+  ADV.forEach(a=>{const l=src.filter(s=>teamOf(s)==="adv"&&s.p===a.id);if(l.length)rows.push(row("Adversaire","",a.name,a.name,l,null))});
+  rows.push(row("Adversaire","","TOTAL ADVERSAIRE","",src.filter(s=>teamOf(s)==="adv"),src.filter(s=>teamOf(s)==="nous")));
+  const mm=mid?matchById(mid):null;
+  const title=mm?[`"Match : ${matchLabel(mid)}${matchScore(mid).any?` · score ${matchScore(mid).n}-${matchScore(mid).a}`:""}"`]:[`"Toute la saison · ${S.matches.length} matchs"`];
+  const fname=mm?`stats-joueurs-${mm.date}-${mm.adv.replace(/[^\w-]+/g,"-")}.csv`:`stats-joueurs-saison-${stamp()}.csv`;
+  await saveFile(fname,"\ufeff"+title.join("")+"\n"+head.join(";")+"\n"+rows.join("\n"),"text/csv");
+  }finally{GK=gkPrev}
+}
+async function exportCSV(mid,pid){
   const pl=id=>S.players.find(x=>x.id===id)||{};
   const head=["date","temps_de_jeu","match","adversaire","lieu","competition","equipe","numero","joueur","poste","action","phase","enclenchement","style","notre_gardien","intervalle","distance","impact"];
   const q=v=>`"${String(v??"").replace(/"/g,'""')}"`;
-  const rows=[...S.shots].sort((a,b)=>(a.t||0)-(b.t||0)).map(s=>{const adv=teamOf(s)==="adv",p=adv?(ADV.find(x=>x.id===s.p)||{}):pl(s.p);const mm=matchById(s.match)||{};return [new Date(s.t||0).toLocaleString("fr-FR"),s.mt!=null?fmtT(s.mt):"",fmtDate(mm.date),mm.adv,mm.lieu==="ext"?"Extérieur":mm.lieu?"Domicile":"",mm.comp,adv?"Adversaire":"Nous",adv?"":p.num,adv?"":p.name,adv?p.name:POS[p.pos],TL_LABEL[s.res]||RES[s.res]?.label,PH[s.kind]?.label,s.play,s.style,s.gk?pName(s.gk):"",zoneName(s.zone),s.zone==="7m"?"7 m":(s.dist?distName(s.dist):""),isShot(s)&&s.res!=="contre"?cellName(s.cell):""].map(q).join(";")});
-  await saveFile(`actions-handball-${stamp()}.csv`,"﻿"+head.join(";")+"\n"+rows.join("\n"),"text/csv");
+  const rows=[...S.shots].filter(s=>(!mid||s.match===mid)&&(!pid||s.p===pid||(s.gk&&s.gk===pid))).sort((a,b)=>(a.match===b.match?((a.mt??1e9)-(b.mt??1e9)):0)||(a.t||0)-(b.t||0)).map(s=>{const adv=teamOf(s)==="adv",p=adv?(ADV.find(x=>x.id===s.p)||{}):pl(s.p);const mm=matchById(s.match)||{};return [new Date(s.t||0).toLocaleString("fr-FR"),s.mt!=null?fmtT(s.mt):"",fmtDate(mm.date),mm.adv,mm.lieu==="ext"?"Extérieur":mm.lieu?"Domicile":"",mm.comp,adv?"Adversaire":"Nous",adv?"":p.num,adv?"":p.name,adv?p.name:POS[p.pos],TL_LABEL[s.res]||RES[s.res]?.label,PH[s.kind]?.label,s.play,s.style,s.gk?pName(s.gk):"",zoneName(s.zone),s.zone==="7m"?"7 m":(s.dist?distName(s.dist):""),isShot(s)&&s.res!=="contre"?cellName(s.cell):""].map(q).join(";")});
+  const mm=mid?matchById(mid):null,pn=pid?pName(pid).replace(/[^\w-]+/g,"-").replace(/^-+|-+$/g,""):"";
+  await saveFile(`actions-${mm?mm.date+"-"+mm.adv.replace(/[^\w-]+/g,"-"):"saison-"+stamp()}${pn?"-"+pn:""}.csv`,"﻿"+head.join(";")+"\n"+rows.join("\n"),"text/csv");
 }
 async function backup(){
   const data={app:"carnet-tirs",version:1,date:new Date().toISOString(),matches:S.matches,players:S.players,shots:S.shots,cfg:S.cfg};
