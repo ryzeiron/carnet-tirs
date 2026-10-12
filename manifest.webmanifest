@@ -1,0 +1,17 @@
+{
+  "name": "Carnet de tirs",
+  "short_name": "Carnet tirs",
+  "description": "Analyse handball : tirs, impacts et pertes de balle par joueur.",
+  "lang": "fr",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#eaeff1",
+  "theme_color": "#11202a",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
