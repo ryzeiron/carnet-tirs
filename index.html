@@ -288,6 +288,13 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .trres .b-arret{background:var(--r-arret);border-color:var(--r-arret);color:#fff}
 .trres .b-poteau{background:var(--r-poteau);border-color:var(--r-poteau);color:#fff}
 .trstats{margin-top:14px}
+.trtools{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.trgbck{font-size:13px;white-space:nowrap;align-self:center}
+#trPgrid.manage .pcheck{border-style:dashed}
+.pdel{display:block;margin-top:4px;font-size:11px;font-weight:700;color:var(--r-arret);text-transform:uppercase;letter-spacing:.05em}
+#trGkTable tr[data-trg]{cursor:pointer}
+#trGkTable tr.sel td{background:var(--panel-2);font-weight:700}
+.gkchip[aria-pressed="true"]{background:var(--r-perte);border-color:var(--r-perte);color:#fff}
 .trstats-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
 @media (max-width:860px){.trstats-grid{grid-template-columns:1fr}}
 #trTable tr[data-trp]{cursor:pointer}
@@ -423,7 +430,10 @@ img{max-width:100%}
       <div class="panel" id="trLeft">
         <div class="panel-head"><h2><span class="stepn">1</span>Tireur</h2></div>
         <div class="pgrid" id="trPgrid"></div>
-        <form id="trAdd" class="tradd" autocomplete="off"><input type="text" id="trName" placeholder="Nouveau joueur : nom" aria-label="Nom du nouveau joueur"><button class="btn small" type="submit">Ajouter</button></form>
+        <div class="trtools"><button class="btn small" type="button" id="trPresentBtn">Présents</button><button class="btn small" type="button" id="trManage">Gérer les joueurs</button></div>
+        <form id="trAdd" class="tradd" autocomplete="off"><input type="text" id="trName" placeholder="Nouveau joueur : nom" aria-label="Nom du nouveau joueur"><label class="ckline trgbck"><input type="checkbox" id="trIsGk"> Gardien</label><button class="btn small" type="submit">Ajouter</button></form>
+        <div class="subhead">Gardien dans les buts</div>
+        <div class="chipwrap" id="trGk"></div>
         <div class="subhead"><span class="stepn">2</span>Poste de tir</div>
         <div class="chipwrap trpos" id="trPos"></div>
       </div>
@@ -441,7 +451,8 @@ img{max-width:100%}
     <div class="panel trstats">
       <div class="panel-head"><h2>Bilan</h2><span class="filters" id="trScope"></span></div>
       <div class="trstats-grid">
-        <div class="tbl-wrap"><table id="trTable"></table><p class="hint">Touche un joueur pour voir ses impacts dans la cage.</p></div>
+        <div class="tbl-wrap"><table id="trTable"></table><p class="hint">Touche un joueur pour voir ses impacts dans la cage.</p>
+          <div class="subhead">Gardiens : arrêts selon le poste du tireur</div><table id="trGkTable"></table></div>
         <div><svg id="goalTrA" viewBox="-0.75 -0.75 4.5 2.95" role="img" aria-label="Impacts à l'entraînement"></svg><p class="hint" id="trGoalHint"></p></div>
       </div>
     </div>
@@ -465,7 +476,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 19</span>
+      <span class="status" id="appVersion">Version 20</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -712,6 +723,17 @@ img{max-width:100%}
   </form>
 </div>
 <div class="updbar" id="updBar" hidden>Une nouvelle version de l'appli est prête. <button class="btn small primary" type="button" id="updBtn">Mettre à jour</button><button class="btn small" type="button" id="updLater">Plus tard</button></div>
+<div class="sheet-bg" id="trSheet" hidden>
+  <form class="sheet panel" id="trSheetForm" autocomplete="off">
+    <h2 id="trSheetTitle">Nouvelle séance</h2>
+    <label class="fld"><span class="lbl">Nom de la séance</span><input type="text" id="trSName" maxlength="60"></label>
+    <label class="fld"><span class="lbl">Date</span><input type="date" id="trSDate"></label>
+    <div class="fld"><span class="lbl">Qui est présent ? <span id="trSCount"></span></span>
+      <div class="sqtools"><button type="button" class="btn small" data-trsq="all">Tous</button><button type="button" class="btn small" data-trsq="none">Aucun</button><button type="button" class="btn small" data-trsq="last" id="trSLast">Comme la dernière séance</button></div>
+      <div class="sqgrid" id="trSGrid"></div></div>
+    <div class="sheet-actions"><button class="btn" type="button" id="trSCancel">Annuler</button><button class="btn primary" type="submit" id="trSSubmit">Créer la séance</button></div>
+  </form>
+</div>
 <div class="landing" id="landing" hidden><div class="panel landcard"><div class="landico" id="landIco">✅</div><h2 id="landTitle">Adresse e-mail validée</h2><p id="landText"></p><p class="hint" id="landHint"></p></div></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo">Annuler</button></div>
 
@@ -1902,9 +1924,24 @@ async function doLogout(){try{await sb.auth.signOut()}catch(e){}session=null;set
 const TPOS=[["ALG","Aile gauche"],["ARG","Arrière gauche"],["DC","Demi-centre"],["ARD","Arrière droit"],["ALD","Aile droite"],["PIV","Pivot"],["7M","7 m"],["9M","9 m"]];
 const TPOSN=Object.fromEntries(TPOS);
 const TRES=[["but","But","b-but"],["arret","Arrêt","b-arret"],["poteau","Poteau","b-poteau"],["hors","Hors cadre",""]];
-const T={p:lsGet("hb-trP",""),pos:lsGet("hb-trPos","ARG"),sess:"",gx:null,gy:null,cell:null,style:null,scope:"sess",selP:""};
+const T={manage:false,delArm:"",gk:lsGet("hb-trGk",""),selGk:"",p:lsGet("hb-trP",""),pos:lsGet("hb-trPos","ARG"),sess:"",gx:null,gy:null,cell:null,style:null,scope:"sess",selP:""};
+function presentIds(tr){const all=S.players.map(x=>x.id);return tr&&Array.isArray(tr.present)?tr.present.filter(id=>all.includes(id)):all}
+let trSel=new Set(),trEdit=null;
+function lastTrainPresent(){const t=[...S.trains].filter(x=>Array.isArray(x.present)&&x.id!==trEdit).sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0))[0];return t?t.present:null}
+function renderTrSheet(){
+  const pl=roster("nous");
+  $("trSGrid").innerHTML=pl.length?pl.map(x=>`<button type="button" class="pcheck" data-trsp="${esc(x.id)}" aria-pressed="${trSel.has(x.id)}"><span class="jn">${x.num??"–"}</span><span class="nm">${esc(x.name)}${isGK(x)?" (GB)":""}</span></button>`).join(""):`<div class="hint">Aucun joueur pour l'instant : tu pourras les ajouter sur la page Entraînement.</div>`;
+  $("trSCount").textContent=`· ${trSel.size} présent${trSel.size>1?"s":""}`;$("trSLast").disabled=!lastTrainPresent();
+}
+function openTrSheet(id){
+  trEdit=id||null;const tr=id?S.trains.find(x=>x.id===id):null;
+  $("trSheetTitle").textContent=tr?"Modifier la séance":"Nouvelle séance";$("trSSubmit").textContent=tr?"Enregistrer":"Créer la séance";
+  const n=S.trains.filter(x=>x.date===today()).length;
+  $("trSName").value=tr?(tr.name||""):`Séance du ${fmtDate(today())}${n?" ("+(n+1)+")":""}`;$("trSDate").value=tr?tr.date:today();
+  trSel=new Set(tr?presentIds(tr):(lastTrainPresent()||S.players.map(x=>x.id)));renderTrSheet();$("trSheet").hidden=false;
+}
 function todayTrain(){const d=today();return S.trains.find(x=>x.date===d)}
-function ensureSession(){let tr=S.trains.find(x=>x.id===T.sess);if(!tr){tr=todayTrain();if(!tr){const n=S.trains.filter(x=>x.date===today()).length;tr={id:"tr"+rid(),date:today(),name:"Séance du "+fmtDate(today()),t:Date.now()};S.trains.push(tr)}T.sess=tr.id}return tr}
+function ensureSession(){let tr=S.trains.find(x=>x.id===T.sess);if(!tr){tr=todayTrain();if(!tr){tr={id:"tr"+rid(),date:today(),name:"Séance du "+fmtDate(today()),t:Date.now(),present:S.players.map(x=>x.id)};S.trains.push(tr)}T.sess=tr.id}return tr}
 function renderTrain(){
   if(!$("goalTr").firstChild){$("goalTr").innerHTML=goalMarkup("goalTr");$("goalTrA").innerHTML=goalMarkup("goalTrA")}
   GK=false;
@@ -1913,12 +1950,22 @@ function renderTrain(){
   const sessions=[...S.trains].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0));
   $("trSession").innerHTML=(T.sess?"":`<option value="">Séance du ${fmtDate(today())} (nouvelle)</option>`)+sessions.map(x=>`<option value="${esc(x.id)}" ${x.id===T.sess?"selected":""}>${esc(x.name||("Séance du "+fmtDate(x.date)))} · ${S.tshots.filter(s=>s.tr===x.id).length} tirs</option>`).join("");
   // joueurs
-  const pl=roster("nous");
-  if(T.p&&!pl.some(x=>x.id===T.p))T.p="";
-  $("trPgrid").innerHTML=pl.length?pl.map(x=>`<button type="button" class="pcheck" data-trp="${esc(x.id)}" aria-pressed="${T.p===x.id}"><span class="jn">${x.num??"–"}</span><span class="nm">${esc(x.name)}</span></button>`).join(""):`<div class="empty">Ajoute un joueur ci-dessous.</div>`;
+  const curTr=S.trains.find(x=>x.id===T.sess),pres=presentIds(curTr);
+  const all=roster("nous"),pl=T.manage?all:all.filter(x=>pres.includes(x.id)&&!isGK(x)),gks=all.filter(x=>isGK(x)&&pres.includes(x.id));
+  if(T.p&&!all.some(x=>x.id===T.p&&!isGK(x)&&pres.includes(x.id)))T.p="";
+  if(T.gk&&!gks.some(x=>x.id===T.gk))T.gk="";
+  $("trPgrid").classList.toggle("manage",T.manage);
+  $("trPgrid").innerHTML=pl.length?pl.map(x=>T.manage
+      ?`<button type="button" class="pcheck" data-trdelp="${esc(x.id)}"><span class="jn">${x.num??"–"}</span><span class="nm">${esc(x.name)}${isGK(x)?" (GB)":""}</span><span class="pdel">${T.delArm===x.id?"Confirmer ?":"Supprimer"}</span></button>`
+      :`<button type="button" class="pcheck" data-trp="${esc(x.id)}" aria-pressed="${T.p===x.id}"><span class="jn">${x.num??"–"}</span><span class="nm">${esc(x.name)}</span></button>`).join("")
+    :`<div class="empty">${all.length?"Aucun joueur présent : touche « Présents ».":"Ajoute un joueur ci-dessous."}</div>`;
+  $("trManage").textContent=T.manage?"Terminé":"Gérer les joueurs";
+  $("trPresentBtn").textContent=curTr?`Présents (${pres.length})`:"Présents";
+  $("trGk").innerHTML=`<button type="button" class="chip gkchip" data-trgk="" aria-pressed="${!T.gk}">Aucun</button>`+gks.map(x=>`<button type="button" class="chip gkchip" data-trgk="${esc(x.id)}" aria-pressed="${T.gk===x.id}">${x.num!=null?"#"+x.num+" ":""}${esc(x.name)}</button>`).join("")+(gks.length?"":`<span class="hint">Ajoute un gardien (case « Gardien ») pour suivre ses arrêts.</span>`);
   $("trPos").innerHTML=TPOS.map(([k,l])=>`<button type="button" class="chip" data-trpos="${k}" aria-pressed="${T.pos===k}">${l}</button>`).join("");
   const p=pl.find(x=>x.id===T.p);
-  $("trWho").textContent=p?`${p.name} · ${TPOSN[T.pos]}`:"Choisis d'abord le tireur";
+  const gkp=S.players.find(x=>x.id===T.gk);
+  $("trWho").textContent=p?`${p.name} · ${TPOSN[T.pos]}${gkp?" → GB "+gkp.name:""}`:"Choisis d'abord le tireur";
   // cage de saisie
   $("goalTr-cells").innerHTML=Array.from({length:9},(_,i)=>`<rect x="${i%3}" y="${Math.floor(i/3)*2/3}" width="1" height="${2/3}" fill="${T.cell===i?"var(--accent)":"transparent"}" fill-opacity="${T.cell===i?".18":"0"}"/>`).join("");
   $("goalTr-pend").innerHTML=T.gx!=null?`<circle cx="${T.gx}" cy="${T.gy}" r=".08" fill="var(--accent)" stroke="var(--panel)" stroke-width=".025"/>`:"";
@@ -1928,7 +1975,7 @@ function renderTrain(){
   $("trRes").innerHTML=TRES.map(([k,l,c])=>`<button type="button" class="btn ${c}" data-trres="${k}">${l}</button>`).join("");
   $("trStyle").innerHTML=allStyles().map(v=>`<button type="button" class="chip" data-trst="${esc(v)}" aria-pressed="${T.style===v}">${esc(v)}</button>`).join("");
   const last=[...inSess].sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,8);
-  $("trLast").innerHTML=last.length?last.map(s=>`<li><span class="rdot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span><span><b>${TRES.find(x=>x[0]===s.res)?.[1]||s.res}</b> · ${esc(pName(s.p))}<small>${TPOSN[s.pos]||""}${s.cell!=null?" · "+cellName(s.cell):""}${s.style?" · "+esc(s.style):""}</small></span><button class="x" data-trdel="${esc(s.id)}" aria-label="Supprimer ce tir">×</button></li>`).join(""):`<li class="empty" style="display:block">Aucun tir dans cette séance pour l'instant.</li>`;
+  $("trLast").innerHTML=last.length?last.map(s=>`<li><span class="rdot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span><span><b>${TRES.find(x=>x[0]===s.res)?.[1]||s.res}</b> · ${esc(pName(s.p))}<small>${TPOSN[s.pos]||""}${s.cell!=null?" · "+cellName(s.cell):""}${s.style?" · "+esc(s.style):""}${s.gk?" · GB "+esc(pName(s.gk)):""}</small></span><button class="x" data-trdel="${esc(s.id)}" aria-label="Supprimer ce tir">×</button></li>`).join(""):`<li class="empty" style="display:block">Aucun tir dans cette séance pour l'instant.</li>`;
   renderTrainStats();
 }
 function renderTrainStats(){
@@ -1943,21 +1990,30 @@ function renderTrainStats(){
     rows.map(r=>{const a=st(r.l);return `<tr data-trp-s="${esc(r.id)}" class="${T.selP===r.id?"sel":""}" tabindex="0"><td>${esc(pName(r.id))}</td><td>${a.t}</td><td>${a.g}</td><td>${pct(a.g,a.t)} %</td>${used.map(([k])=>{const x=st(r.l.filter(s=>s.pos===k));return `<td>${x.t?x.g+"/"+x.t:"–"}</td>`}).join("")}</tr>`}).join("")+
     `<tr data-trp-s="" class="${!T.selP?"sel":""}"><td>Total</td><td>${tot.t}</td><td>${tot.g}</td><td>${pct(tot.g,tot.t)} %</td>${used.map(([k])=>{const x=st(src.filter(s=>s.pos===k));return `<td>${x.g}/${x.t}</td>`}).join("")}</tr></tbody>`
     :`<tbody><tr><td class="empty">Pas encore de tir ${T.scope==="all"?"à l'entraînement":"dans cette séance"}.</td></tr></tbody>`;
-  const list=src.filter(s=>!T.selP||s.p===T.selP);
+  // gardiens : arrêts / tirs cadrés, par poste du tireur
+  const gkIds=[...new Set(src.map(s=>s.gk).filter(Boolean))];
+  const gst=l=>{const c=l.filter(s=>s.res==="but"||s.res==="arret"),a=c.filter(s=>s.res==="arret").length;return {t:c.length,g:a}};
+  const gUsed=TPOS.filter(([k])=>src.some(s=>s.gk&&s.pos===k));
+  $("trGkTable").innerHTML=gkIds.length?`<thead><tr><th>Gardien</th><th>Cadrés</th><th>Arrêts</th><th>% arr.</th>${gUsed.map(([k,l])=>`<th>${l}</th>`).join("")}</tr></thead><tbody>`+
+    gkIds.map(id=>{const l=src.filter(s=>s.gk===id),a=gst(l);return `<tr data-trg="${esc(id)}" class="${T.selGk===id?"sel":""}"><td>${esc(pName(id))}</td><td>${a.t}</td><td>${a.g}</td><td>${pct(a.g,a.t)} %</td>${gUsed.map(([k])=>{const x=gst(l.filter(s=>s.pos===k));return `<td>${x.t?x.g+"/"+x.t:"–"}</td>`}).join("")}</tr>`}).join("")+"</tbody>"
+    :`<tbody><tr><td class="empty">Choisis un gardien dans les buts pour suivre ses arrêts.</td></tr></tbody>`;
+  const gkMode=!!T.selGk;
+  const list=gkMode?src.filter(s=>s.gk===T.selGk):src.filter(s=>!T.selP||s.p===T.selP);
   const cells=Array.from({length:9},()=>({t:0,g:0}));
-  list.forEach(s=>{if(s.cell!=null&&cells[s.cell]){cells[s.cell].t++;if(s.res==="but")cells[s.cell].g++}});
+  list.forEach(s=>{if(s.cell==null||!cells[s.cell])return;if(gkMode){if(s.res==="arret"||s.res==="but"){cells[s.cell].t++;if(s.res==="arret")cells[s.cell].g++}}else{cells[s.cell].t++;if(s.res==="but")cells[s.cell].g++}});
   const maxT=Math.max(1,...cells.map(c=>c.t));
   $("goalTrA-cells").innerHTML=cells.map((c,i)=>{const x=i%3,y=Math.floor(i/3)*2/3;
     return `<rect x="${x}" y="${y}" width="1" height="${2/3}" fill="${c.t?heatColor(pct(c.g,c.t)):"transparent"}" fill-opacity="${c.t?(0.15+0.45*c.t/maxT).toFixed(2):0}"/>`+(c.t?`<text x="${x+.5}" y="${y+.4}" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size=".2" fill="var(--ink)">${c.g}/${c.t}</text>`:"")}).join("");
-  $("goalTrA-dots").innerHTML=list.filter(s=>s.gx!=null).map(s=>`<circle cx="${s.gx}" cy="${s.gy}" r=".05" fill="${RES[s.res]?.c||"var(--r-hors)"}" stroke="var(--panel)" stroke-width=".015"/>`).join("");
+  const dcol=r=>gkMode&&r==="but"?"var(--r-arret)":gkMode&&r==="arret"?"var(--r-but)":(RES[r]?.c||"var(--r-hors)");
+  $("goalTrA-dots").innerHTML=list.filter(s=>s.gx!=null).map(s=>`<circle cx="${s.gx}" cy="${s.gy}" r=".05" fill="${dcol(s.res)}" stroke="var(--panel)" stroke-width=".015"/>`).join("");
   const hc=list.filter(s=>s.res==="hors").length;
-  $("trGoalHint").textContent=`${T.selP?pName(T.selP):"Tous les joueurs"} · buts / tirs par zone${hc?` · ${hc} hors cadre`:""}`;
+  $("trGoalHint").textContent=gkMode?`GB ${pName(T.selGk)} · arrêts / tirs cadrés par zone (vert = arrêt, rouge = but encaissé)`:`${T.selP?pName(T.selP):"Tous les joueurs"} · buts / tirs par zone${hc?` · ${hc} hors cadre`:""}`;
 }
 function saveTrainShot(res){
   if(!T.p){toast("Choisis d'abord le tireur",false);return}
   if(ROLE==="lecteur"){toast("Tu es en lecture seule dans cette équipe",false);return}
   const tr=ensureSession();
-  const s={id:"ts"+rid(),tr:tr.id,p:T.p,pos:T.pos,gx:T.gx,gy:T.gy,cell:res==="hors"?null:T.cell,res,style:T.style||null,t:Date.now()};
+  const s={id:"ts"+rid(),tr:tr.id,p:T.p,pos:T.pos,gx:T.gx,gy:T.gy,cell:res==="hors"?null:T.cell,res,style:T.style||null,gk:T.gk||null,t:Date.now()};
   S.tshots.push(s);T.gx=T.gy=T.cell=null;T.style=null;saveLocal();renderTrain();
   window.__undoFn=()=>{S.tshots=S.tshots.filter(x=>x.id!==s.id);saveLocal();renderTrain()};
   toast(`${TRES.find(x=>x[0]===res)[1]} · ${pName(s.p)} · ${TPOSN[s.pos]}`,true);
@@ -1967,8 +2023,9 @@ function bindTrain(){
     const pl=S.players.find(x=>x.id===T.p);if(pl&&TPOSN[pl.pos]&&!lsGet("hb-trPosManual",false))T.pos=pl.pos;renderTrain()});
   $("trPos").addEventListener("click",e=>{const b=e.target.closest("[data-trpos]");if(!b)return;T.pos=b.dataset.trpos;lsSet("hb-trPos",T.pos);renderTrain()});
   $("trAdd").addEventListener("submit",async e=>{e.preventDefault();const name=$("trName").value.trim();if(!name)return;
-    const pos=["ALG","ARG","DC","ARD","ALD","PIV"].includes(T.pos)?T.pos:"ARG";
-    const id=await addPlayer({name,num:null,pos});T.p=id;lsSet("hb-trP",id);$("trName").value="";renderTrain()});
+    const gk=$("trIsGk").checked,pos=gk?"GB":(["ALG","ARG","DC","ARD","ALD","PIV"].includes(T.pos)?T.pos:"ARG");
+    const id=await addPlayer({name,num:null,pos});const tr=S.trains.find(x=>x.id===T.sess);if(tr&&Array.isArray(tr.present)){tr.present.push(id);saveLocal()}
+    if(gk){T.gk=id;lsSet("hb-trGk",id)}else{T.p=id;lsSet("hb-trP",id)}$("trName").value="";$("trIsGk").checked=false;renderTrain()});
   $("goalTr").addEventListener("click",e=>{
     const pt=svgPoint($("goalTr"),e),gx=+pt.x.toFixed(3),gy=+pt.y.toFixed(3);
     if(!T.p){toast("Choisis d'abord le tireur",false);return}
@@ -1981,9 +2038,29 @@ function bindTrain(){
   $("trLast").addEventListener("click",e=>{const b=e.target.closest("[data-trdel]");if(!b)return;const id=b.dataset.trdel;const s=S.tshots.find(x=>x.id===id);
     S.tshots=S.tshots.filter(x=>x.id!==id);saveLocal();renderTrain();window.__undoFn=()=>{S.tshots.push(s);saveLocal();renderTrain()};toast("Tir supprimé",true)});
   $("trSession").addEventListener("change",e=>{T.sess=e.target.value;renderTrain()});
-  $("trNewSess").onclick=()=>{const n=S.trains.filter(x=>x.date===today()).length;const tr={id:"tr"+rid(),date:today(),name:`Séance du ${fmtDate(today())}${n?" ("+(n+1)+")":""}`,t:Date.now()};S.trains.push(tr);T.sess=tr.id;saveLocal();renderTrain();toast("Nouvelle séance créée",false)};
+  $("trNewSess").onclick=()=>openTrSheet();
   $("trScope").addEventListener("click",e=>{const b=e.target.closest("[data-trsc]");if(!b)return;T.scope=b.dataset.trsc;renderTrainStats()});
-  $("trTable").addEventListener("click",e=>{const r=e.target.closest("[data-trp-s]");if(!r)return;T.selP=r.dataset.trpS;renderTrainStats()});
+  $("trTable").addEventListener("click",e=>{const r=e.target.closest("[data-trp-s]");if(!r)return;T.selP=r.dataset.trpS;T.selGk="";renderTrainStats()});
+  $("trGkTable").addEventListener("click",e=>{const r=e.target.closest("[data-trg]");if(!r)return;T.selGk=T.selGk===r.dataset.trg?"":r.dataset.trg;T.selP="";renderTrainStats()});
+  $("trGk").addEventListener("click",e=>{const b=e.target.closest("[data-trgk]");if(!b)return;T.gk=b.dataset.trgk;lsSet("hb-trGk",T.gk);renderTrain()});
+  $("trManage").onclick=()=>{T.manage=!T.manage;T.delArm="";renderTrain()};
+  $("trPgrid").addEventListener("click",async e=>{const b=e.target.closest("[data-trdelp]");if(!b)return;const id=b.dataset.trdelp;
+    if(ROLE==="lecteur"){toast("Tu es en lecture seule dans cette équipe",false);return}
+    if(T.delArm!==id){T.delArm=id;renderTrain();const nm=S.shots.filter(s=>s.p===id).length,nt=S.tshots.filter(s=>s.p===id).length;
+      toast(`Touche encore pour supprimer ${pName(id)}${nm+nt?` et ses ${nm+nt} tir(s)`:""}`,false);setTimeout(()=>{if(T.delArm===id){T.delArm="";renderTrain()}},5000);return}
+    T.delArm="";S.tshots=S.tshots.filter(s=>s.p!==id);S.tshots.forEach(s=>{if(s.gk===id)s.gk=null});
+    S.trains.forEach(t=>{if(Array.isArray(t.present))t.present=t.present.filter(x=>x!==id)});
+    if(T.p===id)T.p="";if(T.gk===id)T.gk="";await removePlayer(id);saveLocal();renderTrain();toast("Joueur supprimé",false)});
+  $("trPresentBtn").onclick=()=>{const tr=S.trains.find(x=>x.id===T.sess);if(tr)openTrSheet(tr.id);else openTrSheet()};
+  $("trSGrid").addEventListener("click",e=>{const b=e.target.closest("[data-trsp]");if(!b)return;const id=b.dataset.trsp;trSel.has(id)?trSel.delete(id):trSel.add(id);renderTrSheet()});
+  document.querySelectorAll("[data-trsq]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.trsq;trSel=new Set(k==="all"?S.players.map(x=>x.id):k==="none"?[]:(lastTrainPresent()||[]));renderTrSheet()}));
+  $("trSCancel").onclick=()=>{$("trSheet").hidden=true};
+  $("trSheet").addEventListener("click",e=>{if(e.target===$("trSheet"))$("trSheet").hidden=true});
+  $("trSheetForm").addEventListener("submit",e=>{e.preventDefault();
+    const name=$("trSName").value.trim()||("Séance du "+fmtDate($("trSDate").value||today())),date=$("trSDate").value||today(),present=roster("nous").map(x=>x.id).filter(id=>trSel.has(id));
+    if(trEdit){const tr=S.trains.find(x=>x.id===trEdit);Object.assign(tr,{name,date,present});toast("Séance modifiée",false)}
+    else{const tr={id:"tr"+rid(),date,name,present,t:Date.now()};S.trains.push(tr);T.sess=tr.id;toast("Séance créée",false)}
+    $("trSheet").hidden=true;saveLocal();renderTrain()});
 }
 
 /* ---------- Démarrage ---------- */
