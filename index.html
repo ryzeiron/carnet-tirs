@@ -51,7 +51,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-
 .tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
 .top-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-select,input[type=text],input[type=number]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
+select,input[type=text],input[type=number],input[type=email],input[type=date]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;font-weight:600}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -216,6 +216,18 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .tl li.adv .lab{color:var(--r-perte)}
 .tmark{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;margin-right:6px}
 .updbar{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 8px 24px rgba(0,0,0,.15);font-size:14px;max-width:calc(100% - 32px)}
+.teamgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:14px;align-items:start}
+.stack{display:flex;flex-direction:column;gap:10px;margin-top:8px}
+.stack input,.stack select{font-size:16px}
+.ckline{display:flex;gap:8px;align-items:flex-start;font-size:14px}
+.wslist,.memlist{list-style:none;margin:0;padding:0}
+.wslist li,.memlist li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.wslist li .nm,.memlist li .nm{flex:1 1 160px;min-width:0;overflow-wrap:anywhere}
+.wslist li.cur .nm b{color:var(--accent)}
+.rolep{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;border-radius:999px;padding:2px 8px;background:var(--panel-2);border:1px solid var(--line)}
+.memlist select{font-size:13px;padding:4px 6px}
+.syncst.ok{color:var(--r-but)}.syncst.warn{color:var(--accent)}.syncst.err{color:var(--r-arret)}
+body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [data-medit],body.ro [data-mcur],body.ro #newMatchBtn2,body.ro #delPlayer{display:none!important}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -308,13 +320,15 @@ img{max-width:100%}
         <button class="tab" role="tab" id="tabEntry" aria-selected="true">Saisie</button>
         <button class="tab" role="tab" id="tabAna" aria-selected="false">Analyse</button>
         <button class="tab" role="tab" id="tabMatch" aria-selected="false">Matchs</button>
+        <button class="tab" role="tab" id="tabTeam" aria-selected="false">Équipe</button>
       </div>
     </div>
     <div class="top-tools">
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
-      <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
+      <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 12</span>
+      <span class="status syncst" id="syncStatus" hidden></span>
+      <span class="status" id="appVersion">Version 13</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -406,6 +420,57 @@ img{max-width:100%}
   </section>
 
   <!-- ================= ANALYSE ================= -->
+  <section id="viewTeam" hidden>
+    <div class="teamgrid">
+      <div class="panel" id="accPanel">
+        <div class="panel-head"><h2>Mon compte</h2></div>
+        <div id="accOut">
+          <p class="hint">Connecte-toi avec ton e-mail pour partager une équipe avec ton staff. Tu reçois un code à 6 chiffres par e-mail, sans mot de passe.</p>
+          <form id="loginForm" class="stack" autocomplete="on">
+            <label class="fld"><span class="lbl">E-mail</span><input type="email" id="loginEmail" autocomplete="email" placeholder="toi@exemple.fr" required></label>
+            <button class="btn primary" type="submit" id="loginSend">Recevoir le code</button>
+          </form>
+          <form id="codeForm" class="stack" hidden autocomplete="off">
+            <p class="hint" id="codeHint"></p>
+            <label class="fld"><span class="lbl">Code reçu par e-mail</span><input type="text" id="loginCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" required></label>
+            <div class="sheet-actions"><button class="btn" type="button" id="codeBack">Changer d'e-mail</button><button class="btn primary" type="submit">Se connecter</button></div>
+          </form>
+        </div>
+        <div id="accIn" hidden>
+          <p>Connecté avec <b id="accEmail"></b></p>
+          <button class="btn small" type="button" id="logoutBtn">Se déconnecter</button>
+        </div>
+        <p class="hint" id="accMsg"></p>
+      </div>
+
+      <div class="panel" id="wsPanel">
+        <div class="panel-head"><h2>Mes équipes</h2><button class="btn small" type="button" id="syncNow" hidden>Synchroniser</button></div>
+        <ul class="wslist" id="wsList"></ul>
+        <form id="newTeamForm" class="stack" hidden autocomplete="off">
+          <div class="subhead">Créer une équipe</div>
+          <label class="fld"><span class="lbl">Nom de l'équipe</span><input type="text" id="teamName" maxlength="80" placeholder="ex. Seniors Garçons" required></label>
+          <label class="ckline"><input type="checkbox" id="teamImport" checked> Mettre dedans les données de cet appareil (joueurs, matchs, actions)</label>
+          <button class="btn primary" type="submit">Créer l'équipe</button>
+        </form>
+      </div>
+
+      <div class="panel" id="memPanel" hidden>
+        <div class="panel-head"><h2>Staff de <span id="memTeam"></span></h2></div>
+        <ul class="memlist" id="memList"></ul>
+        <form id="inviteForm" class="stack" autocomplete="off" hidden>
+          <div class="subhead">Inviter quelqu'un</div>
+          <label class="fld"><span class="lbl">E-mail</span><input type="email" id="invEmail" placeholder="coach@exemple.fr" required></label>
+          <div class="fld"><span class="lbl">Rôle</span><select id="invRole">
+            <option value="analyste">Analyste : saisit les matchs</option>
+            <option value="lecteur">Lecteur : consulte les stats</option>
+            <option value="admin">Admin : gère aussi le staff</option></select></div>
+          <button class="btn primary" type="submit">Inviter</button>
+          <p class="hint">La personne reçoit un code par e-mail. Elle ouvre l'appli, va dans « Équipe » et se connecte avec cette adresse.</p>
+        </form>
+      </div>
+    </div>
+  </section>
+
   <section id="viewMatch" hidden>
     <div class="panel season">
       <div class="panel-head"><h2>Saison</h2><button class="btn primary small" type="button" id="newMatchBtn2">+ Nouveau match</button></div>
@@ -536,7 +601,7 @@ const S={matches:[],cur:"",players:[],shots:[],mode:"loading",cfg:{plays:[],styl
 const A={sel:null,match:"",phase:"",view:"tirs",play:"",style:"",team:"nous"};
 const allPlays=()=>[...DEFAULT_PLAYS,...(S.cfg.plays||[]).filter(x=>!DEFAULT_PLAYS.includes(x))];
 const allStyles=()=>[...DEFAULT_STYLES,...(S.cfg.styles||[]).filter(x=>!DEFAULT_STYLES.includes(x))];
-async function saveCfg(){if(db){await db.doc("config/lists").set({plays:S.cfg.plays||[],styles:S.cfg.styles||[]})}else{lsSet("hb-cfg",S.cfg);render()}}
+async function saveCfg(){if(db){await db.doc("config/lists").set({plays:S.cfg.plays||[],styles:S.cfg.styles||[]})}else{lsSet(K("hb-cfg"),S.cfg);scheduleSync();render()}}
 let E=blankEntry();
 let db=null,downloads=null,lastDeleted=null,toastTimer=null,delArm=null,tab="entry";
 
@@ -546,6 +611,8 @@ const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&g
 const pct=(a,b)=>b?Math.round(a*100/b):0;
 function lsGet(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}}
 function lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+let WS=lsGet("hb-ws","");               // équipe active ("" = cet appareil, sans équipe)
+const K=n=>WS?n+"@"+WS:n;
 function blankEntry(){return {team:arguments[0]||"nous",mt:null,gk:null,p:null,res:null,phase:null,x:null,y:null,zone:null,dist:null,gx:null,gy:null,cell:null,play:null,style:null}}
 
 function zoneOf(x,y){const t=Math.atan2(Math.max(y,0.001),x-10)*180/Math.PI;return (ZONES.find(z=>t>=z.a[0]&&t<=z.a[1])||ZONES[3]).id}
@@ -576,7 +643,7 @@ async function removeShot(id){
   if(db){await db.collection("shots").doc(id).delete()}else{S.shots=S.shots.filter(x=>x.id!==id);saveLocal();render()}
   toast("Action supprimée",true);
 }
-function saveLocal(){lsSet("hb-data",{players:S.players,shots:S.shots});lsSet("hb-matches",S.matches);if(typeof updateStatus==="function")updateStatus()}
+function saveLocal(){lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet(K("hb-matches"),S.matches);if(typeof updateStatus==="function")updateStatus();if(typeof scheduleSync==="function")scheduleSync()}
 const fmtDate=d=>{if(!d)return"";const [y,m,j]=d.split("-");return `${j}/${m}/${y.slice(2)}`};
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 function matchById(id){return S.matches.find(m=>m.id===id)}
@@ -844,10 +911,10 @@ function render(){
   if(S.cur&&!matchById(S.cur))S.cur="";
   $("matchSel").innerHTML=(S.matches.length?"":`<option value="">Crée d'abord un match →</option>`)+(S.matches.length&&!S.cur?`<option value="">Choisis le match…</option>`:"")+
     sortedMatches().map(m=>`<option value="${esc(m.id)}" ${m.id===S.cur?"selected":""}>${esc(matchLabel(m.id))}</option>`).join("");
-  if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else renderAnalysis();
+  if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="team")renderTeam();else renderAnalysis();
 }
-function setTab(t){tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("savebar").hidden=t!=="entry";
-  $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");render()}
+function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry";
+  $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");$("tabTeam").setAttribute("aria-selected",t==="team");render()}
 
 /* ---------- CHRONO ---------- */
 const HALF=1800;
@@ -1001,17 +1068,17 @@ function bindMatches(){
     if(S.players.length&&!sqSel.size){toast("Coche au moins un joueur pour ce match.",false);return}
     const data={adv,date:$("mDate").value||today(),lieu:mLieu,comp:$("mComp").value.trim().slice(0,40),squad:roster("nous").map(p=>p.id).filter(id=>sqSel.has(id))};
     if(editId){const m=matchById(editId);Object.assign(m,data);toast("Match modifié",false)}
-    else{const m={id:"m"+rid(),...data,t:Date.now()};S.matches.push(m);S.cur=m.id;lsSet("hb-curMatch",S.cur);toast(`Match créé : ${matchLabel(m.id)}`,false)}
+    else{const m={id:"m"+rid(),...data,t:Date.now()};S.matches.push(m);S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);toast(`Match créé : ${matchLabel(m.id)}`,false)}
     saveLocal();$("matchSheet").hidden=true;render()});
   $("pnlPlayer").addEventListener("click",e=>{if(e.target.closest("#editSquad")&&S.cur)openMatchForm(S.cur)});
   $("sqGrid").addEventListener("click",e=>{const b=e.target.closest("[data-sqp]");if(!b)return;const id=b.dataset.sqp;sqSel.has(id)?sqSel.delete(id):sqSel.add(id);renderSquad()});
   document.querySelectorAll("[data-sq]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.sq;
     sqSel=new Set(k==="all"?S.players.map(p=>p.id):k==="none"?[]:(lastSquad()||[]));renderSquad()}));
-  $("matchSel").addEventListener("change",e=>{S.cur=e.target.value;lsSet("hb-curMatch",S.cur);render()});
+  $("matchSel").addEventListener("change",e=>{S.cur=e.target.value;lsSet(K("hb-curMatch"),S.cur);render()});
   $("matchCards").addEventListener("click",e=>{
     const t=e.target.closest("button");if(!t)return;
     if(t.dataset.mstats){A.match=t.dataset.mstats;A.sel=null;setTab("ana");window.scrollTo(0,0);return}
-    if(t.dataset.mcur){S.cur=t.dataset.mcur;lsSet("hb-curMatch",S.cur);setTab("entry");window.scrollTo(0,0);return}
+    if(t.dataset.mcur){S.cur=t.dataset.mcur;lsSet(K("hb-curMatch"),S.cur);setTab("entry");window.scrollTo(0,0);return}
     if(t.dataset.medit){openMatchForm(t.dataset.medit);return}
     if(t.dataset.mtl){const id=t.dataset.mtl;openTL.has(id)?openTL.delete(id):openTL.add(id);renderMatches();return}
     if(t.dataset.mdel){const id=t.dataset.mdel;
@@ -1258,7 +1325,7 @@ function restore(file){
     S.matches=[...S.matches,...nm];
     S.players=[...S.players,...np];S.shots=[...S.shots,...ns];migrateMatches();
     const c=d.cfg||{};S.cfg={plays:[...new Set([...(S.cfg.plays||[]),...(c.plays||[])])],styles:[...new Set([...(S.cfg.styles||[]),...(c.styles||[])])]};
-    saveLocal();lsSet("hb-cfg",S.cfg);render();
+    saveLocal();lsSet(K("hb-cfg"),S.cfg);render();
     toast(`Sauvegarde restaurée : ${np.length} joueur${np.length>1?"s":""} et ${ns.length} action${ns.length>1?"s":""} ajoutés`,false);
   }catch(e){toast("Ce fichier n'est pas une sauvegarde du Carnet de tirs.",false)}};
   r.readAsText(file);
@@ -1270,6 +1337,184 @@ function updateStatus(){
   $("status").innerHTML=days>=7?`<span class="backup-warn">Dernière sauvegarde il y a ${days} j</span>`:`Sauvegardé ${days===0?"aujourd'hui":days===1?"hier":"il y a "+days+" j"}`;
 }
 
+/* ---------- ÉQUIPE & SYNCHRONISATION ---------- */
+const SB_URL="https://apcsdghdmzspovxdlmbv.supabase.co",SB_KEY="sb_publishable_OAt73IQCwvpDrIff_mE_Cg_eAJ-205M";
+const APP_URL="https://ryzeiron.github.io/carnet-tirs/";
+let sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
+const ROLE_LABEL={admin:"Admin",analyste:"Analyste",lecteur:"Lecteur"};
+const stab=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k2)=>(o[k2]=x[k2],o),{}):x);
+function loadWorkspaceData(){
+  const d=lsGet(K("hb-data"),{players:[],shots:[]});S.players=d.players||[];S.shots=d.shots||[];S.cfg=lsGet(K("hb-cfg"),{plays:[],styles:[]});
+  S.matches=lsGet(K("hb-matches"),[]);S.cur=lsGet(K("hb-curMatch"),"");
+  SY=WS?lsGet(K("hb-synced"),{}):{};CURSOR=WS?lsGet(K("hb-cursor"),""):"";
+  const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:null):null;
+  document.body.classList.toggle("ro",ROLE==="lecteur");
+  migrateMatches();
+}
+function localItems(){const m=new Map();S.players.forEach(p=>m.set("player:"+p.id,p));S.matches.forEach(x=>m.set("match:"+x.id,x));S.shots.forEach(x=>m.set("shot:"+x.id,x));
+  m.set("cfg:lists",{plays:S.cfg.plays||[],styles:S.cfg.styles||[]});return m}
+function setSync(state,txt){const el=$("syncStatus");if(!WS){el.hidden=true;return}el.hidden=false;el.className="status syncst "+state;el.textContent=txt}
+function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?t.name:"Équipe";
+  if(!session)return setSync("warn",`☁ ${nm} · connecte-toi dans « Équipe »`);
+  if(lastErr)return setSync("err",`☁ ${nm} · ${navigator.onLine?"serveur injoignable":"hors ligne"}${pendingN?` · ${pendingN} en attente`:""}`);
+  setSync(pendingN?"warn":"ok",`☁ ${nm} · ${pendingN?pendingN+" en attente":"synchronisé"}`)}
+function scheduleSync(){if(!WS||!sb||!session)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushNow,700)}
+function dirtyRows(){const rows=[],pend={},loc=localItems();
+  loc.forEach((obj,k)=>{const h=stab(obj);if(SY[k]!==h){const i=k.indexOf(":");rows.push({team_id:WS,kind:k.slice(0,i),id:k.slice(i+1),data:obj,deleted:false});pend[k]=h}});
+  Object.keys(SY).forEach(k=>{if(!loc.has(k)){const i=k.indexOf(":");rows.push({team_id:WS,kind:k.slice(0,i),id:k.slice(i+1),data:null,deleted:true});pend[k]=null}});
+  return {rows,pend}}
+async function pushNow(){
+  if(!WS||!sb||!session)return;
+  if(ROLE==="lecteur"){pendingN=0;syncLabel();return}
+  if(pushing){pushAgain=true;return}pushing=true;
+  try{
+    const {rows,pend}=dirtyRows();pendingN=rows.length;syncLabel();
+    for(let i=0;i<rows.length;i+=400){
+      const chunk=rows.slice(i,i+400);
+      const {error}=await sb.from("items").upsert(chunk,{onConflict:"team_id,kind,id"});
+      if(error)throw error;
+      chunk.forEach(r=>{const k=r.kind+":"+r.id;if(pend[k]===null)delete SY[k];else SY[k]=pend[k]});
+      lsSet(K("hb-synced"),SY);pendingN=Math.max(0,pendingN-chunk.length);
+    }
+    lastErr="";
+  }catch(e){lastErr=(e&&e.message)||"erreur";setTimeout(scheduleSync,15000)}
+  finally{pushing=false;syncLabel();if(pushAgain){pushAgain=false;scheduleSync()}}
+}
+const COLL={player:"players",match:"matches",shot:"shots"};
+function applyRemote(r){
+  const k=r.kind+":"+r.id,loc=localItems(),lo=loc.get(k);
+  const dirty=lo?SY[k]!==stab(lo):(k in SY);
+  if(r.updated_at&&r.updated_at>CURSOR)CURSOR=r.updated_at;
+  if(dirty&&!(r.data&&lo&&stab(r.data)===stab(lo)))return false;   // modification locale pas encore envoyée : elle gagnera
+  if(r.kind==="cfg"){if(r.deleted||!r.data)return false;S.cfg={plays:[...(r.data.plays||[])],styles:[...(r.data.styles||[])]};SY[k]=stab(localItems().get(k));return true}
+  const coll=COLL[r.kind];if(!coll)return false;
+  const arr=S[coll],idx=arr.findIndex(x=>x.id===r.id);
+  if(r.deleted||!r.data){if(idx>=0)arr.splice(idx,1);delete SY[k];return idx>=0}
+  const obj={...r.data,id:r.id};if(idx>=0)arr[idx]=obj;else arr.push(obj);SY[k]=stab(obj);return true;
+}
+let applyTimer=null;
+function afterApply(){clearTimeout(applyTimer);applyTimer=setTimeout(()=>{
+  lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet(K("hb-matches"),S.matches);lsSet(K("hb-cfg"),S.cfg);
+  lsSet(K("hb-synced"),SY);lsSet(K("hb-cursor"),CURSOR);render()},150)}
+async function pullNow(){
+  if(!WS||!sb||!session)return;
+  try{
+    let since=CURSOR?new Date(new Date(CURSOR).getTime()-60000).toISOString():null,changed=false;
+    for(let guard=0;guard<200;guard++){
+      let q=sb.from("items").select("kind,id,data,deleted,updated_at").eq("team_id",WS).order("updated_at",{ascending:true}).limit(1000);
+      if(since)q=q.gt("updated_at",since);
+      const {data,error}=await q;if(error)throw error;
+      data.forEach(r=>{if(applyRemote(r))changed=true});
+      if(data.length<1000)break;since=data[data.length-1].updated_at;
+    }
+    lsSet(K("hb-cursor"),CURSOR);lsSet(K("hb-synced"),SY);
+    if(changed)afterApply();
+    lastErr="";
+  }catch(e){lastErr=(e&&e.message)||"erreur"}
+  syncLabel();
+}
+function stopSync(){if(chan&&sb){sb.removeChannel(chan);chan=null}clearInterval(pullTimer);pullTimer=null}
+function startSync(){
+  stopSync();if(!WS||!sb||!session)return syncLabel();
+  chan=sb.channel("items-"+WS).on("postgres_changes",{event:"*",schema:"public",table:"items",filter:"team_id=eq."+WS},p=>{if(p.new&&p.new.kind&&applyRemote(p.new))afterApply()}).subscribe();
+  pullTimer=setInterval(()=>{pullNow();scheduleSync()},30000);
+  pullNow().then(()=>scheduleSync());
+}
+function loadScript(src){return new Promise((res,rej)=>{const sc=document.createElement("script");sc.src=src;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
+async function sbInit(){
+  try{if(!window.supabase)await loadScript("supabase.min.js");
+    sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"hb-auth"}});
+  }catch(e){syncLabel();return}
+  const {data}=await sb.auth.getSession();session=data.session;
+  sb.auth.onAuthStateChange((ev,s)=>{const was=!!session;session=s;if(!!s!==was){if(s)afterLogin();else{stopSync();syncLabel();if(tab==="team")renderTeam()}}});
+  if(session)afterLogin();else syncLabel();
+  window.addEventListener("online",()=>{pullNow();scheduleSync()});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pullNow();scheduleSync()}});
+}
+async function afterLogin(){
+  try{await sb.rpc("claim_invites")}catch(e){}
+  await loadTeams();
+  if(WS&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine&&!lastErr){setWorkspace("")}
+  else{const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:ROLE):null;document.body.classList.toggle("ro",ROLE==="lecteur");startSync()}
+  if(tab==="team")renderTeam();
+}
+async function loadTeams(){
+  if(!sb||!session)return;
+  const em=(session.user.email||"").toLowerCase();
+  const {data,error}=await sb.from("members").select("team_id,role,teams(name)").eq("email",em);
+  if(error){lastErr=error.message;return}
+  TEAMS=(data||[]).map(r=>({id:r.team_id,role:r.role,name:(r.teams&&r.teams.name)||"Équipe"})).sort((a,b)=>a.name.localeCompare(b.name));
+  lsSet("hb-teams",TEAMS);
+}
+function setWorkspace(id,carry){
+  stopSync();
+  const keep=carry?{players:S.players,shots:S.shots,matches:S.matches,cfg:S.cfg}:null;
+  WS=id||"";lsSet("hb-ws",WS);
+  if(keep&&WS){lsSet(K("hb-data"),{players:keep.players,shots:keep.shots});lsSet(K("hb-matches"),keep.matches);lsSet(K("hb-cfg"),keep.cfg);lsSet(K("hb-synced"),{});lsSet(K("hb-cursor"),"")}
+  loadWorkspaceData();E=blankEntry();A.sel=null;A.match="";
+  if(WS)startSync();
+  syncLabel();updateStatus();setTab(ROLE==="lecteur"&&tab==="entry"?"ana":tab);
+}
+function renderTeam(){
+  const on=!!session;
+  $("accOut").hidden=on;$("accIn").hidden=!on;if(on)$("accEmail").textContent=session.user.email;
+  if(!sb)$("accMsg").textContent="La connexion au serveur n'a pas pu démarrer. Vérifie le réseau.";
+  // espaces
+  const items=[{id:"",name:"Cet appareil (sans équipe)",role:null},...TEAMS];
+  $("wsList").innerHTML=items.map(t=>`<li class="${t.id===WS?"cur":""}"><span class="nm"><b>${esc(t.name)}</b>${t.id===WS?" · en cours":""}</span>${t.role?`<span class="rolep">${ROLE_LABEL[t.role]}</span>`:""}${t.id===WS?"":`<button class="btn small" type="button" data-ws="${esc(t.id)}">Ouvrir</button>`}</li>`).join("");
+  $("newTeamForm").hidden=!on;$("syncNow").hidden=!(on&&WS);
+  $("teamImport").closest("label").hidden=!!WS;
+  // staff
+  const t=TEAMS.find(x=>x.id===WS);
+  $("memPanel").hidden=!(on&&t);
+  if(on&&t){$("memTeam").textContent=t.name;$("inviteForm").hidden=t.role!=="admin";loadMembers()}
+}
+async function loadMembers(){
+  const t=TEAMS.find(x=>x.id===WS);if(!t||!sb)return;
+  const {data,error}=await sb.from("members").select("email,role,user_id").eq("team_id",WS).order("created_at");
+  if(error){$("memList").innerHTML=`<li class="hint">Liste indisponible hors ligne.</li>`;return}
+  const me=(session.user.email||"").toLowerCase(),admin=t.role==="admin";
+  $("memList").innerHTML=data.map(m=>`<li><span class="nm">${esc(m.email)}${m.email===me?" (toi)":""}<br><small class="hint">${m.user_id?"Compte actif":"Invitation en attente"}</small></span>
+    ${admin&&m.email!==me?`<select data-mrole="${esc(m.email)}" aria-label="Rôle">${["admin","analyste","lecteur"].map(r=>`<option value="${r}" ${r===m.role?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select><button class="btn small danger" type="button" data-mdelm="${esc(m.email)}">Retirer</button>`:`<span class="rolep">${ROLE_LABEL[m.role]}</span>`}</li>`).join("");
+}
+function bindTeam(){
+  $("tabTeam").onclick=()=>setTab("team");
+  $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!sb)return;
+    loginEmail=$("loginEmail").value.trim().toLowerCase();$("loginSend").disabled=true;$("accMsg").textContent="";
+    const {error}=await sb.auth.signInWithOtp({email:loginEmail,options:{shouldCreateUser:true,emailRedirectTo:APP_URL}});
+    $("loginSend").disabled=false;
+    if(error){$("accMsg").textContent=/rate|limit|seconds/i.test(error.message)?"Trop d'e-mails envoyés pour le moment. Réessaie dans quelques minutes.":"Envoi impossible : "+error.message;return}
+    $("loginForm").hidden=true;$("codeForm").hidden=false;$("codeHint").textContent=`Code envoyé à ${loginEmail}. Regarde aussi dans les spams.`;$("loginCode").focus()});
+  $("codeBack").onclick=()=>{$("loginForm").hidden=false;$("codeForm").hidden=true};
+  $("codeForm").addEventListener("submit",async e=>{e.preventDefault();
+    const token=$("loginCode").value.replace(/\s/g,"");
+    const {error}=await sb.auth.verifyOtp({email:loginEmail,token,type:"email"});
+    if(error){$("accMsg").textContent="Code incorrect ou expiré. Vérifie le dernier e-mail reçu.";return}
+    $("accMsg").textContent="";$("loginForm").hidden=false;$("codeForm").hidden=true;$("loginCode").value="";toast("Connecté",false)});
+  $("logoutBtn").onclick=async()=>{await sb.auth.signOut();session=null;setWorkspace("");TEAMS=[];lsSet("hb-teams",[]);renderTeam()};
+  $("wsList").addEventListener("click",e=>{const b=e.target.closest("[data-ws]");if(!b)return;setWorkspace(b.dataset.ws);renderTeam();toast(b.dataset.ws?"Équipe ouverte":"Données de cet appareil",false)});
+  $("newTeamForm").addEventListener("submit",async e=>{e.preventDefault();
+    const name=$("teamName").value.trim();if(!name)return;
+    const {data,error}=await sb.rpc("create_team",{team_name:name});
+    if(error){toast("Création impossible : "+error.message,false);return}
+    TEAMS.push({id:data,name,role:"admin"});lsSet("hb-teams",TEAMS);
+    setWorkspace(data,$("teamImport").checked&&!WS);$("teamName").value="";renderTeam();toast(`Équipe « ${name} » créée`,false)});
+  $("inviteForm").addEventListener("submit",async e=>{e.preventDefault();
+    const email=$("invEmail").value.trim().toLowerCase(),role=$("invRole").value;
+    const {error}=await sb.from("members").insert({team_id:WS,email,role});
+    if(error){toast(/duplicate/i.test(error.message)?"Cette personne est déjà dans l'équipe.":"Invitation impossible : "+error.message,false);return}
+    const r=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:APP_URL}});
+    toast(r.error?"Ajouté. L'e-mail n'a pas pu partir : dis-lui de se connecter dans « Équipe » avec cette adresse.":`Invitation envoyée à ${email}`,false);
+    $("invEmail").value="";loadMembers()});
+  $("memList").addEventListener("change",async e=>{const s=e.target.closest("[data-mrole]");if(!s)return;
+    const {error}=await sb.from("members").update({role:s.value}).eq("team_id",WS).eq("email",s.dataset.mrole);toast(error?"Modification impossible":"Rôle modifié",false);loadMembers()});
+  let mArm=null;
+  $("memList").addEventListener("click",async e=>{const b=e.target.closest("[data-mdelm]");if(!b)return;const em=b.dataset.mdelm;
+    if(mArm!==em){mArm=em;b.textContent="Confirmer";setTimeout(()=>{if(mArm===em){mArm=null;loadMembers()}},4000);return}
+    mArm=null;const {error}=await sb.from("members").delete().eq("team_id",WS).eq("email",em);toast(error?"Suppression impossible":"Retiré de l'équipe",false);loadMembers()});
+  $("syncNow").onclick=async()=>{await pullNow();await pushNow();toast(lastErr?"Synchronisation impossible pour le moment":"Synchronisé",false)};
+}
+
 /* ---------- Démarrage ---------- */
 function start(){
   bind();
@@ -1278,9 +1523,9 @@ function start(){
   bindMatches();bindClock();
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
   S.mode="local";
-  const d=lsGet("hb-data",{players:[],shots:[]});S.players=d.players||[];S.shots=d.shots||[];S.cfg=lsGet("hb-cfg",{plays:[],styles:[]});
-  S.matches=lsGet("hb-matches",[]);S.cur=lsGet("hb-curMatch","");migrateMatches();
-  const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match"].includes(t0)?t0:"entry");updateStatus();
+  loadWorkspaceData();bindTeam();
+  const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match","team"].includes(t0)?t0:"entry");updateStatus();
+  sbInit();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if("serviceWorker" in navigator){
     // Plus de rechargement automatique : la nouvelle version s'applique au prochain lancement,

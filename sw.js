@@ -1,6 +1,6 @@
 // Carnet de tirs : fonctionne hors ligne. Change VERSION à chaque mise à jour des fichiers.
-const VERSION = "carnet-tirs-v12";
-const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./jspdf.umd.min.js"];
+const VERSION = "carnet-tirs-v13";
+const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./jspdf.umd.min.js", "./supabase.min.js"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)));
@@ -11,6 +11,7 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const req = e.request;
   if (req.method !== "GET") return;
+  if (new URL(req.url).origin !== self.location.origin && !/fonts\.(googleapis|gstatic)\.com/.test(req.url)) return;
   if (req.mode === "navigate") {
     // Page : réseau d'abord (pour les mises à jour), sinon la copie hors ligne
     e.respondWith(fetch(req,{cache:"no-store"}).then(r => { const copy = r.clone(); caches.open(VERSION).then(c => c.put("./index.html", copy)); return r; })
