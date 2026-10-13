@@ -328,7 +328,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 13</span>
+      <span class="status" id="appVersion">Version 14</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1340,7 +1340,7 @@ function updateStatus(){
 /* ---------- ÉQUIPE & SYNCHRONISATION ---------- */
 const SB_URL="https://apcsdghdmzspovxdlmbv.supabase.co",SB_KEY="sb_publishable_OAt73IQCwvpDrIff_mE_Cg_eAJ-205M";
 const APP_URL="https://ryzeiron.github.io/carnet-tirs/";
-let sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
+let sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
 const ROLE_LABEL={admin:"Admin",analyste:"Analyste",lecteur:"Lecteur"};
 const stab=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k2)=>(o[k2]=x[k2],o),{}):x);
 function loadWorkspaceData(){
@@ -1424,8 +1424,10 @@ function loadScript(src){return new Promise((res,rej)=>{const sc=document.create
 async function sbInit(){
   try{if(!window.supabase)await loadScript("supabase.min.js");
     sb=window.supabase.createClient(SB_URL,SB_KEY,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false,storageKey:"hb-auth"}});
-  }catch(e){syncLabel();return}
+  }catch(e){sbFailed=true;syncLabel();if(tab==="team")renderTeam();window.addEventListener("online",()=>{if(!sb){sbFailed=false;sbInit()}},{once:true});return}
+  sbFailed=false;
   const {data}=await sb.auth.getSession();session=data.session;
+  if(tab==="team")renderTeam();
   sb.auth.onAuthStateChange((ev,s)=>{const was=!!session;session=s;if(!!s!==was){if(s)afterLogin();else{stopSync();syncLabel();if(tab==="team")renderTeam()}}});
   if(session)afterLogin();else syncLabel();
   window.addEventListener("online",()=>{pullNow();scheduleSync()});
@@ -1458,7 +1460,9 @@ function setWorkspace(id,carry){
 function renderTeam(){
   const on=!!session;
   $("accOut").hidden=on;$("accIn").hidden=!on;if(on)$("accEmail").textContent=session.user.email;
-  if(!sb)$("accMsg").textContent="La connexion au serveur n'a pas pu démarrer. Vérifie le réseau.";
+  if(sbFailed)$("accMsg").textContent="La connexion au serveur n'a pas pu démarrer. Vérifie le réseau, puis ferme et rouvre l'appli.";
+  else if(!sb)$("accMsg").textContent="Connexion au serveur…";
+  else if(/connexion au serveur/i.test($("accMsg").textContent))$("accMsg").textContent="";
   // espaces
   const items=[{id:"",name:"Cet appareil (sans équipe)",role:null},...TEAMS];
   $("wsList").innerHTML=items.map(t=>`<li class="${t.id===WS?"cur":""}"><span class="nm"><b>${esc(t.name)}</b>${t.id===WS?" · en cours":""}</span>${t.role?`<span class="rolep">${ROLE_LABEL[t.role]}</span>`:""}${t.id===WS?"":`<button class="btn small" type="button" data-ws="${esc(t.id)}">Ouvrir</button>`}</li>`).join("");
@@ -1479,7 +1483,7 @@ async function loadMembers(){
 }
 function bindTeam(){
   $("tabTeam").onclick=()=>setTab("team");
-  $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!sb)return;
+  $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!sb){$("accMsg").textContent="Connexion au serveur en cours, réessaie dans quelques secondes.";if(sbFailed){sbFailed=false;sbInit()}return}
     loginEmail=$("loginEmail").value.trim().toLowerCase();$("loginSend").disabled=true;$("accMsg").textContent="";
     const {error}=await sb.auth.signInWithOtp({email:loginEmail,options:{shouldCreateUser:true,emailRedirectTo:APP_URL}});
     $("loginSend").disabled=false;
