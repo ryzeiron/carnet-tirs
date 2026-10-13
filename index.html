@@ -215,6 +215,7 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .tl .who{color:var(--muted)}
 .tl li.adv .lab{color:var(--r-perte)}
 .tmark{font-family:var(--display);font-weight:700;font-variant-numeric:tabular-nums;margin-right:6px}
+.updbar{position:fixed;top:calc(8px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%);z-index:9;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;box-shadow:0 8px 24px rgba(0,0,0,.15);font-size:14px;max-width:calc(100% - 32px)}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -313,7 +314,7 @@ img{max-width:100%}
       <button class="btn small" id="backupBtn" type="button">Sauvegarder</button>
       <label class="btn small filebtn">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
-      <span class="status" id="appVersion">Version 11</span>
+      <span class="status" id="appVersion">Version 12</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -493,6 +494,7 @@ img{max-width:100%}
     <div class="sheet-actions"><button class="btn" type="button" id="exportCancel">Annuler</button><button class="btn primary" type="submit">Exporter</button></div>
   </form>
 </div>
+<div class="updbar" id="updBar" hidden>Une nouvelle version de l'appli est prête. <button class="btn small primary" type="button" id="updBtn">Mettre à jour</button><button class="btn small" type="button" id="updLater">Plus tard</button></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo">Annuler</button></div>
 
 <script>
@@ -1274,16 +1276,20 @@ function start(){
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
   bindMatches();bindClock();
+  $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
   S.mode="local";
   const d=lsGet("hb-data",{players:[],shots:[]});S.players=d.players||[];S.shots=d.shots||[];S.cfg=lsGet("hb-cfg",{plays:[],styles:[]});
   S.matches=lsGet("hb-matches",[]);S.cur=lsGet("hb-curMatch","");migrateMatches();
   const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match"].includes(t0)?t0:"entry");updateStatus();
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if("serviceWorker" in navigator){
-    const hadCtrl=!!navigator.serviceWorker.controller;let reloaded=false;
-    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtrl&&!reloaded){reloaded=true;location.reload()}});
-    navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{r.update().catch(()=>{});
-      document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")r.update().catch(()=>{})})}).catch(()=>{});
+    // Plus de rechargement automatique : la nouvelle version s'applique au prochain lancement,
+    // ou tout de suite si l'utilisateur touche « Mettre à jour ».
+    const hadCtrl=!!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener("controllerchange",()=>{if(hadCtrl)$("updBar").hidden=false});
+    navigator.serviceWorker.register("sw.js",{updateViaCache:"none"}).then(r=>{
+      let last=0;const check=()=>{if(Date.now()-last<60000)return;last=Date.now();r.update().catch(()=>{})};
+      check();document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible")check()})}).catch(()=>{});
   }
 }
 start();

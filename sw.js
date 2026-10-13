@@ -1,12 +1,12 @@
 // Carnet de tirs : fonctionne hors ligne. Change VERSION à chaque mise à jour des fichiers.
-const VERSION = "carnet-tirs-v11";
+const VERSION = "carnet-tirs-v12";
 const CORE = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./apple-touch-icon.png", "./jspdf.umd.min.js"];
 
 self.addEventListener("install", e => {
-  e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)).then(() => self.skipWaiting()));
+  e.waitUntil(caches.open(VERSION).then(c => c.addAll(CORE)));
 });
 self.addEventListener("activate", e => {
-  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== VERSION).map(k => caches.delete(k)))));
 });
 self.addEventListener("fetch", e => {
   const req = e.request;
