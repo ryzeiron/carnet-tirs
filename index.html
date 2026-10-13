@@ -51,7 +51,7 @@ header.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-
 .tab[aria-selected="true"]{background:var(--ink);color:var(--bg)}
 .top-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
-select,input[type=text],input[type=number],input[type=email],input[type=date]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
+select,input[type=text],input[type=number],input[type=email],input[type=date],input[type=password]{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:7px 9px;min-width:0}
 .btn{border:1px solid var(--line);background:var(--panel);border-radius:6px;padding:7px 12px;font-weight:600}
 .btn:hover{border-color:var(--muted)}
 .btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
@@ -248,6 +248,50 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .syncinfo b{color:var(--ink)}
 .syncinfo .err{color:var(--r-arret)}
 .tbsel{font-size:13px;padding:5px 8px}
+.screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg)}
+.lc-kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+.login-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;padding:26px 22px}
+.lc-brand h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1;margin:6px 0 8px;text-transform:uppercase}
+.lc-brand p{margin:0;color:var(--muted)}
+.lc-tabs{width:100%}.lc-tabs .tab{flex:1 1 0}
+.lc-title{font-family:var(--display);font-size:22px;margin:0;text-transform:uppercase;letter-spacing:.04em}
+.lc-main{padding:12px;font-size:16px}
+.lc-err{color:var(--r-arret);font-weight:600;margin:0;min-height:0}
+.lc-err:empty{display:none}
+.lc-links{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.lc-foot{border-top:1px solid var(--line);padding-top:12px;text-align:center}
+.linkbtn{background:none;border:0;padding:4px 0;color:var(--accent);font-weight:600;text-decoration:underline;text-underline-offset:3px;text-align:left}
+.hub{width:100%;max-width:880px;display:flex;flex-direction:column;gap:18px}
+.hub-top h1{font-family:var(--display);font-weight:700;font-size:44px;line-height:1;margin:6px 0 6px;text-transform:uppercase}
+.hub-space{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 14px}
+.hub-space select{font-size:16px;flex:1 1 220px}
+.hub-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px}
+.hubcard{display:flex;flex-direction:column;align-items:flex-start;gap:8px;text-align:left;background:var(--panel);border:1.5px solid var(--line);border-radius:14px;padding:22px 20px;min-height:170px;transition:border-color .15s,transform .15s}
+.hubcard:hover{border-color:var(--accent);transform:translateY(-2px)}
+.hubcard .hc-n{font-family:var(--display);font-weight:700;font-size:15px;color:var(--accent);letter-spacing:.08em}
+.hubcard b{font-family:var(--display);font-size:30px;line-height:1;text-transform:uppercase}
+.hubcard span:last-child{color:var(--muted);font-size:14px}
+@media (prefers-reduced-motion:reduce){.hubcard{transition:none}.hubcard:hover{transform:none}}
+.hub-foot{display:flex;gap:16px;justify-content:center}
+.homebtn{align-self:center}
+.trhead{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:14px}
+.trhead h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-transform:uppercase}
+.trsess{display:flex;align-items:center;gap:6px}
+.trgrid{display:grid;grid-template-columns:minmax(240px,320px) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:760px){.trgrid{grid-template-columns:1fr}}
+.tradd{display:flex;gap:6px;margin:10px 0 4px}.tradd input{flex:1 1 auto;min-width:0;font-size:16px}
+.trpos .chip{padding:8px 13px;font-size:14px}
+#goalTr{cursor:crosshair;max-height:46vh}
+.trres{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:8px 0}
+.trres .btn{padding:14px 8px;font-size:16px;font-weight:700}
+.trres .b-but{background:var(--r-but);border-color:var(--r-but);color:#fff}
+.trres .b-arret{background:var(--r-arret);border-color:var(--r-arret);color:#fff}
+.trres .b-poteau{background:var(--r-poteau);border-color:var(--r-poteau);color:#fff}
+.trstats{margin-top:14px}
+.trstats-grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+@media (max-width:860px){.trstats-grid{grid-template-columns:1fr}}
+#trTable tr[data-trp]{cursor:pointer}
+#trTable tr.sel td{background:var(--panel-2);font-weight:700}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -332,9 +376,82 @@ img{max-width:100%}
 <body>
 
 
-<div class="wrap">
+<section class="screen" id="viewLogin" hidden>
+  <div class="login-card panel">
+    <div class="lc-brand"><span class="lc-kicker">Handball · analyse</span><h1>Carnet de tirs</h1><p>Tes stats de match et d'entraînement, synchronisées sur tous tes appareils.</p></div>
+    <div class="tabs lc-tabs" id="lcTabs"><button class="tab" type="button" data-lc="login" aria-selected="true">Connexion</button><button class="tab" type="button" data-lc="signup" aria-selected="false">Créer un compte</button></div>
+    <h2 class="lc-title" id="lcTitle" hidden></h2>
+    <form id="lcForm" class="stack" autocomplete="on" novalidate>
+      <label class="fld" id="lcEmailF"><span class="lbl">E-mail</span><input type="email" id="lcEmail" autocomplete="username email" placeholder="toi@exemple.fr"></label>
+      <label class="fld" id="lcPassF"><span class="lbl" id="lcPassL">Mot de passe</span><input type="password" id="lcPass" autocomplete="current-password" placeholder="6 caractères minimum"></label>
+      <label class="fld" id="lcPass2F" hidden><span class="lbl">Confirme le mot de passe</span><input type="password" id="lcPass2" autocomplete="new-password"></label>
+      <label class="fld" id="lcCodeF" hidden><span class="lbl">Code reçu par e-mail</span><input type="text" id="lcCode" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456"></label>
+      <p class="hint" id="lcInfo"></p>
+      <button class="btn primary lc-main" type="submit" id="lcSubmit">Se connecter</button>
+    </form>
+    <p class="lc-err" id="lcErr" role="alert"></p>
+    <div class="lc-links" id="lcLinks"><button type="button" class="linkbtn" id="lcForgot">Mot de passe oublié ?</button><button type="button" class="linkbtn" id="lcOtp">Recevoir un code par e-mail</button></div>
+    <button type="button" class="linkbtn" id="lcBack" hidden>← Retour</button>
+    <div class="lc-foot"><button type="button" class="linkbtn" id="lcSkip">Continuer sans compte (données sur cet appareil uniquement)</button></div>
+  </div>
+</section>
+
+<section class="screen" id="viewHub" hidden>
+  <div class="hub">
+    <div class="hub-top"><span class="lc-kicker">Carnet de tirs</span><h1>On fait quoi aujourd'hui ?</h1><p class="hint" id="hubWho"></p></div>
+    <label class="hub-space panel"><span class="lbl">Espace</span><select id="hubSpace"></select><span class="hint" id="hubSpaceHint"></span></label>
+    <div class="hub-cards">
+      <button class="hubcard" type="button" data-go="team"><span class="hc-n">01</span><b>Mon équipe</b><span>Choisir l'équipe, gérer le staff et les invitations</span></button>
+      <button class="hubcard" type="button" data-go="match"><span class="hc-n">02</span><b>Match</b><span>Saisie en direct, chrono, score, analyses et exports</span></button>
+      <button class="hubcard" type="button" data-go="train"><span class="hc-n">03</span><b>Entraînement</b><span>Tirs au poste : impact dans la cage et style de tir</span></button>
+    </div>
+    <div class="hub-foot"><button type="button" class="linkbtn" id="hubLogin" hidden>Se connecter pour synchroniser</button><button type="button" class="linkbtn" id="hubLogout" hidden>Se déconnecter</button></div>
+  </div>
+</section>
+
+<section id="viewTrain" hidden>
+  <div class="wrap">
+    <header class="trhead">
+      <button class="btn small" type="button" id="trHome">← Accueil</button>
+      <h1>Entraînement</h1>
+      <span class="hint" id="trSpace"></span>
+      <span class="tb-sp"></span>
+      <label class="trsess"><span class="lbl">Séance</span><select id="trSession"></select></label>
+      <button class="btn small" type="button" id="trNewSess">+ Nouvelle séance</button>
+    </header>
+    <div class="trgrid">
+      <div class="panel" id="trLeft">
+        <div class="panel-head"><h2><span class="stepn">1</span>Tireur</h2></div>
+        <div class="pgrid" id="trPgrid"></div>
+        <form id="trAdd" class="tradd" autocomplete="off"><input type="text" id="trName" placeholder="Nouveau joueur : nom" aria-label="Nom du nouveau joueur"><button class="btn small" type="submit">Ajouter</button></form>
+        <div class="subhead"><span class="stepn">2</span>Poste de tir</div>
+        <div class="chipwrap trpos" id="trPos"></div>
+      </div>
+      <div class="panel" id="trRight">
+        <div class="panel-head"><h2><span class="stepn">3</span>Impact</h2><span class="hint" id="trWho">Vue du tireur</span></div>
+        <svg id="goalTr" viewBox="-0.75 -0.75 4.5 2.95" role="img" aria-label="Cage : touche l'impact du tir"></svg>
+        <p class="hint" id="trHint">Touche la cage là où arrive le ballon. En dehors du cadre = hors cadre.</p>
+        <div class="trres" id="trRes" hidden></div>
+        <div class="subhead">Style de tir (facultatif)</div>
+        <div class="chipwrap" id="trStyle"></div>
+        <div class="subhead">Derniers tirs</div>
+        <ul class="acts" id="trLast"></ul>
+      </div>
+    </div>
+    <div class="panel trstats">
+      <div class="panel-head"><h2>Bilan</h2><span class="filters" id="trScope"></span></div>
+      <div class="trstats-grid">
+        <div class="tbl-wrap"><table id="trTable"></table><p class="hint">Touche un joueur pour voir ses impacts dans la cage.</p></div>
+        <div><svg id="goalTrA" viewBox="-0.75 -0.75 4.5 2.95" role="img" aria-label="Impacts à l'entraînement"></svg><p class="hint" id="trGoalHint"></p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="wrap" id="appWrap">
   <header class="top">
     <div class="brand">
+      <button class="btn small homebtn" type="button" id="homeBtn">⌂ Accueil</button>
       <h1>Carnet de tirs</h1>
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" id="tabEntry" aria-selected="true">Saisie</button>
@@ -348,7 +465,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 18</span>
+      <span class="status" id="appVersion">Version 19</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -460,6 +577,10 @@ img{max-width:100%}
         </div>
         <div id="accIn" hidden>
           <p>Connecté avec <b id="accEmail"></b></p>
+          <form id="pwForm" class="stack" autocomplete="off">
+            <label class="fld"><span class="lbl">Nouveau mot de passe</span><input type="password" id="pwNew" autocomplete="new-password" placeholder="6 caractères minimum"></label>
+            <button class="btn small" type="submit">Enregistrer le mot de passe</button>
+          </form>
           <button class="btn small" type="button" id="logoutBtn">Se déconnecter</button>
         </div>
         <p class="hint" id="accMsg"></p>
@@ -629,7 +750,7 @@ const YMAX=20;
 
 const DEFAULT_PLAYS=["Yu go","Ya go","Spanish","Spanish bis","Échap","Iso","Iso 2"];
 const DEFAULT_STYLES=["Chabala","Roucoulette","Lob","Kung-fu"];
-const S={matches:[],cur:"",players:[],shots:[],mode:"loading",cfg:{plays:[],styles:[]}};
+const S={trains:[],tshots:[],matches:[],cur:"",players:[],shots:[],mode:"loading",cfg:{plays:[],styles:[]}};
 const A={sel:null,match:"",phase:"",view:"tirs",play:"",style:"",team:"nous"};
 const allPlays=()=>[...DEFAULT_PLAYS,...(S.cfg.plays||[]).filter(x=>!DEFAULT_PLAYS.includes(x))];
 const allStyles=()=>[...DEFAULT_STYLES,...(S.cfg.styles||[]).filter(x=>!DEFAULT_STYLES.includes(x))];
@@ -675,7 +796,7 @@ async function removeShot(id){
   if(db){await db.collection("shots").doc(id).delete()}else{S.shots=S.shots.filter(x=>x.id!==id);saveLocal();render()}
   toast("Action supprimée",true);
 }
-function saveLocal(){lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet(K("hb-matches"),S.matches);if(typeof updateStatus==="function")updateStatus();if(typeof scheduleSync==="function")scheduleSync()}
+function saveLocal(){lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet(K("hb-train"),{trains:S.trains,tshots:S.tshots});lsSet(K("hb-matches"),S.matches);if(typeof updateStatus==="function")updateStatus();if(typeof scheduleSync==="function")scheduleSync()}
 const fmtDate=d=>{if(!d)return"";const [y,m,j]=d.split("-");return `${j}/${m}/${y.slice(2)}`};
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 function matchById(id){return S.matches.find(m=>m.id===id)}
@@ -944,9 +1065,11 @@ function render(){
   $("matchSel").innerHTML=(S.matches.length?"":`<option value="">Crée d'abord un match →</option>`)+(S.matches.length&&!S.cur?`<option value="">Choisis le match…</option>`:"")+
     sortedMatches().map(m=>`<option value="${esc(m.id)}" ${m.id===S.cur?"selected":""}>${esc(matchLabel(m.id))}</option>`).join("");
   renderTeamBar();
+  if(MODE==="train"){renderTrain();return}
+  if(MODE==="hub"){renderHub();return}
   if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="team")renderTeam();else renderAnalysis();
 }
-function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry";
+function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry"||MODE!=="app";
   $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");$("tabTeam").setAttribute("aria-selected",t==="team");render()}
 
 /* ---------- CHRONO ---------- */
@@ -1195,7 +1318,7 @@ function bind(){
     delArm=null;try{await removePlayer(p.id)}catch(err){toast(saveError(err),false)}};
   const delHandler=e=>{const b=e.target.closest("[data-del]");if(b)removeShot(b.dataset.del).catch(err=>toast(saveError(err),false))};
   $("logList").addEventListener("click",delHandler);$("actList").addEventListener("click",delHandler);
-  $("toastUndo").onclick=async()=>{if(!lastDeleted)return;const d=lastDeleted;lastDeleted=null;hideToast();await addShot(d.data,d.id)};
+  $("toastUndo").onclick=async()=>{if(window.__undoFn){const f=window.__undoFn;window.__undoFn=null;hideToast();f();return}if(!lastDeleted)return;const d=lastDeleted;lastDeleted=null;hideToast();await addShot(d.data,d.id)};
   $("exportBtn").onclick=openExport;
   $("xKind").addEventListener("click",e=>{const b=e.target.closest("[data-xk]");if(b)setXKind(b.dataset.xk)});
   $("exportCancel").onclick=()=>{$("exportSheet").hidden=true};
@@ -1344,7 +1467,7 @@ async function exportCSV(mid,pid){
   await saveFile(`actions-${mm?mm.date+"-"+mm.adv.replace(/[^\w-]+/g,"-"):"saison-"+stamp()}${pn?"-"+pn:""}.csv`,"﻿"+head.join(";")+"\n"+rows.join("\n"),"text/csv");
 }
 async function backup(){
-  const data={app:"carnet-tirs",version:1,date:new Date().toISOString(),matches:S.matches,players:S.players,shots:S.shots,cfg:S.cfg};
+  const data={app:"carnet-tirs",version:1,date:new Date().toISOString(),matches:S.matches,players:S.players,shots:S.shots,cfg:S.cfg,trains:S.trains,tshots:S.tshots};
   const ok=await saveFile(`sauvegarde-carnet-tirs-${stamp()}.json`,JSON.stringify(data),"application/json");
   if(ok){lsSet("hb-lastBackup",Date.now());updateStatus();toast("Sauvegarde créée",false)}
 }
@@ -1357,6 +1480,8 @@ function restore(file){
     const mIds=new Set(S.matches.map(m=>m.id)),nm=(d.matches||[]).filter(m=>m&&m.id&&!mIds.has(m.id));
     S.matches=[...S.matches,...nm];
     S.players=[...S.players,...np];S.shots=[...S.shots,...ns];migrateMatches();
+    const tIds=new Set(S.trains.map(x=>x.id)),tsIds=new Set(S.tshots.map(x=>x.id));
+    S.trains=[...S.trains,...(d.trains||[]).filter(x=>x&&x.id&&!tIds.has(x.id))];S.tshots=[...S.tshots,...(d.tshots||[]).filter(x=>x&&x.id&&!tsIds.has(x.id))];
     const c=d.cfg||{};S.cfg={plays:[...new Set([...(S.cfg.plays||[]),...(c.plays||[])])],styles:[...new Set([...(S.cfg.styles||[]),...(c.styles||[])])]};
     saveLocal();lsSet(K("hb-cfg"),S.cfg);render();
     toast(`Sauvegarde restaurée : ${np.length} joueur${np.length>1?"s":""} et ${ns.length} action${ns.length>1?"s":""} ajoutés`,false);
@@ -1379,12 +1504,14 @@ const stab=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?
 function loadWorkspaceData(){
   const d=lsGet(K("hb-data"),{players:[],shots:[]});S.players=d.players||[];S.shots=d.shots||[];S.cfg=lsGet(K("hb-cfg"),{plays:[],styles:[]});
   S.matches=lsGet(K("hb-matches"),[]);S.cur=lsGet(K("hb-curMatch"),"");
+  const tr=lsGet(K("hb-train"),{trains:[],tshots:[]});S.trains=tr.trains||[];S.tshots=tr.tshots||[];
   SY=WS?lsGet(K("hb-synced"),{}):{};CURSOR=WS?lsGet(K("hb-cursor"),""):"";
   const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:null):null;
   document.body.classList.toggle("ro",ROLE==="lecteur");
   migrateMatches();
 }
 function localItems(){const m=new Map();S.players.forEach(p=>m.set("player:"+p.id,p));S.matches.forEach(x=>m.set("match:"+x.id,x));S.shots.forEach(x=>m.set("shot:"+x.id,x));
+  S.trains.forEach(x=>m.set("train:"+x.id,x));S.tshots.forEach(x=>m.set("tshot:"+x.id,x));
   m.set("cfg:lists",{plays:S.cfg.plays||[],styles:S.cfg.styles||[]});return m}
 function setSync(state,txt){const el=$("syncStatus");if(!WS){el.hidden=true;return}el.hidden=false;el.className="status syncst "+state;el.textContent=txt}
 function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?(t.perso?"Mon espace":t.name):"Équipe";
@@ -1397,7 +1524,7 @@ function dirtyRows(){const rows=[],pend={},loc=localItems();
   loc.forEach((obj,k)=>{const h=stab(obj);if(SY[k]!==h){const i=k.indexOf(":");rows.push({team_id:WS,kind:k.slice(0,i),id:k.slice(i+1),data:obj,deleted:false});pend[k]=h}});
   Object.keys(SY).forEach(k=>{if(!loc.has(k)){const i=k.indexOf(":");rows.push({team_id:WS,kind:k.slice(0,i),id:k.slice(i+1),data:null,deleted:true});pend[k]=null}});
   return {rows,pend}}
-let lastPushAt=0,lastPullAt=0;
+let lastPushAt=0,lastPullAt=0,noTrainSync=false;
 function renderSyncInfo(){const el=$("syncInfo");if(!el)return;const t=TEAMS.find(x=>x.id===WS);
   if(!WS||!t){el.hidden=true;return}el.hidden=false;
   const hm=ts=>ts?new Date(ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"jamais";
@@ -1407,11 +1534,11 @@ async function pushNow(){
   if(ROLE==="lecteur"){pendingN=0;syncLabel();return}
   if(pushing){pushAgain=true;return}pushing=true;
   try{
-    const {rows,pend}=dirtyRows();pendingN=rows.length;syncLabel();
+    let {rows,pend}=dirtyRows();if(noTrainSync)rows=rows.filter(r=>r.kind!=="train"&&r.kind!=="tshot");pendingN=rows.length;syncLabel();
     for(let i=0;i<rows.length;i+=400){
       const chunk=rows.slice(i,i+400);
       const {error}=await sb.from("items").upsert(chunk,{onConflict:"team_id,kind,id"});
-      if(error)throw error;
+      if(error){if(/kind_check|violates check/i.test(error.message||"")&&!noTrainSync){noTrainSync=true;pushing=false;return pushNow()}throw error}
       chunk.forEach(r=>{const k=r.kind+":"+r.id;if(pend[k]===null)delete SY[k];else SY[k]=pend[k]});
       lsSet(K("hb-synced"),SY);pendingN=Math.max(0,pendingN-chunk.length);
     }
@@ -1419,7 +1546,7 @@ async function pushNow(){
   }catch(e){lastErr=(e&&e.message)||"erreur";setTimeout(scheduleSync,15000)}
   finally{pushing=false;syncLabel();if(pushAgain){pushAgain=false;scheduleSync()}}
 }
-const COLL={player:"players",match:"matches",shot:"shots"};
+const COLL={player:"players",match:"matches",shot:"shots",train:"trains",tshot:"tshots"};
 function applyRemote(r){
   const k=r.kind+":"+r.id,loc=localItems(),lo=loc.get(k);
   const dirty=lo?SY[k]!==stab(lo):(k in SY);
@@ -1433,7 +1560,7 @@ function applyRemote(r){
 }
 let applyTimer=null;
 function afterApply(){clearTimeout(applyTimer);applyTimer=setTimeout(()=>{
-  lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet(K("hb-matches"),S.matches);lsSet(K("hb-cfg"),S.cfg);
+  lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet(K("hb-matches"),S.matches);lsSet(K("hb-cfg"),S.cfg);lsSet(K("hb-train"),{trains:S.trains,tshots:S.tshots});
   lsSet(K("hb-synced"),SY);lsSet(K("hb-cursor"),CURSOR);render()},150)}
 async function pullNow(){
   if(!WS||!sb||!session)return;
@@ -1468,11 +1595,11 @@ async function sbInit(){
   const {data}=await sb.auth.getSession();session=data.session;
   if(tab==="team")renderTeam();
   sb.auth.onAuthStateChange((ev,s)=>{const was=!!session;session=s;if(!!s!==was){if(s)afterLogin();else{stopSync();syncLabel();if(tab==="team")renderTeam()}}});
-  if(session)afterLogin();else syncLabel();
+  if(session)afterLogin();else{syncLabel();if(MODE!=="login"&&!lsGet("hb-nologin",false))showMode("login")}
   window.addEventListener("online",()=>{pullNow();scheduleSync()});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pullNow();scheduleSync()}});
 }
-function hasLocalData(){const d=lsGet("hb-data",{players:[],shots:[]});return !!((d.players||[]).length||(d.shots||[]).length||lsGet("hb-matches",[]).length)}
+function hasLocalData(){const d=lsGet("hb-data",{players:[],shots:[]});return !!((lsGet("hb-train",{tshots:[]}).tshots||[]).length||(d.players||[]).length||(d.shots||[]).length||lsGet("hb-matches",[]).length)}
 function moveLocalInto(id){
   // verse les données « sans compte » de cet appareil dans l'espace id, puis les retire de l'appareil (pas de doublons)
   const k=n=>n+"@"+id;
@@ -1482,7 +1609,9 @@ function moveLocalInto(id){
   lsSet(k("hb-data"),{players:uni(P.players,L.players),shots:uni(P.shots,L.shots)});lsSet(k("hb-matches"),uni(Pm,Lm));
   lsSet(k("hb-cfg"),{plays:[...new Set([...(Pc.plays||[]),...(Lc.plays||[])])],styles:[...new Set([...(Pc.styles||[]),...(Lc.styles||[])])]});
   const cur=lsGet("hb-curMatch","");if(cur&&!lsGet(k("hb-curMatch"),""))lsSet(k("hb-curMatch"),cur);
-  ["hb-data","hb-matches","hb-curMatch"].forEach(n=>{try{localStorage.removeItem(n)}catch(e){}});
+  const Lt=lsGet("hb-train",{trains:[],tshots:[]}),Pt=lsGet(k("hb-train"),{trains:[],tshots:[]});
+  lsSet(k("hb-train"),{trains:uni(Pt.trains,Lt.trains),tshots:uni(Pt.tshots,Lt.tshots)});
+  ["hb-data","hb-matches","hb-curMatch","hb-train"].forEach(n=>{try{localStorage.removeItem(n)}catch(e){}});
 }
 async function ensurePerso(){
   if(PERSO_ID||!sb||!session)return;
@@ -1501,7 +1630,7 @@ async function afterLogin(){
     if(justLoggedIn&&shared.length&&persoEmpty)enterTeam(shared[0].id);else{setWorkspace(PERSO_ID);setTab(tab)}}
   else if(!WS&&shared.length&&justLoggedIn){enterTeam(shared[0].id)}
   else{const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:ROLE):null;document.body.classList.toggle("ro",ROLE==="lecteur");startSync()}
-  justLoggedIn=false;renderTeamBar();
+  justLoggedIn=false;renderTeamBar();if(MODE==="hub")renderHub();if(MODE==="train")renderTrain();
   if(tab==="team")renderTeam();
 }
 async function loadTeams(){
@@ -1518,9 +1647,9 @@ async function loadTeams(){
 }
 function setWorkspace(id,carry){
   stopSync();
-  const keep=carry?{players:S.players,shots:S.shots,matches:S.matches,cfg:S.cfg}:null;
+  const keep=carry?{players:S.players,shots:S.shots,matches:S.matches,cfg:S.cfg,trains:S.trains,tshots:S.tshots}:null;
   WS=id||"";lsSet("hb-ws",WS);
-  if(keep&&WS){lsSet(K("hb-data"),{players:keep.players,shots:keep.shots});lsSet(K("hb-matches"),keep.matches);lsSet(K("hb-cfg"),keep.cfg);lsSet(K("hb-synced"),{});lsSet(K("hb-cursor"),"")}
+  if(keep&&WS){lsSet(K("hb-train"),{trains:keep.trains,tshots:keep.tshots});lsSet(K("hb-data"),{players:keep.players,shots:keep.shots});lsSet(K("hb-matches"),keep.matches);lsSet(K("hb-cfg"),keep.cfg);lsSet(K("hb-synced"),{});lsSet(K("hb-cursor"),"")}
   loadWorkspaceData();E=blankEntry();A.sel=null;A.match="";
   if(WS)startSync();
   syncLabel();updateStatus();setTab(ROLE==="lecteur"&&tab==="entry"?"ana":tab);
@@ -1598,7 +1727,7 @@ function bindTeam(){
     if(error){$("accMsg").textContent="Code incorrect ou expiré. Vérifie le dernier e-mail reçu.";return}
     justLoggedIn=true;
     $("accMsg").textContent="";$("loginForm").hidden=false;$("codeForm").hidden=true;$("loginCode").value="";toast("Connecté",false)});
-  $("logoutBtn").onclick=async()=>{await sb.auth.signOut();session=null;setWorkspace("");TEAMS=[];PERSO_ID="";lsSet("hb-teams",[]);lsSet("hb-perso","");renderTeam();toast("Déconnecté : tes données restent sur ton compte, reconnecte-toi pour les retrouver",false)};
+  $("logoutBtn").onclick=async()=>{await doLogout();return;await sb.auth.signOut();session=null;setWorkspace("");TEAMS=[];PERSO_ID="";lsSet("hb-teams",[]);lsSet("hb-perso","");renderTeam();toast("Déconnecté : tes données restent sur ton compte, reconnecte-toi pour les retrouver",false)};
   $("wsList").addEventListener("click",e=>{const b=e.target.closest("[data-ws]");if(!b||b.dataset.ws===WS)return;enterTeam(b.dataset.ws)});
   $("teamBar").addEventListener("change",e=>{const s=e.target.closest("[data-tbsel]");if(s&&s.value)enterTeam(s.value)});
   $("teamBar").addEventListener("click",e=>{const a=e.target.closest("[data-tb]");if(a){setTab("team");window.scrollTo(0,0);return}const b=e.target.closest("[data-tbws]");if(b)enterTeam(b.dataset.tbws)});
@@ -1655,6 +1784,208 @@ async function landingSendCode(email){
     :`Ton adresse <b>${esc(email)}</b> est confirmée.<br><br>📩 Ton <b>code de connexion</b> vient de partir par e-mail (regarde aussi dans les spams).<br><br>Ouvre l'appli <b>Carnet de tirs</b> → onglet « Équipe » → tape ton e-mail → <b>« J'ai déjà reçu un code »</b>.`;
 }
 
+/* ---------- NAVIGATION (connexion → choix → match / entraînement / équipe) ---------- */
+let MODE="app";
+function showMode(m){
+  MODE=m;lsSet("hb-mode",m==="login"?"hub":m);
+  $("viewLogin").hidden=m!=="login";$("viewHub").hidden=m!=="hub";$("viewTrain").hidden=m!=="train";$("appWrap").hidden=m!=="app";
+  $("savebar").hidden=!(m==="app"&&tab==="entry");
+  document.body.dataset.mode=m;window.scrollTo(0,0);
+  if(m==="hub")renderHub();else if(m==="train")renderTrain();else if(m==="login")lcSet(lcState||"login");else render();
+}
+function renderHub(){
+  const on=!!session;
+  $("hubWho").textContent=on?`Connecté avec ${session.user.email}`:"Sans compte : les données restent sur cet appareil.";
+  const spaces=on&&TEAMS.length?TEAMS:[{id:"",name:"Cet appareil",role:null}];
+  $("hubSpace").innerHTML=spaces.map(t=>`<option value="${esc(t.id)}" ${t.id===WS?"selected":""}>${t.perso?"👤 Mon espace (perso)":t.id?"👥 "+esc(t.name)+" · "+ROLE_LABEL[t.role]:"📱 Cet appareil"}</option>`).join("");
+  const cur=TEAMS.find(t=>t.id===WS);
+  $("hubSpaceHint").textContent=!on?"":cur&&cur.perso?"Synchronisé sur tous tes appareils":cur?"Partagé avec le staff de l'équipe":"";
+  $("hubLogin").hidden=on;$("hubLogout").hidden=!on;
+}
+/* --- page de connexion --- */
+let lcState="login",lcEmailSaved="";
+function lcSet(st,info){
+  lcState=st;const E2=x=>$(x);
+  const isTab=st==="login"||st==="signup";
+  E2("lcTabs").hidden=!isTab;E2("lcTabs").querySelectorAll("[data-lc]").forEach(b=>b.setAttribute("aria-selected",b.dataset.lc===st));
+  const titles={forgot:"Mot de passe oublié",otp:"Connexion par code","verify-signup":"Confirme ton e-mail","verify-forgot":"Nouveau mot de passe","verify-otp":"Entre ton code"};
+  E2("lcTitle").hidden=isTab;E2("lcTitle").textContent=titles[st]||"";
+  const showPass=st==="login"||st==="signup"||st==="verify-forgot";
+  E2("lcEmailF").hidden=st.startsWith("verify");E2("lcPassF").hidden=!showPass;E2("lcPass2F").hidden=!(st==="signup"||st==="verify-forgot");
+  E2("lcCodeF").hidden=!st.startsWith("verify");
+  E2("lcPassL").textContent=st==="verify-forgot"?"Nouveau mot de passe":"Mot de passe";
+  E2("lcPass").autocomplete=st==="login"?"current-password":"new-password";
+  E2("lcSubmit").textContent={login:"Se connecter",signup:"Créer mon compte",forgot:"Recevoir un code",otp:"Recevoir un code","verify-signup":"Valider","verify-forgot":"Changer le mot de passe","verify-otp":"Se connecter"}[st];
+  E2("lcLinks").hidden=st!=="login";E2("lcBack").hidden=isTab;
+  E2("lcInfo").textContent=info||(st==="signup"?"Tu recevras un code par e-mail pour confirmer ton adresse.":st.startsWith("verify")?`Code envoyé à ${lcEmailSaved}. Regarde aussi dans les spams.`:st==="forgot"?"On t'envoie un code pour choisir un nouveau mot de passe.":st==="otp"?"Connexion sans mot de passe : on t'envoie un code.":"");
+  E2("lcErr").textContent="";if(st.startsWith("verify")){E2("lcCode").value="";setTimeout(()=>E2("lcCode").focus(),50)}
+}
+function lcError(m){$("lcErr").textContent=m;$("lcSubmit").disabled=false}
+function authMsg(e){const m=(e&&e.message)||"";
+  if(/invalid login/i.test(m))return "E-mail ou mot de passe incorrect. Si tu t'es inscrit avec un code, touche « Mot de passe oublié ? » pour créer ton mot de passe.";
+  if(/not confirmed/i.test(m))return "Ton e-mail n'est pas encore confirmé.";
+  if(/rate|seconds|too many/i.test(m))return "Trop de tentatives. Patiente une minute puis réessaie.";
+  if(/expired|invalid.*otp|token/i.test(m))return "Code incorrect ou expiré. Vérifie le dernier e-mail reçu.";
+  if(/password.*(6|short|least)/i.test(m))return "Mot de passe trop court : 6 caractères minimum.";
+  if(/fetch|network/i.test(m))return "Pas de connexion au serveur. Vérifie ton réseau.";
+  return m||"Une erreur est survenue.";}
+async function lcSubmit(e){
+  e.preventDefault();if(!sb){lcError(sbFailed?"Serveur injoignable. Vérifie ton réseau, ou continue sans compte.":"Connexion au serveur en cours, réessaie dans 2 secondes.");if(sbFailed){sbFailed=false;sbInit()}return}
+  const email=$("lcEmail").value.trim().toLowerCase(),pw=$("lcPass").value,pw2=$("lcPass2").value,code=$("lcCode").value.replace(/\s/g,"");
+  $("lcErr").textContent="";$("lcSubmit").disabled=true;
+  try{
+    if(!lcState.startsWith("verify")&&(!email||!email.includes("@")))return lcError("Entre une adresse e-mail valide.");
+    if(lcState==="login"){
+      const {error}=await sb.auth.signInWithPassword({email,password:pw});
+      if(error){if(/not confirmed/i.test(error.message)){lcEmailSaved=email;await sb.auth.resend({type:"signup",email});lcSet("verify-signup","Ton e-mail n'était pas confirmé : un nouveau code vient de partir.");$("lcSubmit").disabled=false;return}return lcError(authMsg(error))}
+      return authDone();
+    }
+    if(lcState==="signup"){
+      if(pw.length<6)return lcError("Mot de passe trop court : 6 caractères minimum.");
+      if(pw!==pw2)return lcError("Les deux mots de passe ne sont pas identiques.");
+      const {data,error}=await sb.auth.signUp({email,password:pw,options:{emailRedirectTo:APP_URL}});
+      if(error)return lcError(authMsg(error));
+      if(data.user&&Array.isArray(data.user.identities)&&!data.user.identities.length)return lcError("Un compte existe déjà avec cet e-mail. Connecte-toi, ou touche « Mot de passe oublié ? » dans l'onglet Connexion.");
+      if(data.session)return authDone();
+      lcEmailSaved=email;lcSet("verify-signup");$("lcSubmit").disabled=false;return;
+    }
+    if(lcState==="forgot"){
+      const {error}=await sb.auth.resetPasswordForEmail(email,{redirectTo:APP_URL});
+      if(error)return lcError(authMsg(error));
+      lcEmailSaved=email;lcSet("verify-forgot");$("lcSubmit").disabled=false;return;
+    }
+    if(lcState==="otp"){
+      const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true,emailRedirectTo:APP_URL}});
+      if(error)return lcError(authMsg(error));
+      lcEmailSaved=email;lcSet("verify-otp");$("lcSubmit").disabled=false;return;
+    }
+    if(!code)return lcError("Entre le code reçu par e-mail.");
+    if(lcState==="verify-signup"){
+      let r=await sb.auth.verifyOtp({email:lcEmailSaved,token:code,type:"signup"});
+      if(r.error)r=await sb.auth.verifyOtp({email:lcEmailSaved,token:code,type:"email"});
+      if(r.error)return lcError(authMsg(r.error));return authDone();
+    }
+    if(lcState==="verify-otp"){
+      const {error}=await sb.auth.verifyOtp({email:lcEmailSaved,token:code,type:"email"});
+      if(error)return lcError(authMsg(error));return authDone();
+    }
+    if(lcState==="verify-forgot"){
+      if(pw.length<6)return lcError("Mot de passe trop court : 6 caractères minimum.");
+      if(pw!==pw2)return lcError("Les deux mots de passe ne sont pas identiques.");
+      const {error}=await sb.auth.verifyOtp({email:lcEmailSaved,token:code,type:"recovery"});
+      if(error)return lcError(authMsg(error));
+      const u=await sb.auth.updateUser({password:pw});
+      if(u.error)return lcError(authMsg(u.error));
+      toast("Mot de passe enregistré",false);return authDone();
+    }
+  }catch(err){lcError(authMsg(err))}
+}
+function authDone(){lcState="login";$("lcSubmit").disabled=false;$("lcPass").value="";$("lcPass2").value="";lsSet("hb-nologin",false);justLoggedIn=true;showMode("hub");}
+function bindNav(){
+  $("lcForm").addEventListener("submit",lcSubmit);
+  $("lcTabs").addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(b)lcSet(b.dataset.lc)});
+  $("lcForgot").onclick=()=>lcSet("forgot");$("lcOtp").onclick=()=>lcSet("otp");$("lcBack").onclick=()=>lcSet("login");
+  $("lcSkip").onclick=()=>{lsSet("hb-nologin",true);showMode("hub")};
+  $("hubLogin").onclick=()=>{lsSet("hb-nologin",false);showMode("login")};
+  $("hubLogout").onclick=async()=>{await doLogout()};
+  $("hubSpace").addEventListener("change",e=>{setWorkspace(e.target.value);renderHub()});
+  document.querySelector(".hub-cards").addEventListener("click",e=>{const c=e.target.closest("[data-go]");if(!c)return;const g=c.dataset.go;
+    if(g==="train"){showMode("train");return}
+    showMode("app");if(g==="team")setTab("team");else setTab(ROLE==="lecteur"?"ana":(S.cur&&matchById(S.cur)?"entry":"match"))});
+  $("homeBtn").onclick=()=>showMode("hub");$("trHome").onclick=()=>showMode("hub");
+  $("pwForm").addEventListener("submit",async e=>{e.preventDefault();const pw=$("pwNew").value;if(pw.length<6){toast("Mot de passe trop court : 6 caractères minimum",false);return}
+    const {error}=await sb.auth.updateUser({password:pw});$("pwNew").value="";toast(error?authMsg(error):"Mot de passe enregistré : tu peux maintenant te connecter avec ton e-mail et ce mot de passe",false)});
+}
+async function doLogout(){try{await sb.auth.signOut()}catch(e){}session=null;setWorkspace("");TEAMS=[];PERSO_ID="";lsSet("hb-teams",[]);lsSet("hb-perso","");lsSet("hb-nologin",false);lcState="login";showMode("login");toast("Déconnecté",false)}
+
+/* ---------- ENTRAÎNEMENT : tirs au poste ---------- */
+const TPOS=[["ALG","Aile gauche"],["ARG","Arrière gauche"],["DC","Demi-centre"],["ARD","Arrière droit"],["ALD","Aile droite"],["PIV","Pivot"],["7M","7 m"],["9M","9 m"]];
+const TPOSN=Object.fromEntries(TPOS);
+const TRES=[["but","But","b-but"],["arret","Arrêt","b-arret"],["poteau","Poteau","b-poteau"],["hors","Hors cadre",""]];
+const T={p:lsGet("hb-trP",""),pos:lsGet("hb-trPos","ARG"),sess:"",gx:null,gy:null,cell:null,style:null,scope:"sess",selP:""};
+function todayTrain(){const d=today();return S.trains.find(x=>x.date===d)}
+function ensureSession(){let tr=S.trains.find(x=>x.id===T.sess);if(!tr){tr=todayTrain();if(!tr){const n=S.trains.filter(x=>x.date===today()).length;tr={id:"tr"+rid(),date:today(),name:"Séance du "+fmtDate(today()),t:Date.now()};S.trains.push(tr)}T.sess=tr.id}return tr}
+function renderTrain(){
+  if(!$("goalTr").firstChild){$("goalTr").innerHTML=goalMarkup("goalTr");$("goalTrA").innerHTML=goalMarkup("goalTrA")}
+  GK=false;
+  const t=TEAMS.find(x=>x.id===WS);$("trSpace").textContent=t?(t.perso?"👤 Mon espace":"👥 "+t.name):"📱 Cet appareil";
+  if(!S.trains.some(x=>x.id===T.sess)){const td=todayTrain();T.sess=td?td.id:""}
+  const sessions=[...S.trains].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0));
+  $("trSession").innerHTML=(T.sess?"":`<option value="">Séance du ${fmtDate(today())} (nouvelle)</option>`)+sessions.map(x=>`<option value="${esc(x.id)}" ${x.id===T.sess?"selected":""}>${esc(x.name||("Séance du "+fmtDate(x.date)))} · ${S.tshots.filter(s=>s.tr===x.id).length} tirs</option>`).join("");
+  // joueurs
+  const pl=roster("nous");
+  if(T.p&&!pl.some(x=>x.id===T.p))T.p="";
+  $("trPgrid").innerHTML=pl.length?pl.map(x=>`<button type="button" class="pcheck" data-trp="${esc(x.id)}" aria-pressed="${T.p===x.id}"><span class="jn">${x.num??"–"}</span><span class="nm">${esc(x.name)}</span></button>`).join(""):`<div class="empty">Ajoute un joueur ci-dessous.</div>`;
+  $("trPos").innerHTML=TPOS.map(([k,l])=>`<button type="button" class="chip" data-trpos="${k}" aria-pressed="${T.pos===k}">${l}</button>`).join("");
+  const p=pl.find(x=>x.id===T.p);
+  $("trWho").textContent=p?`${p.name} · ${TPOSN[T.pos]}`:"Choisis d'abord le tireur";
+  // cage de saisie
+  $("goalTr-cells").innerHTML=Array.from({length:9},(_,i)=>`<rect x="${i%3}" y="${Math.floor(i/3)*2/3}" width="1" height="${2/3}" fill="${T.cell===i?"var(--accent)":"transparent"}" fill-opacity="${T.cell===i?".18":"0"}"/>`).join("");
+  $("goalTr-pend").innerHTML=T.gx!=null?`<circle cx="${T.gx}" cy="${T.gy}" r=".08" fill="var(--accent)" stroke="var(--panel)" stroke-width=".025"/>`:"";
+  const inSess=S.tshots.filter(s=>s.tr===T.sess);
+  $("goalTr-dots").innerHTML=inSess.filter(s=>s.gx!=null&&(!T.p||s.p===T.p)).slice(-30).map(s=>`<circle cx="${s.gx}" cy="${s.gy}" r=".045" fill="${RES[s.res]?.c||"var(--r-hors)"}" fill-opacity=".55"/>`).join("");
+  $("trRes").hidden=T.gx==null;$("trHint").hidden=T.gx!=null;
+  $("trRes").innerHTML=TRES.map(([k,l,c])=>`<button type="button" class="btn ${c}" data-trres="${k}">${l}</button>`).join("");
+  $("trStyle").innerHTML=allStyles().map(v=>`<button type="button" class="chip" data-trst="${esc(v)}" aria-pressed="${T.style===v}">${esc(v)}</button>`).join("");
+  const last=[...inSess].sort((a,b)=>(b.t||0)-(a.t||0)).slice(0,8);
+  $("trLast").innerHTML=last.length?last.map(s=>`<li><span class="rdot" style="background:${RES[s.res]?.c||"var(--r-hors)"}"></span><span><b>${TRES.find(x=>x[0]===s.res)?.[1]||s.res}</b> · ${esc(pName(s.p))}<small>${TPOSN[s.pos]||""}${s.cell!=null?" · "+cellName(s.cell):""}${s.style?" · "+esc(s.style):""}</small></span><button class="x" data-trdel="${esc(s.id)}" aria-label="Supprimer ce tir">×</button></li>`).join(""):`<li class="empty" style="display:block">Aucun tir dans cette séance pour l'instant.</li>`;
+  renderTrainStats();
+}
+function renderTrainStats(){
+  $("trScope").innerHTML=[["sess","Cette séance"],["all","Toutes les séances"]].map(([k,l])=>`<button type="button" class="chip" data-trsc="${k}" aria-pressed="${T.scope===k}">${l}</button>`).join("");
+  const src=S.tshots.filter(s=>T.scope==="all"||s.tr===T.sess);
+  const st=l=>{const t=l.length,g=l.filter(s=>s.res==="but").length;return {t,g}};
+  const used=TPOS.filter(([k])=>src.some(s=>s.pos===k));
+  const ids=[...new Set(src.map(s=>s.p))];
+  const rows=ids.map(id=>({id,l:src.filter(s=>s.p===id)})).sort((a,b)=>b.l.length-a.l.length);
+  const tot=st(src);
+  $("trTable").innerHTML=src.length?`<thead><tr><th>Joueur</th><th>Tirs</th><th>Buts</th><th>Eff.</th>${used.map(([k,l])=>`<th>${l}</th>`).join("")}</tr></thead><tbody>`+
+    rows.map(r=>{const a=st(r.l);return `<tr data-trp-s="${esc(r.id)}" class="${T.selP===r.id?"sel":""}" tabindex="0"><td>${esc(pName(r.id))}</td><td>${a.t}</td><td>${a.g}</td><td>${pct(a.g,a.t)} %</td>${used.map(([k])=>{const x=st(r.l.filter(s=>s.pos===k));return `<td>${x.t?x.g+"/"+x.t:"–"}</td>`}).join("")}</tr>`}).join("")+
+    `<tr data-trp-s="" class="${!T.selP?"sel":""}"><td>Total</td><td>${tot.t}</td><td>${tot.g}</td><td>${pct(tot.g,tot.t)} %</td>${used.map(([k])=>{const x=st(src.filter(s=>s.pos===k));return `<td>${x.g}/${x.t}</td>`}).join("")}</tr></tbody>`
+    :`<tbody><tr><td class="empty">Pas encore de tir ${T.scope==="all"?"à l'entraînement":"dans cette séance"}.</td></tr></tbody>`;
+  const list=src.filter(s=>!T.selP||s.p===T.selP);
+  const cells=Array.from({length:9},()=>({t:0,g:0}));
+  list.forEach(s=>{if(s.cell!=null&&cells[s.cell]){cells[s.cell].t++;if(s.res==="but")cells[s.cell].g++}});
+  const maxT=Math.max(1,...cells.map(c=>c.t));
+  $("goalTrA-cells").innerHTML=cells.map((c,i)=>{const x=i%3,y=Math.floor(i/3)*2/3;
+    return `<rect x="${x}" y="${y}" width="1" height="${2/3}" fill="${c.t?heatColor(pct(c.g,c.t)):"transparent"}" fill-opacity="${c.t?(0.15+0.45*c.t/maxT).toFixed(2):0}"/>`+(c.t?`<text x="${x+.5}" y="${y+.4}" text-anchor="middle" font-family="var(--display)" font-weight="700" font-size=".2" fill="var(--ink)">${c.g}/${c.t}</text>`:"")}).join("");
+  $("goalTrA-dots").innerHTML=list.filter(s=>s.gx!=null).map(s=>`<circle cx="${s.gx}" cy="${s.gy}" r=".05" fill="${RES[s.res]?.c||"var(--r-hors)"}" stroke="var(--panel)" stroke-width=".015"/>`).join("");
+  const hc=list.filter(s=>s.res==="hors").length;
+  $("trGoalHint").textContent=`${T.selP?pName(T.selP):"Tous les joueurs"} · buts / tirs par zone${hc?` · ${hc} hors cadre`:""}`;
+}
+function saveTrainShot(res){
+  if(!T.p){toast("Choisis d'abord le tireur",false);return}
+  if(ROLE==="lecteur"){toast("Tu es en lecture seule dans cette équipe",false);return}
+  const tr=ensureSession();
+  const s={id:"ts"+rid(),tr:tr.id,p:T.p,pos:T.pos,gx:T.gx,gy:T.gy,cell:res==="hors"?null:T.cell,res,style:T.style||null,t:Date.now()};
+  S.tshots.push(s);T.gx=T.gy=T.cell=null;T.style=null;saveLocal();renderTrain();
+  window.__undoFn=()=>{S.tshots=S.tshots.filter(x=>x.id!==s.id);saveLocal();renderTrain()};
+  toast(`${TRES.find(x=>x[0]===res)[1]} · ${pName(s.p)} · ${TPOSN[s.pos]}`,true);
+}
+function bindTrain(){
+  $("trPgrid").addEventListener("click",e=>{const b=e.target.closest("[data-trp]");if(!b)return;T.p=b.dataset.trp;lsSet("hb-trP",T.p);
+    const pl=S.players.find(x=>x.id===T.p);if(pl&&TPOSN[pl.pos]&&!lsGet("hb-trPosManual",false))T.pos=pl.pos;renderTrain()});
+  $("trPos").addEventListener("click",e=>{const b=e.target.closest("[data-trpos]");if(!b)return;T.pos=b.dataset.trpos;lsSet("hb-trPos",T.pos);renderTrain()});
+  $("trAdd").addEventListener("submit",async e=>{e.preventDefault();const name=$("trName").value.trim();if(!name)return;
+    const pos=["ALG","ARG","DC","ARD","ALD","PIV"].includes(T.pos)?T.pos:"ARG";
+    const id=await addPlayer({name,num:null,pos});T.p=id;lsSet("hb-trP",id);$("trName").value="";renderTrain()});
+  $("goalTr").addEventListener("click",e=>{
+    const pt=svgPoint($("goalTr"),e),gx=+pt.x.toFixed(3),gy=+pt.y.toFixed(3);
+    if(!T.p){toast("Choisis d'abord le tireur",false);return}
+    const inside=gx>=0&&gx<=3&&gy>=0&&gy<=2;
+    T.gx=gx;T.gy=gy;T.cell=inside?Math.min(2,Math.floor(gy/(2/3)))*3+Math.min(2,Math.floor(gx)):null;
+    if(!inside){saveTrainShot("hors");return}
+    renderTrain()});
+  $("trRes").addEventListener("click",e=>{const b=e.target.closest("[data-trres]");if(b)saveTrainShot(b.dataset.trres)});
+  $("trStyle").addEventListener("click",e=>{const b=e.target.closest("[data-trst]");if(!b)return;T.style=T.style===b.dataset.trst?null:b.dataset.trst;renderTrain()});
+  $("trLast").addEventListener("click",e=>{const b=e.target.closest("[data-trdel]");if(!b)return;const id=b.dataset.trdel;const s=S.tshots.find(x=>x.id===id);
+    S.tshots=S.tshots.filter(x=>x.id!==id);saveLocal();renderTrain();window.__undoFn=()=>{S.tshots.push(s);saveLocal();renderTrain()};toast("Tir supprimé",true)});
+  $("trSession").addEventListener("change",e=>{T.sess=e.target.value;renderTrain()});
+  $("trNewSess").onclick=()=>{const n=S.trains.filter(x=>x.date===today()).length;const tr={id:"tr"+rid(),date:today(),name:`Séance du ${fmtDate(today())}${n?" ("+(n+1)+")":""}`,t:Date.now()};S.trains.push(tr);T.sess=tr.id;saveLocal();renderTrain();toast("Nouvelle séance créée",false)};
+  $("trScope").addEventListener("click",e=>{const b=e.target.closest("[data-trsc]");if(!b)return;T.scope=b.dataset.trsc;renderTrainStats()});
+  $("trTable").addEventListener("click",e=>{const r=e.target.closest("[data-trp-s]");if(!r)return;T.selP=r.dataset.trpS;renderTrainStats()});
+}
+
 /* ---------- Démarrage ---------- */
 function start(){
   bind();
@@ -1665,6 +1996,9 @@ function start(){
   S.mode="local";
   loadWorkspaceData();bindTeam();
   const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match","team"].includes(t0)?t0:"entry");updateStatus();
+  bindNav();bindTrain();
+  const hasAuth=(()=>{try{return !!localStorage.getItem("hb-auth")}catch(e){return false}})();
+  showMode(hasAuth||lsGet("hb-nologin",false)?"hub":"login");
   const landing=checkLanding();
   sbInit().then(()=>{if(landing)landingSendCode(landing)});
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
