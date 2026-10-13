@@ -1,0 +1,42 @@
+name: Configuration Supabase
+# Applique la migration SQL et les réglages de connexion (modèles d'e-mail, adresse de l'appli).
+# Se lance quand supabase/setup.json change, ou à la main depuis l'onglet Actions.
+on:
+  push:
+    paths: ["supabase/setup.json"]
+  workflow_dispatch:
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: apcsdghdmzspovxdlmbv
+      APP: https://ryzeiron.github.io/carnet-tirs/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier la clé
+        run: |
+          if [ -z "$TOKEN" ]; then echo "::error::Secret SUPABASE_ACCESS_TOKEN absent"; exit 1; fi
+      - name: Migration SQL (entraînement)
+        run: |
+          jq -n --rawfile q supabase/migration-entrainement.sql '{query:$q}' > q.json
+          code=$(curl -sS -o out.txt -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @q.json)
+          echo "SQL -> HTTP $code"; cat out.txt; echo
+          case "$code" in 2*) ;; *) exit 1;; esac
+      - name: Réglages de connexion et modèles d'e-mail
+        run: |
+          jq -n \
+            --arg site "$APP" \
+            --rawfile ml supabase/templates/magic_link.html \
+            --rawfile cf supabase/templates/confirmation.html \
+            --rawfile rc supabase/templates/recovery.html \
+            '{site_url:$site, uri_allow_list:$site,
+              mailer_subjects_magic_link:"Ton code de connexion · Carnet de tirs", mailer_templates_magic_link_content:$ml,
+              mailer_subjects_confirmation:"Bienvenue sur Carnet de tirs · ton code", mailer_templates_confirmation_content:$cf,
+              mailer_subjects_recovery:"Ton code pour changer de mot de passe · Carnet de tirs", mailer_templates_recovery_content:$rc}' > auth.json
+          code=$(curl -sS -o out.txt -w "%{http_code}" -X PATCH "https://api.supabase.com/v1/projects/$REF/config/auth" \
+            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @auth.json)
+          echo "Auth -> HTTP $code"
+          jq '{site_url, uri_allow_list, mailer_subjects_magic_link, mailer_subjects_confirmation, mailer_subjects_recovery}' out.txt 2>/dev/null || head -c 400 out.txt
+          case "$code" in 2*) ;; *) exit 1;; esac
