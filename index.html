@@ -247,6 +247,7 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .syncinfo{font-size:13px;color:var(--muted);background:var(--panel-2);border-radius:8px;padding:8px 10px;margin:10px 0;line-height:1.5}
 .syncinfo b{color:var(--ink)}
 .syncinfo .err{color:var(--r-arret)}
+.tbsel{font-size:13px;padding:5px 8px}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -347,7 +348,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 17</span>
+      <span class="status" id="appVersion">Version 18</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -469,11 +470,11 @@ img{max-width:100%}
         <p class="hint" id="wsHelp">Touche une équipe pour y entrer : les matchs, joueurs et stats que tu vois sont alors ceux de l'équipe, partagés avec tout le staff.</p>
         <ul class="wslist" id="wsList"></ul>
         <div class="syncinfo" id="syncInfo" hidden></div>
-        <button class="btn small" type="button" id="mergeLocal" hidden>Ajouter les données de cet appareil à l'équipe</button>
+        <button class="btn small" type="button" id="mergeLocal" hidden>Copier les données de « Mon espace » dans cette équipe</button>
         <form id="newTeamForm" class="stack" hidden autocomplete="off">
           <div class="subhead">Créer une équipe</div>
           <label class="fld"><span class="lbl">Nom de l'équipe</span><input type="text" id="teamName" maxlength="80" placeholder="ex. Seniors Garçons" required></label>
-          <label class="ckline"><input type="checkbox" id="teamImport" checked> Mettre dedans les données de cet appareil (joueurs, matchs, actions)</label>
+          <label class="ckline"><input type="checkbox" id="teamImport"> Copier dedans mes joueurs, matchs et actions actuels</label>
           <button class="btn primary" type="submit">Créer l'équipe</button>
         </form>
       </div>
@@ -1372,7 +1373,7 @@ function updateStatus(){
 /* ---------- ÉQUIPE & SYNCHRONISATION ---------- */
 const SB_URL="https://apcsdghdmzspovxdlmbv.supabase.co",SB_KEY="sb_publishable_OAt73IQCwvpDrIff_mE_Cg_eAJ-205M";
 const APP_URL="https://ryzeiron.github.io/carnet-tirs/";
-let justLoggedIn=false,sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
+const PERSO_NAME="__perso__";let PERSO_ID=lsGet("hb-perso",""),justLoggedIn=false,sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
 const ROLE_LABEL={admin:"Admin",analyste:"Analyste",lecteur:"Lecteur"};
 const stab=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k2)=>(o[k2]=x[k2],o),{}):x);
 function loadWorkspaceData(){
@@ -1386,7 +1387,7 @@ function loadWorkspaceData(){
 function localItems(){const m=new Map();S.players.forEach(p=>m.set("player:"+p.id,p));S.matches.forEach(x=>m.set("match:"+x.id,x));S.shots.forEach(x=>m.set("shot:"+x.id,x));
   m.set("cfg:lists",{plays:S.cfg.plays||[],styles:S.cfg.styles||[]});return m}
 function setSync(state,txt){const el=$("syncStatus");if(!WS){el.hidden=true;return}el.hidden=false;el.className="status syncst "+state;el.textContent=txt}
-function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?t.name:"Équipe";
+function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?(t.perso?"Mon espace":t.name):"Équipe";
   if(!session)return setSync("warn",`☁ ${nm} · connecte-toi dans « Équipe »`);
   if(lastErr)return setSync("err",`☁ ${nm} · ${navigator.onLine?"serveur injoignable":"hors ligne"}${pendingN?` · ${pendingN} en attente`:""}`);
   setSync(pendingN?"warn":"ok",`☁ ${nm} · ${pendingN?pendingN+" en attente":"synchronisé"}`)}
@@ -1471,11 +1472,34 @@ async function sbInit(){
   window.addEventListener("online",()=>{pullNow();scheduleSync()});
   document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pullNow();scheduleSync()}});
 }
+function hasLocalData(){const d=lsGet("hb-data",{players:[],shots:[]});return !!((d.players||[]).length||(d.shots||[]).length||lsGet("hb-matches",[]).length)}
+function moveLocalInto(id){
+  // verse les données « sans compte » de cet appareil dans l'espace id, puis les retire de l'appareil (pas de doublons)
+  const k=n=>n+"@"+id;
+  const L=lsGet("hb-data",{players:[],shots:[]}),Lm=lsGet("hb-matches",[]),Lc=lsGet("hb-cfg",{plays:[],styles:[]});
+  const P=lsGet(k("hb-data"),{players:[],shots:[]}),Pm=lsGet(k("hb-matches"),[]),Pc=lsGet(k("hb-cfg"),{plays:[],styles:[]});
+  const uni=(a,b)=>{const ids=new Set((a||[]).map(x=>x.id));return [...(a||[]),...(b||[]).filter(x=>x&&x.id&&!ids.has(x.id))]};
+  lsSet(k("hb-data"),{players:uni(P.players,L.players),shots:uni(P.shots,L.shots)});lsSet(k("hb-matches"),uni(Pm,Lm));
+  lsSet(k("hb-cfg"),{plays:[...new Set([...(Pc.plays||[]),...(Lc.plays||[])])],styles:[...new Set([...(Pc.styles||[]),...(Lc.styles||[])])]});
+  const cur=lsGet("hb-curMatch","");if(cur&&!lsGet(k("hb-curMatch"),""))lsSet(k("hb-curMatch"),cur);
+  ["hb-data","hb-matches","hb-curMatch"].forEach(n=>{try{localStorage.removeItem(n)}catch(e){}});
+}
+async function ensurePerso(){
+  if(PERSO_ID||!sb||!session)return;
+  const {error}=await sb.rpc("create_team",{team_name:PERSO_NAME});
+  if(!error)await loadTeams();
+}
 async function afterLogin(){
   try{await sb.rpc("claim_invites")}catch(e){}
-  await loadTeams();
-  if(WS&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine&&!lastErr){const gone=WS;setWorkspace("");purgeTeamLocal(gone);toast("Cette équipe a été supprimée par un admin.",false)}
-  else if(!WS&&TEAMS.length&&(justLoggedIn||(!S.matches.length&&!S.shots.length))){enterTeam(TEAMS[0].id)}
+  const ok=await loadTeams();
+  if(ok)await ensurePerso();
+  const shared=TEAMS.filter(t=>!t.perso);
+  if(PERSO_ID&&hasLocalData()){moveLocalInto(PERSO_ID);if(!WS){setWorkspace(PERSO_ID);toast("Tes données sont maintenant dans « Mon espace », synchronisé sur tous tes appareils",false)}else if(WS===PERSO_ID){loadWorkspaceData();render()}}
+  if(WS&&ok&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine){const gone=WS;setWorkspace(PERSO_ID||"");purgeTeamLocal(gone);toast("Cette équipe a été supprimée par un admin.",false)}
+  else if(!WS&&PERSO_ID){
+    const persoEmpty=!lsGet("hb-matches@"+PERSO_ID,[]).length;
+    if(justLoggedIn&&shared.length&&persoEmpty)enterTeam(shared[0].id);else{setWorkspace(PERSO_ID);setTab(tab)}}
+  else if(!WS&&shared.length&&justLoggedIn){enterTeam(shared[0].id)}
   else{const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:ROLE):null;document.body.classList.toggle("ro",ROLE==="lecteur");startSync()}
   justLoggedIn=false;renderTeamBar();
   if(tab==="team")renderTeam();
@@ -1483,10 +1507,14 @@ async function afterLogin(){
 async function loadTeams(){
   if(!sb||!session)return;
   const em=(session.user.email||"").toLowerCase();
-  const {data,error}=await sb.from("members").select("team_id,role,teams(name)").eq("email",em);
-  if(error){lastErr=error.message;return}
-  TEAMS=(data||[]).map(r=>({id:r.team_id,role:r.role,name:(r.teams&&r.teams.name)||"Équipe"})).sort((a,b)=>a.name.localeCompare(b.name));
-  lsSet("hb-teams",TEAMS);
+  const {data,error}=await sb.from("members").select("team_id,role,teams(name,created_at)").eq("email",em);
+  if(error){lastErr=error.message;return false}
+  const rows=(data||[]).map(r=>({id:r.team_id,role:r.role,raw:(r.teams&&r.teams.name)||"Équipe",at:(r.teams&&r.teams.created_at)||""}));
+  const persos=rows.filter(r=>r.raw===PERSO_NAME).sort((a,b)=>a.at.localeCompare(b.at));
+  PERSO_ID=persos.length?persos[0].id:"";lsSet("hb-perso",PERSO_ID);
+  TEAMS=rows.filter(r=>r.raw!==PERSO_NAME||r.id===PERSO_ID).map(r=>({id:r.id,role:r.role,name:r.id===PERSO_ID?"Mon espace":r.raw,perso:r.id===PERSO_ID}))
+    .sort((a,b)=>(b.perso-a.perso)||a.name.localeCompare(b.name));
+  lsSet("hb-teams",TEAMS);return true;
 }
 function setWorkspace(id,carry){
   stopSync();
@@ -1504,12 +1532,15 @@ function renderTeamBar(){
   bar.hidden=false;bar.classList.toggle("inteam",!!WS);
   if(WS){
     const st=!session?"connecte-toi pour synchroniser":lastErr?(navigator.onLine?"serveur injoignable":"hors ligne"):pendingN?pendingN+" en attente d'envoi":"synchronisé";
-    bar.innerHTML=`<span>👥 Équipe <span class="tb-name">${esc(t?t.name:"…")}</span>${t?` · ${ROLE_LABEL[t.role]}`:""}</span><span class="status syncst ${lastErr?"err":pendingN?"warn":"ok"}">☁ ${st}</span><span class="tb-sp"></span><button class="btn small" type="button" data-tb="team">Changer d'équipe</button>`;
+    const others=TEAMS.filter(x=>x.id!==WS);
+    bar.innerHTML=(t&&t.perso?`<span>👤 <span class="tb-name">Mon espace</span> · tous tes appareils</span>`:`<span>👥 Équipe <span class="tb-name">${esc(t?t.name:"…")}</span>${t?` · ${ROLE_LABEL[t.role]}`:""}</span>`)+`<span class="status syncst ${lastErr?"err":pendingN?"warn":"ok"}">☁ ${st}</span><span class="tb-sp"></span>`+
+      (others.length?`<select class="tbsel" data-tbsel aria-label="Changer d'espace"><option value="">Changer…</option>${others.map(x=>`<option value="${esc(x.id)}">${x.perso?"👤 Mon espace":"👥 "+esc(x.name)}</option>`).join("")}</select>`:`<button class="btn small" type="button" data-tb="team">Équipes</button>`);
+  }else if(session&&PERSO_ID){bar.innerHTML=`<span>📱 Données de cet appareil seulement</span><span class="tb-sp"></span><button class="btn small primary" type="button" data-tbws="${esc(PERSO_ID)}">Ouvrir Mon espace</button>`;
   }else{
     bar.innerHTML=`<span>📱 Tu es sur <b>Cet appareil</b> (données non partagées)</span><span class="tb-sp"></span>`+TEAMS.map(x=>`<button class="btn small primary" type="button" data-tbws="${esc(x.id)}">Entrer dans « ${esc(x.name)} »</button>`).join("");
   }
 }
-function enterTeam(id){const t=TEAMS.find(x=>x.id===id);setWorkspace(id);setTab(ROLE==="lecteur"?"ana":"match");window.scrollTo(0,0);toast(id?`Tu es dans l'équipe « ${t?t.name:""} »`:"Données de cet appareil",false)}
+function enterTeam(id){const t=TEAMS.find(x=>x.id===id);setWorkspace(id);setTab(ROLE==="lecteur"?"ana":"match");window.scrollTo(0,0);toast(!id?"Données de cet appareil":t&&t.perso?"Tu es dans « Mon espace »":`Tu es dans l'équipe « ${t?t.name:""} »`,false)}
 function renderTeam(){
   const on=!!session;
   $("accOut").hidden=on;$("accIn").hidden=!on;if(on)$("accEmail").textContent=session.user.email;
@@ -1517,17 +1548,17 @@ function renderTeam(){
   else if(!sb)$("accMsg").textContent="Connexion au serveur…";
   else if(/connexion au serveur/i.test($("accMsg").textContent))$("accMsg").textContent="";
   // espaces
-  const items=[{id:"",name:"Cet appareil (sans équipe)",role:null},...TEAMS];
-  $("wsList").innerHTML=items.map(t=>`<li class="${t.id===WS?"cur":""}" data-ws="${esc(t.id)}"><span class="nm"><b>${t.id?"👥 ":"📱 "}${esc(t.name)}</b>${t.id===WS?" · <b>tu es ici</b>":""}</span>${t.role?`<span class="rolep">${ROLE_LABEL[t.role]}</span>`:""}${t.id===WS?"":`<button class="btn small primary" type="button">Entrer</button>`}</li>`).join("");
+  const items=on&&PERSO_ID?[...TEAMS]:[{id:"",name:"Cet appareil (sans compte)",role:null},...TEAMS];
+  $("wsList").innerHTML=items.map(t=>`<li class="${t.id===WS?"cur":""}" data-ws="${esc(t.id)}"><span class="nm"><b>${t.perso?"👤 ":t.id?"👥 ":"📱 "}${esc(t.name)}</b>${t.perso?"<br><small class=\"hint\">Ton espace perso, synchronisé sur ton PC, ton téléphone, ta tablette…</small>":""}${t.id===WS?" · <b>tu es ici</b>":""}</span>${t.role&&!t.perso?`<span class="rolep">${ROLE_LABEL[t.role]}</span>`:""}${t.id===WS?"":`<button class="btn small primary" type="button">Entrer</button>`}</li>`).join("");
   $("wsHelp").hidden=!TEAMS.length;
-  const tt=TEAMS.find(x=>x.id===WS);$("mergeLocal").hidden=!(on&&tt&&tt.role!=="lecteur");
+  const tt=TEAMS.find(x=>x.id===WS);$("mergeLocal").hidden=!(on&&tt&&!tt.perso&&tt.role!=="lecteur"&&PERSO_ID);
   renderSyncInfo();
   $("newTeamForm").hidden=!on;$("syncNow").hidden=!(on&&WS);
-  $("teamImport").closest("label").hidden=!!WS;
+  $("teamImport").closest("label").hidden=!!WS&&WS!==PERSO_ID;
   // staff
   const t=TEAMS.find(x=>x.id===WS);
-  $("memPanel").hidden=!(on&&t);
-  if(on&&t){$("memTeam").textContent=t.name;$("inviteForm").hidden=t.role!=="admin";$("dangerZone").hidden=t.role!=="admin";
+  $("memPanel").hidden=!(on&&t&&!t.perso);
+  if(on&&t&&!t.perso){$("memTeam").textContent=t.name;$("inviteForm").hidden=t.role!=="admin";$("dangerZone").hidden=t.role!=="admin";
     if($("delTeamName").dataset.ws!==WS){$("delTeamName").value="";$("delTeamName").dataset.ws=WS}checkDelName();loadMembers()}
 }
 async function loadMembers(){
@@ -1550,7 +1581,7 @@ function bindTeam(){
     if(error){toast("Suppression impossible : "+(navigator.onLine?error.message:"pas de réseau"),false);checkDelName();return}
     await loadTeams();
     if(TEAMS.some(x=>x.id===t.id)){toast("Suppression refusée : seul un admin peut supprimer l'équipe.",false);checkDelName();return}
-    purgeTeamLocal(t.id);$("delTeamName").value="";setWorkspace("");renderTeam();toast(`Équipe « ${t.name} » supprimée`,false)};
+    purgeTeamLocal(t.id);$("delTeamName").value="";setWorkspace(PERSO_ID||"");renderTeam();toast(`Équipe « ${t.name} » supprimée`,false)};
   $("tabTeam").onclick=()=>setTab("team");
   $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!sb){$("accMsg").textContent="Connexion au serveur en cours, réessaie dans quelques secondes.";if(sbFailed){sbFailed=false;sbInit()}return}
     loginEmail=$("loginEmail").value.trim().toLowerCase();$("loginSend").disabled=true;$("accMsg").textContent="";
@@ -1567,11 +1598,12 @@ function bindTeam(){
     if(error){$("accMsg").textContent="Code incorrect ou expiré. Vérifie le dernier e-mail reçu.";return}
     justLoggedIn=true;
     $("accMsg").textContent="";$("loginForm").hidden=false;$("codeForm").hidden=true;$("loginCode").value="";toast("Connecté",false)});
-  $("logoutBtn").onclick=async()=>{await sb.auth.signOut();session=null;setWorkspace("");TEAMS=[];lsSet("hb-teams",[]);renderTeam()};
+  $("logoutBtn").onclick=async()=>{await sb.auth.signOut();session=null;setWorkspace("");TEAMS=[];PERSO_ID="";lsSet("hb-teams",[]);lsSet("hb-perso","");renderTeam();toast("Déconnecté : tes données restent sur ton compte, reconnecte-toi pour les retrouver",false)};
   $("wsList").addEventListener("click",e=>{const b=e.target.closest("[data-ws]");if(!b||b.dataset.ws===WS)return;enterTeam(b.dataset.ws)});
+  $("teamBar").addEventListener("change",e=>{const s=e.target.closest("[data-tbsel]");if(s&&s.value)enterTeam(s.value)});
   $("teamBar").addEventListener("click",e=>{const a=e.target.closest("[data-tb]");if(a){setTab("team");window.scrollTo(0,0);return}const b=e.target.closest("[data-tbws]");if(b)enterTeam(b.dataset.tbws)});
   $("mergeLocal").onclick=()=>{
-    const d=lsGet("hb-data",{players:[],shots:[]}),ms=lsGet("hb-matches",[]),cf=lsGet("hb-cfg",{plays:[],styles:[]});
+    const src=PERSO_ID?"@"+PERSO_ID:"";const d=lsGet("hb-data"+src,{players:[],shots:[]}),ms=lsGet("hb-matches"+src,[]),cf=lsGet("hb-cfg"+src,{plays:[],styles:[]});
     const add=(arr,src)=>{const ids=new Set(arr.map(x=>x.id));let n=0;(src||[]).forEach(x=>{if(x&&x.id&&!ids.has(x.id)){arr.push(x);n++}});return n};
     const np=add(S.players,d.players),nm=add(S.matches,ms),ns=add(S.shots,d.shots);
     S.cfg={plays:[...new Set([...(S.cfg.plays||[]),...(cf.plays||[])])],styles:[...new Set([...(S.cfg.styles||[]),...(cf.styles||[])])]};
@@ -1582,7 +1614,7 @@ function bindTeam(){
     const {data,error}=await sb.rpc("create_team",{team_name:name});
     if(error){toast("Création impossible : "+error.message,false);return}
     TEAMS.push({id:data,name,role:"admin"});lsSet("hb-teams",TEAMS);
-    setWorkspace(data,$("teamImport").checked&&!WS);$("teamName").value="";setTab("match");window.scrollTo(0,0);toast(`Équipe « ${name} » créée : tu es dedans`,false)});
+    setWorkspace(data,$("teamImport").checked&&(!WS||WS===PERSO_ID));$("teamName").value="";setTab("match");window.scrollTo(0,0);toast(`Équipe « ${name} » créée : tu es dedans`,false)});
   $("inviteForm").addEventListener("submit",async e=>{e.preventDefault();
     const email=$("invEmail").value.trim().toLowerCase(),role=$("invRole").value;
     const {error}=await sb.from("members").insert({team_id:WS,email,role});
