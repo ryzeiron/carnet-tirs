@@ -1,1 +1,1 @@
-{ "run": 1, "note": "Modifier ce fichier relance la configuration automatique de Supabase (voir .github/workflows/supabase-setup.yml)" }
+{ "run": 2, "note": "Modifier ce fichier relance la configuration automatique de Supabase (voir .github/workflows/supabase-setup.yml)" }
