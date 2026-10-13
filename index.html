@@ -233,6 +233,10 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .landico{font-size:52px;line-height:1}
 .landcard h2{font-size:21px;text-wrap:balance}
 .landcard p{margin:0;font-size:16px}
+.danger-zone{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.danger-zone .btn.danger{border-color:var(--r-arret)}
+.danger-zone .btn.danger:not(:disabled){background:var(--r-arret);color:#fff}
+.danger-zone .btn:disabled{opacity:.45;cursor:not-allowed}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -333,7 +337,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 15</span>
+      <span class="status" id="appVersion">Version 16</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -473,6 +477,12 @@ img{max-width:100%}
           <button class="btn primary" type="submit">Inviter</button>
           <p class="hint">La personne reçoit un code par e-mail. Elle ouvre l'appli, va dans « Équipe » et se connecte avec cette adresse.</p>
         </form>
+        <div class="danger-zone" id="dangerZone" hidden>
+          <div class="subhead">Supprimer l'équipe</div>
+          <p class="hint">Tout sera effacé pour <b>tout le staff</b> : joueurs, matchs, actions et invitations. C'est définitif. Fais d'abord une <b>sauvegarde</b> si tu veux garder les données.</p>
+          <label class="fld"><span class="lbl">Pour confirmer, tape le nom de l'équipe</span><input type="text" id="delTeamName" autocomplete="off"></label>
+          <button class="btn danger" type="button" id="delTeamBtn" disabled>Supprimer définitivement l'équipe</button>
+        </div>
       </div>
     </div>
   </section>
@@ -1443,7 +1453,7 @@ async function sbInit(){
 async function afterLogin(){
   try{await sb.rpc("claim_invites")}catch(e){}
   await loadTeams();
-  if(WS&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine&&!lastErr){setWorkspace("")}
+  if(WS&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine&&!lastErr){const gone=WS;setWorkspace("");purgeTeamLocal(gone);toast("Cette équipe a été supprimée par un admin.",false)}
   else{const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:ROLE):null;document.body.classList.toggle("ro",ROLE==="lecteur");startSync()}
   if(tab==="team")renderTeam();
 }
@@ -1478,7 +1488,8 @@ function renderTeam(){
   // staff
   const t=TEAMS.find(x=>x.id===WS);
   $("memPanel").hidden=!(on&&t);
-  if(on&&t){$("memTeam").textContent=t.name;$("inviteForm").hidden=t.role!=="admin";loadMembers()}
+  if(on&&t){$("memTeam").textContent=t.name;$("inviteForm").hidden=t.role!=="admin";$("dangerZone").hidden=t.role!=="admin";
+    if($("delTeamName").dataset.ws!==WS){$("delTeamName").value="";$("delTeamName").dataset.ws=WS}checkDelName();loadMembers()}
 }
 async function loadMembers(){
   const t=TEAMS.find(x=>x.id===WS);if(!t||!sb)return;
@@ -1488,7 +1499,19 @@ async function loadMembers(){
   $("memList").innerHTML=data.map(m=>`<li><span class="nm">${esc(m.email)}${m.email===me?" (toi)":""}<br><small class="hint">${m.user_id?"Compte actif":"Invitation en attente"}</small></span>
     ${admin&&m.email!==me?`<select data-mrole="${esc(m.email)}" aria-label="Rôle">${["admin","analyste","lecteur"].map(r=>`<option value="${r}" ${r===m.role?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select><button class="btn small danger" type="button" data-mdelm="${esc(m.email)}">Retirer</button>`:`<span class="rolep">${ROLE_LABEL[m.role]}</span>`}</li>`).join("");
 }
+function purgeTeamLocal(id){try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.endsWith("@"+id))ks.push(k)}ks.forEach(k=>localStorage.removeItem(k))}catch(e){}}
+function checkDelName(){const t=TEAMS.find(x=>x.id===WS);$("delTeamBtn").disabled=!t||$("delTeamName").value.trim().toLowerCase()!==t.name.trim().toLowerCase()}
 function bindTeam(){
+  $("delTeamName").addEventListener("input",checkDelName);
+  $("delTeamBtn").onclick=async()=>{
+    const t=TEAMS.find(x=>x.id===WS);if(!t||t.role!=="admin"||$("delTeamBtn").disabled)return;
+    $("delTeamBtn").disabled=true;$("delTeamBtn").textContent="Suppression…";
+    const {error}=await sb.from("teams").delete().eq("id",t.id);
+    $("delTeamBtn").textContent="Supprimer définitivement l'équipe";
+    if(error){toast("Suppression impossible : "+(navigator.onLine?error.message:"pas de réseau"),false);checkDelName();return}
+    await loadTeams();
+    if(TEAMS.some(x=>x.id===t.id)){toast("Suppression refusée : seul un admin peut supprimer l'équipe.",false);checkDelName();return}
+    purgeTeamLocal(t.id);$("delTeamName").value="";setWorkspace("");renderTeam();toast(`Équipe « ${t.name} » supprimée`,false)};
   $("tabTeam").onclick=()=>setTab("team");
   $("loginForm").addEventListener("submit",async e=>{e.preventDefault();if(!sb){$("accMsg").textContent="Connexion au serveur en cours, réessaie dans quelques secondes.";if(sbFailed){sbFailed=false;sbInit()}return}
     loginEmail=$("loginEmail").value.trim().toLowerCase();$("loginSend").disabled=true;$("accMsg").textContent="";
