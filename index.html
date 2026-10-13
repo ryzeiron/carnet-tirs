@@ -228,6 +228,11 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .memlist select{font-size:13px;padding:4px 6px}
 .syncst.ok{color:var(--r-but)}.syncst.warn{color:var(--accent)}.syncst.err{color:var(--r-arret)}
 body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [data-medit],body.ro [data-mcur],body.ro #newMatchBtn2,body.ro #delPlayer{display:none!important}
+.landing{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.landcard{width:100%;min-width:0;max-width:440px;overflow-wrap:anywhere;text-align:center;display:flex;flex-direction:column;gap:10px;padding:28px 22px}
+.landico{font-size:52px;line-height:1}
+.landcard h2{font-size:21px;text-wrap:balance}
+.landcard p{margin:0;font-size:16px}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -328,7 +333,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 14</span>
+      <span class="status" id="appVersion">Version 15</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -429,6 +434,7 @@ img{max-width:100%}
           <form id="loginForm" class="stack" autocomplete="on">
             <label class="fld"><span class="lbl">E-mail</span><input type="email" id="loginEmail" autocomplete="email" placeholder="toi@exemple.fr" required></label>
             <button class="btn primary" type="submit" id="loginSend">Recevoir le code</button>
+            <button class="btn small" type="button" id="haveCode">J'ai déjà reçu un code</button>
           </form>
           <form id="codeForm" class="stack" hidden autocomplete="off">
             <p class="hint" id="codeHint"></p>
@@ -560,6 +566,7 @@ img{max-width:100%}
   </form>
 </div>
 <div class="updbar" id="updBar" hidden>Une nouvelle version de l'appli est prête. <button class="btn small primary" type="button" id="updBtn">Mettre à jour</button><button class="btn small" type="button" id="updLater">Plus tard</button></div>
+<div class="landing" id="landing" hidden><div class="panel landcard"><div class="landico" id="landIco">✅</div><h2 id="landTitle">Adresse e-mail validée</h2><p id="landText"></p><p class="hint" id="landHint"></p></div></div>
 <div class="toast" id="toast" hidden><span id="toastMsg"></span><button id="toastUndo">Annuler</button></div>
 
 <script>
@@ -1489,6 +1496,8 @@ function bindTeam(){
     $("loginSend").disabled=false;
     if(error){$("accMsg").textContent=/rate|limit|seconds/i.test(error.message)?"Trop d'e-mails envoyés pour le moment. Réessaie dans quelques minutes.":"Envoi impossible : "+error.message;return}
     $("loginForm").hidden=true;$("codeForm").hidden=false;$("codeHint").textContent=`Code envoyé à ${loginEmail}. Regarde aussi dans les spams.`;$("loginCode").focus()});
+  $("haveCode").onclick=()=>{const em=$("loginEmail").value.trim().toLowerCase();if(!em||!em.includes("@")){$("accMsg").textContent="Tape d'abord ton e-mail, puis touche « J'ai déjà reçu un code ».";$("loginEmail").focus();return}
+    loginEmail=em;$("accMsg").textContent="";$("loginForm").hidden=true;$("codeForm").hidden=false;$("codeHint").textContent=`Entre le code reçu à ${loginEmail}.`;$("loginCode").focus()};
   $("codeBack").onclick=()=>{$("loginForm").hidden=false;$("codeForm").hidden=true};
   $("codeForm").addEventListener("submit",async e=>{e.preventDefault();
     const token=$("loginCode").value.replace(/\s/g,"");
@@ -1519,6 +1528,30 @@ function bindTeam(){
   $("syncNow").onclick=async()=>{await pullNow();await pushNow();toast(lastErr?"Synchronisation impossible pour le moment":"Synchronisé",false)};
 }
 
+/* Arrivée depuis le lien d'un e-mail (s'ouvre dans Safari, pas dans l'appli installée) */
+function checkLanding(){
+  const raw=(location.hash||"").replace(/^#/,"")+"&"+(location.search||"").replace(/^\?/,"");
+  if(!/access_token=|error_description=|error_code=|type=(signup|magiclink|invite|email)/.test(raw))return null;
+  const prm=new URLSearchParams(raw);
+  try{history.replaceState(null,"",location.pathname)}catch(e){}
+  $("landing").hidden=false;
+  if(prm.get("error")||prm.get("error_description")){
+    $("landIco").textContent="⚠️";$("landTitle").textContent="Lien expiré ou déjà utilisé";
+    $("landText").textContent="Ce n'est pas grave. Retourne dans l'appli Carnet de tirs, onglet « Équipe », et demande un nouveau code.";
+    $("landHint").textContent="Tu peux fermer cette page.";return null}
+  let email="";try{const tok=prm.get("access_token");const pl=JSON.parse(decodeURIComponent(escape(atob(tok.split(".")[1].replace(/-/g,"+").replace(/_/g,"/")))));email=(pl.email||"").toLowerCase()}catch(e){}
+  $("landText").textContent=email?`Ton adresse ${email} est confirmée. On t'envoie ton code de connexion par e-mail…`:"Ton adresse est confirmée. Retourne dans l'appli Carnet de tirs, onglet « Équipe », et demande ton code.";
+  $("landHint").textContent="Tu peux fermer cette page.";
+  return email||null;
+}
+async function landingSendCode(email){
+  if(!sb){$("landText").textContent=`Ton adresse ${email} est confirmée. Retourne dans l'appli Carnet de tirs, onglet « Équipe », et demande ton code.`;return}
+  const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:false}});
+  $("landText").innerHTML=error
+    ?`Ton adresse <b>${esc(email)}</b> est confirmée.<br>Retourne dans l'appli Carnet de tirs, onglet « Équipe », et touche « Recevoir le code ».`
+    :`Ton adresse <b>${esc(email)}</b> est confirmée.<br><br>📩 Ton <b>code de connexion</b> vient de partir par e-mail (regarde aussi dans les spams).<br><br>Ouvre l'appli <b>Carnet de tirs</b> → onglet « Équipe » → tape ton e-mail → <b>« J'ai déjà reçu un code »</b>.`;
+}
+
 /* ---------- Démarrage ---------- */
 function start(){
   bind();
@@ -1529,7 +1562,8 @@ function start(){
   S.mode="local";
   loadWorkspaceData();bindTeam();
   const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match","team"].includes(t0)?t0:"entry");updateStatus();
-  sbInit();
+  const landing=checkLanding();
+  sbInit().then(()=>{if(landing)landingSendCode(landing)});
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   if("serviceWorker" in navigator){
     // Plus de rechargement automatique : la nouvelle version s'applique au prochain lancement,
