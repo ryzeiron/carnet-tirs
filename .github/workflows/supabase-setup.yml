@@ -17,13 +17,15 @@ jobs:
       - name: Vérifier la clé
         run: |
           if [ -z "$TOKEN" ]; then echo "::error::Secret SUPABASE_ACCESS_TOKEN absent"; exit 1; fi
-      - name: Migration SQL (entraînement)
+      - name: Migrations SQL (supabase/migrations, dans l'ordre)
         run: |
-          jq -n --rawfile q supabase/migration-entrainement.sql '{query:$q}' > q.json
-          code=$(curl -sS -o out.txt -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
-            -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @q.json)
-          echo "SQL -> HTTP $code"; cat out.txt; echo
-          case "$code" in 2*) ;; *) exit 1;; esac
+          for f in supabase/migrations/*.sql; do
+            jq -n --rawfile q "$f" '{query:$q}' > q.json
+            code=$(curl -sS -o out.txt -w "%{http_code}" -X POST "https://api.supabase.com/v1/projects/$REF/database/query" \
+              -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @q.json)
+            echo "$f -> HTTP $code"; head -c 300 out.txt; echo
+            case "$code" in 2*) ;; *) exit 1;; esac
+          done
       - name: Réglages de connexion et modèles d'e-mail
         run: |
           jq -n \

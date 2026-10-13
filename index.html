@@ -299,6 +299,9 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 @media (max-width:860px){.trstats-grid{grid-template-columns:1fr}}
 #trTable tr[data-trp]{cursor:pointer}
 #trTable tr.sel td{background:var(--panel-2);font-weight:700}
+.suplist li{cursor:default}
+.suplist .meta{font-size:12px;color:var(--muted);display:block;margin-top:2px}
+.suplist .acts2{display:flex;gap:6px;flex-wrap:wrap}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -476,7 +479,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 20</span>
+      <span class="status" id="appVersion">Version 21</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -609,6 +612,12 @@ img{max-width:100%}
           <label class="ckline"><input type="checkbox" id="teamImport"> Copier dedans mes joueurs, matchs et actions actuels</label>
           <button class="btn primary" type="submit">Créer l'équipe</button>
         </form>
+      </div>
+
+      <div class="panel" id="supPanel" hidden>
+        <div class="panel-head"><h2>Administration · toutes les équipes</h2><button class="btn small" type="button" id="supRefresh">Actualiser</button></div>
+        <p class="hint">Tu es super-administrateur : tu vois toutes les équipes de l'appli, tu peux y entrer, gérer leur staff et les supprimer. Les espaces perso des utilisateurs restent privés.</p>
+        <ul class="wslist suplist" id="supList"></ul>
       </div>
 
       <div class="panel" id="memPanel" hidden>
@@ -1520,7 +1529,7 @@ function updateStatus(){
 /* ---------- ÉQUIPE & SYNCHRONISATION ---------- */
 const SB_URL="https://apcsdghdmzspovxdlmbv.supabase.co",SB_KEY="sb_publishable_OAt73IQCwvpDrIff_mE_Cg_eAJ-205M";
 const APP_URL="https://ryzeiron.github.io/carnet-tirs/";
-const PERSO_NAME="__perso__";let PERSO_ID=lsGet("hb-perso",""),justLoggedIn=false,sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
+const PERSO_NAME="__perso__";let IS_SUPER=lsGet("hb-super",false),SUP_TEAMS=[],supArm="";let PERSO_ID=lsGet("hb-perso",""),justLoggedIn=false,sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
 const ROLE_LABEL={admin:"Admin",analyste:"Analyste",lecteur:"Lecteur"};
 const stab=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k2)=>(o[k2]=x[k2],o),{}):x);
 function loadWorkspaceData(){
@@ -1644,7 +1653,7 @@ async function afterLogin(){
   try{await sb.rpc("claim_invites")}catch(e){}
   const ok=await loadTeams();
   if(ok)await ensurePerso();
-  const shared=TEAMS.filter(t=>!t.perso);
+  const shared=TEAMS.filter(t=>!t.perso&&!t.sup);
   if(PERSO_ID&&hasLocalData()){moveLocalInto(PERSO_ID);if(!WS){setWorkspace(PERSO_ID);toast("Tes données sont maintenant dans « Mon espace », synchronisé sur tous tes appareils",false)}else if(WS===PERSO_ID){loadWorkspaceData();render()}}
   if(WS&&ok&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine){const gone=WS;setWorkspace(PERSO_ID||"");purgeTeamLocal(gone);toast("Cette équipe a été supprimée par un admin.",false)}
   else if(!WS&&PERSO_ID){
@@ -1663,8 +1672,12 @@ async function loadTeams(){
   const rows=(data||[]).map(r=>({id:r.team_id,role:r.role,raw:(r.teams&&r.teams.name)||"Équipe",at:(r.teams&&r.teams.created_at)||""}));
   const persos=rows.filter(r=>r.raw===PERSO_NAME).sort((a,b)=>a.at.localeCompare(b.at));
   PERSO_ID=persos.length?persos[0].id:"";lsSet("hb-perso",PERSO_ID);
-  TEAMS=rows.filter(r=>r.raw!==PERSO_NAME||r.id===PERSO_ID).map(r=>({id:r.id,role:r.role,name:r.id===PERSO_ID?"Mon espace":r.raw,perso:r.id===PERSO_ID}))
-    .sort((a,b)=>(b.perso-a.perso)||a.name.localeCompare(b.name));
+  TEAMS=rows.filter(r=>r.raw!==PERSO_NAME||r.id===PERSO_ID).map(r=>({id:r.id,role:r.role,name:r.id===PERSO_ID?"Mon espace":r.raw,perso:r.id===PERSO_ID}));
+  try{const sr=await sb.rpc("is_super");IS_SUPER=!sr.error&&sr.data===true}catch(e){IS_SUPER=false}
+  lsSet("hb-super",IS_SUPER);SUP_TEAMS=[];
+  if(IS_SUPER){const {data:all}=await sb.rpc("admin_list_teams");SUP_TEAMS=all||[];
+    SUP_TEAMS.forEach(t=>{const mine=TEAMS.find(x=>x.id===t.id);if(mine){mine.role="admin"}else TEAMS.push({id:t.id,role:"admin",name:t.name,sup:true})})}
+  TEAMS.sort((a,b)=>(b.perso-a.perso)||a.name.localeCompare(b.name));
   lsSet("hb-teams",TEAMS);return true;
 }
 function setWorkspace(id,carry){
@@ -1706,6 +1719,13 @@ function renderTeam(){
   renderSyncInfo();
   $("newTeamForm").hidden=!on;$("syncNow").hidden=!(on&&WS);
   $("teamImport").closest("label").hidden=!!WS&&WS!==PERSO_ID;
+  // super-admin
+  $("supPanel").hidden=!(on&&IS_SUPER);
+  if(on&&IS_SUPER){
+    $("supList").innerHTML=SUP_TEAMS.length?SUP_TEAMS.map(t=>`<li><span class="nm"><b>👥 ${esc(t.name)}</b>${t.id===WS?" · <b>tu es ici</b>":""}<span class="meta">${t.members} membre(s) · ${t.items} élément(s) · créée le ${new Date(t.created_at).toLocaleDateString("fr-FR")}${t.admins?" · admin : "+esc(t.admins):""}</span></span>
+      <span class="acts2">${t.id===WS?"":`<button class="btn small primary" type="button" data-supgo="${esc(t.id)}">Entrer</button>`}<button class="btn small danger" type="button" data-supdel="${esc(t.id)}">${supArm===t.id?"Confirmer la suppression":"Supprimer"}</button></span></li>`).join("")
+      :`<li class="hint">Aucune équipe pour l'instant.</li>`;
+  }
   // staff
   const t=TEAMS.find(x=>x.id===WS);
   $("memPanel").hidden=!(on&&t&&!t.perso);
@@ -1723,6 +1743,14 @@ async function loadMembers(){
 function purgeTeamLocal(id){try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.endsWith("@"+id))ks.push(k)}ks.forEach(k=>localStorage.removeItem(k))}catch(e){}}
 function checkDelName(){const t=TEAMS.find(x=>x.id===WS);$("delTeamBtn").disabled=!t||$("delTeamName").value.trim().toLowerCase()!==t.name.trim().toLowerCase()}
 function bindTeam(){
+  $("supRefresh").onclick=async()=>{await loadTeams();renderTeam();toast("Liste actualisée",false)};
+  $("supList").addEventListener("click",async e=>{
+    const g=e.target.closest("[data-supgo]");if(g){enterTeam(g.dataset.supgo);return}
+    const d=e.target.closest("[data-supdel]");if(!d)return;const id=d.dataset.supdel,t=SUP_TEAMS.find(x=>x.id===id);
+    if(supArm!==id){supArm=id;renderTeam();setTimeout(()=>{if(supArm===id){supArm="";if(tab==="team")renderTeam()}},5000);return}
+    supArm="";const {error}=await sb.from("teams").delete().eq("id",id);
+    if(error){toast("Suppression impossible : "+error.message,false);return}
+    purgeTeamLocal(id);if(WS===id)setWorkspace(PERSO_ID||"");await loadTeams();renderTeam();toast(`Équipe « ${t?t.name:""} » supprimée`,false)});
   $("delTeamName").addEventListener("input",checkDelName);
   $("delTeamBtn").onclick=async()=>{
     const t=TEAMS.find(x=>x.id===WS);if(!t||t.role!=="admin"||$("delTeamBtn").disabled)return;
