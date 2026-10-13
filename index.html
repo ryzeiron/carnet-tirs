@@ -237,6 +237,16 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .danger-zone .btn.danger{border-color:var(--r-arret)}
 .danger-zone .btn.danger:not(:disabled){background:var(--r-arret);color:#fff}
 .danger-zone .btn:disabled{opacity:.45;cursor:not-allowed}
+.teambar{display:flex;align-items:center;gap:8px 12px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px 12px;margin:-6px 0 14px;font-size:14px}
+.teambar.inteam{border-color:var(--accent);box-shadow:inset 4px 0 0 var(--accent)}
+.teambar .tb-name{font-weight:700}
+.teambar .tb-sp{flex:1 1 auto}
+.wslist li{cursor:pointer;border-radius:8px;padding-inline:8px}
+.wslist li:hover{background:var(--panel-2)}
+.wslist li.cur{background:var(--panel-2);box-shadow:inset 3px 0 0 var(--accent)}
+.syncinfo{font-size:13px;color:var(--muted);background:var(--panel-2);border-radius:8px;padding:8px 10px;margin:10px 0;line-height:1.5}
+.syncinfo b{color:var(--ink)}
+.syncinfo .err{color:var(--r-arret)}
 .col4{display:flex;flex-direction:column;gap:14px;min-width:0}
 .chipwrap{display:flex;flex-wrap:wrap;gap:6px}
 .chip .rm{margin-left:6px;opacity:.6;font-weight:700}
@@ -337,10 +347,11 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 16</span>
+      <span class="status" id="appVersion">Version 17</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
+  <div class="teambar" id="teamBar" hidden></div>
 
   <!-- ================= SAISIE ================= -->
   <section id="viewEntry">
@@ -455,7 +466,10 @@ img{max-width:100%}
 
       <div class="panel" id="wsPanel">
         <div class="panel-head"><h2>Mes équipes</h2><button class="btn small" type="button" id="syncNow" hidden>Synchroniser</button></div>
+        <p class="hint" id="wsHelp">Touche une équipe pour y entrer : les matchs, joueurs et stats que tu vois sont alors ceux de l'équipe, partagés avec tout le staff.</p>
         <ul class="wslist" id="wsList"></ul>
+        <div class="syncinfo" id="syncInfo" hidden></div>
+        <button class="btn small" type="button" id="mergeLocal" hidden>Ajouter les données de cet appareil à l'équipe</button>
         <form id="newTeamForm" class="stack" hidden autocomplete="off">
           <div class="subhead">Créer une équipe</div>
           <label class="fld"><span class="lbl">Nom de l'équipe</span><input type="text" id="teamName" maxlength="80" placeholder="ex. Seniors Garçons" required></label>
@@ -928,6 +942,7 @@ function render(){
   if(S.cur&&!matchById(S.cur))S.cur="";
   $("matchSel").innerHTML=(S.matches.length?"":`<option value="">Crée d'abord un match →</option>`)+(S.matches.length&&!S.cur?`<option value="">Choisis le match…</option>`:"")+
     sortedMatches().map(m=>`<option value="${esc(m.id)}" ${m.id===S.cur?"selected":""}>${esc(matchLabel(m.id))}</option>`).join("");
+  renderTeamBar();
   if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="team")renderTeam();else renderAnalysis();
 }
 function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry";
@@ -1357,7 +1372,7 @@ function updateStatus(){
 /* ---------- ÉQUIPE & SYNCHRONISATION ---------- */
 const SB_URL="https://apcsdghdmzspovxdlmbv.supabase.co",SB_KEY="sb_publishable_OAt73IQCwvpDrIff_mE_Cg_eAJ-205M";
 const APP_URL="https://ryzeiron.github.io/carnet-tirs/";
-let sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
+let justLoggedIn=false,sbFailed=false,sb=null,session=null,ROLE=null,TEAMS=lsGet("hb-teams",[]),SY={},CURSOR="",chan=null,syncTimer=null,pushing=false,pushAgain=false,pullTimer=null,lastErr="",pendingN=0,loginEmail="";
 const ROLE_LABEL={admin:"Admin",analyste:"Analyste",lecteur:"Lecteur"};
 const stab=v=>JSON.stringify(v,(k,x)=>x&&typeof x==="object"&&!Array.isArray(x)?Object.keys(x).sort().reduce((o,k2)=>(o[k2]=x[k2],o),{}):x);
 function loadWorkspaceData(){
@@ -1375,11 +1390,17 @@ function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?t.name:"Équipe
   if(!session)return setSync("warn",`☁ ${nm} · connecte-toi dans « Équipe »`);
   if(lastErr)return setSync("err",`☁ ${nm} · ${navigator.onLine?"serveur injoignable":"hors ligne"}${pendingN?` · ${pendingN} en attente`:""}`);
   setSync(pendingN?"warn":"ok",`☁ ${nm} · ${pendingN?pendingN+" en attente":"synchronisé"}`)}
+const _syncLabel=syncLabel;syncLabel=function(){_syncLabel();renderTeamBar();if(tab==="team")renderSyncInfo()};
 function scheduleSync(){if(!WS||!sb||!session)return;clearTimeout(syncTimer);syncTimer=setTimeout(pushNow,700)}
 function dirtyRows(){const rows=[],pend={},loc=localItems();
   loc.forEach((obj,k)=>{const h=stab(obj);if(SY[k]!==h){const i=k.indexOf(":");rows.push({team_id:WS,kind:k.slice(0,i),id:k.slice(i+1),data:obj,deleted:false});pend[k]=h}});
   Object.keys(SY).forEach(k=>{if(!loc.has(k)){const i=k.indexOf(":");rows.push({team_id:WS,kind:k.slice(0,i),id:k.slice(i+1),data:null,deleted:true});pend[k]=null}});
   return {rows,pend}}
+let lastPushAt=0,lastPullAt=0;
+function renderSyncInfo(){const el=$("syncInfo");if(!el)return;const t=TEAMS.find(x=>x.id===WS);
+  if(!WS||!t){el.hidden=true;return}el.hidden=false;
+  const hm=ts=>ts?new Date(ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"jamais";
+  el.innerHTML=`Dans l'équipe sur cet appareil : <b>${S.players.length}</b> joueur(s), <b>${S.matches.length}</b> match(s), <b>${S.shots.length}</b> action(s).<br>Dernier envoi : <b>${hm(lastPushAt)}</b> · Dernière réception : <b>${hm(lastPullAt)}</b>${pendingN?` · <b>${pendingN}</b> en attente`:""}${lastErr?`<br><span class="err">Problème : ${esc(lastErr)}</span>`:""}`}
 async function pushNow(){
   if(!WS||!sb||!session)return;
   if(ROLE==="lecteur"){pendingN=0;syncLabel();return}
@@ -1393,7 +1414,7 @@ async function pushNow(){
       chunk.forEach(r=>{const k=r.kind+":"+r.id;if(pend[k]===null)delete SY[k];else SY[k]=pend[k]});
       lsSet(K("hb-synced"),SY);pendingN=Math.max(0,pendingN-chunk.length);
     }
-    lastErr="";
+    lastErr="";lastPushAt=Date.now();
   }catch(e){lastErr=(e&&e.message)||"erreur";setTimeout(scheduleSync,15000)}
   finally{pushing=false;syncLabel();if(pushAgain){pushAgain=false;scheduleSync()}}
 }
@@ -1426,7 +1447,7 @@ async function pullNow(){
     }
     lsSet(K("hb-cursor"),CURSOR);lsSet(K("hb-synced"),SY);
     if(changed)afterApply();
-    lastErr="";
+    lastErr="";lastPullAt=Date.now();
   }catch(e){lastErr=(e&&e.message)||"erreur"}
   syncLabel();
 }
@@ -1454,7 +1475,9 @@ async function afterLogin(){
   try{await sb.rpc("claim_invites")}catch(e){}
   await loadTeams();
   if(WS&&!TEAMS.some(t=>t.id===WS)&&navigator.onLine&&!lastErr){const gone=WS;setWorkspace("");purgeTeamLocal(gone);toast("Cette équipe a été supprimée par un admin.",false)}
+  else if(!WS&&TEAMS.length&&(justLoggedIn||(!S.matches.length&&!S.shots.length))){enterTeam(TEAMS[0].id)}
   else{const t=TEAMS.find(x=>x.id===WS);ROLE=WS?(t?t.role:ROLE):null;document.body.classList.toggle("ro",ROLE==="lecteur");startSync()}
+  justLoggedIn=false;renderTeamBar();
   if(tab==="team")renderTeam();
 }
 async function loadTeams(){
@@ -1474,6 +1497,19 @@ function setWorkspace(id,carry){
   if(WS)startSync();
   syncLabel();updateStatus();setTab(ROLE==="lecteur"&&tab==="entry"?"ana":tab);
 }
+function renderTeamBar(){
+  const bar=$("teamBar");if(!bar)return;
+  const t=TEAMS.find(x=>x.id===WS);
+  if(!WS&&!(session&&TEAMS.length)){bar.hidden=true;return}
+  bar.hidden=false;bar.classList.toggle("inteam",!!WS);
+  if(WS){
+    const st=!session?"connecte-toi pour synchroniser":lastErr?(navigator.onLine?"serveur injoignable":"hors ligne"):pendingN?pendingN+" en attente d'envoi":"synchronisé";
+    bar.innerHTML=`<span>👥 Équipe <span class="tb-name">${esc(t?t.name:"…")}</span>${t?` · ${ROLE_LABEL[t.role]}`:""}</span><span class="status syncst ${lastErr?"err":pendingN?"warn":"ok"}">☁ ${st}</span><span class="tb-sp"></span><button class="btn small" type="button" data-tb="team">Changer d'équipe</button>`;
+  }else{
+    bar.innerHTML=`<span>📱 Tu es sur <b>Cet appareil</b> (données non partagées)</span><span class="tb-sp"></span>`+TEAMS.map(x=>`<button class="btn small primary" type="button" data-tbws="${esc(x.id)}">Entrer dans « ${esc(x.name)} »</button>`).join("");
+  }
+}
+function enterTeam(id){const t=TEAMS.find(x=>x.id===id);setWorkspace(id);setTab(ROLE==="lecteur"?"ana":"match");window.scrollTo(0,0);toast(id?`Tu es dans l'équipe « ${t?t.name:""} »`:"Données de cet appareil",false)}
 function renderTeam(){
   const on=!!session;
   $("accOut").hidden=on;$("accIn").hidden=!on;if(on)$("accEmail").textContent=session.user.email;
@@ -1482,7 +1518,10 @@ function renderTeam(){
   else if(/connexion au serveur/i.test($("accMsg").textContent))$("accMsg").textContent="";
   // espaces
   const items=[{id:"",name:"Cet appareil (sans équipe)",role:null},...TEAMS];
-  $("wsList").innerHTML=items.map(t=>`<li class="${t.id===WS?"cur":""}"><span class="nm"><b>${esc(t.name)}</b>${t.id===WS?" · en cours":""}</span>${t.role?`<span class="rolep">${ROLE_LABEL[t.role]}</span>`:""}${t.id===WS?"":`<button class="btn small" type="button" data-ws="${esc(t.id)}">Ouvrir</button>`}</li>`).join("");
+  $("wsList").innerHTML=items.map(t=>`<li class="${t.id===WS?"cur":""}" data-ws="${esc(t.id)}"><span class="nm"><b>${t.id?"👥 ":"📱 "}${esc(t.name)}</b>${t.id===WS?" · <b>tu es ici</b>":""}</span>${t.role?`<span class="rolep">${ROLE_LABEL[t.role]}</span>`:""}${t.id===WS?"":`<button class="btn small primary" type="button">Entrer</button>`}</li>`).join("");
+  $("wsHelp").hidden=!TEAMS.length;
+  const tt=TEAMS.find(x=>x.id===WS);$("mergeLocal").hidden=!(on&&tt&&tt.role!=="lecteur");
+  renderSyncInfo();
   $("newTeamForm").hidden=!on;$("syncNow").hidden=!(on&&WS);
   $("teamImport").closest("label").hidden=!!WS;
   // staff
@@ -1526,15 +1565,24 @@ function bindTeam(){
     const token=$("loginCode").value.replace(/\s/g,"");
     const {error}=await sb.auth.verifyOtp({email:loginEmail,token,type:"email"});
     if(error){$("accMsg").textContent="Code incorrect ou expiré. Vérifie le dernier e-mail reçu.";return}
+    justLoggedIn=true;
     $("accMsg").textContent="";$("loginForm").hidden=false;$("codeForm").hidden=true;$("loginCode").value="";toast("Connecté",false)});
   $("logoutBtn").onclick=async()=>{await sb.auth.signOut();session=null;setWorkspace("");TEAMS=[];lsSet("hb-teams",[]);renderTeam()};
-  $("wsList").addEventListener("click",e=>{const b=e.target.closest("[data-ws]");if(!b)return;setWorkspace(b.dataset.ws);renderTeam();toast(b.dataset.ws?"Équipe ouverte":"Données de cet appareil",false)});
+  $("wsList").addEventListener("click",e=>{const b=e.target.closest("[data-ws]");if(!b||b.dataset.ws===WS)return;enterTeam(b.dataset.ws)});
+  $("teamBar").addEventListener("click",e=>{const a=e.target.closest("[data-tb]");if(a){setTab("team");window.scrollTo(0,0);return}const b=e.target.closest("[data-tbws]");if(b)enterTeam(b.dataset.tbws)});
+  $("mergeLocal").onclick=()=>{
+    const d=lsGet("hb-data",{players:[],shots:[]}),ms=lsGet("hb-matches",[]),cf=lsGet("hb-cfg",{plays:[],styles:[]});
+    const add=(arr,src)=>{const ids=new Set(arr.map(x=>x.id));let n=0;(src||[]).forEach(x=>{if(x&&x.id&&!ids.has(x.id)){arr.push(x);n++}});return n};
+    const np=add(S.players,d.players),nm=add(S.matches,ms),ns=add(S.shots,d.shots);
+    S.cfg={plays:[...new Set([...(S.cfg.plays||[]),...(cf.plays||[])])],styles:[...new Set([...(S.cfg.styles||[]),...(cf.styles||[])])]};
+    lsSet(K("hb-cfg"),S.cfg);saveLocal();render();
+    toast(np+nm+ns?`Ajouté à l'équipe : ${np} joueur(s), ${nm} match(s), ${ns} action(s)`:"Rien de nouveau à ajouter : tout est déjà dans l'équipe.",false)};
   $("newTeamForm").addEventListener("submit",async e=>{e.preventDefault();
     const name=$("teamName").value.trim();if(!name)return;
     const {data,error}=await sb.rpc("create_team",{team_name:name});
     if(error){toast("Création impossible : "+error.message,false);return}
     TEAMS.push({id:data,name,role:"admin"});lsSet("hb-teams",TEAMS);
-    setWorkspace(data,$("teamImport").checked&&!WS);$("teamName").value="";renderTeam();toast(`Équipe « ${name} » créée`,false)});
+    setWorkspace(data,$("teamImport").checked&&!WS);$("teamName").value="";setTab("match");window.scrollTo(0,0);toast(`Équipe « ${name} » créée : tu es dedans`,false)});
   $("inviteForm").addEventListener("submit",async e=>{e.preventDefault();
     const email=$("invEmail").value.trim().toLowerCase(),role=$("invRole").value;
     const {error}=await sb.from("members").insert({team_id:WS,email,role});
