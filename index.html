@@ -483,6 +483,21 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 @keyframes pulse{0%{r:.35;opacity:1}100%{r:1;opacity:0}}
 .pulse{animation:pulse 1.2s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
+
+#splash{position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 90% at 50% 30%,#1a3040 0%,#11202a 60%,#0b161d 100%);overflow:hidden;cursor:pointer}
+#splash[hidden]{display:none}
+.sp-stage{position:absolute;inset:0}
+.sp-goal{position:absolute;left:50%;top:40%;width:min(86vw,560px);transform:translate(-50%,-50%);overflow:visible}
+.sp-net{transform-box:fill-box;transform-origin:50% 50%}
+.sp-ball{position:absolute;left:0;top:0;width:var(--b,120px);height:var(--b,120px);will-change:transform,filter;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
+.sp-ball svg{width:100%;height:100%;display:block;overflow:visible}
+.sp-ghost{opacity:.18;filter:blur(2px)}
+.sp-shadow{position:absolute;left:0;top:0;width:var(--b,120px);height:calc(var(--b,120px)*.22);border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0));opacity:0}
+.sp-flash{position:absolute;left:0;top:0;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(224,87,29,.5) 45%,rgba(224,87,29,0));opacity:0;pointer-events:none}
+.sp-title{position:absolute;left:0;right:0;bottom:16%;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;color:#fff;text-align:center}
+.sp-title img{width:64px;height:64px;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.sp-title b{font-family:var(--display);font-size:38px;letter-spacing:.04em;text-transform:uppercase;line-height:1}
+.sp-title span{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#ff8a52;font-weight:700}
 </style><style>
 html{-webkit-text-size-adjust:100%}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -496,6 +511,66 @@ img{max-width:100%}
 </style>
 </head>
 <body>
+<div id="splash" aria-hidden="true" hidden>
+  <div class="sp-stage" id="spStage">
+    <svg class="sp-goal" id="spGoal" viewBox="0 0 320 220">
+      <defs><linearGradient id="spFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3140"/><stop offset="1" stop-color="#11202a" stop-opacity="0"/></linearGradient></defs>
+      <path d="M-200 200 L520 200 L620 330 L-300 330Z" fill="url(#spFloor)"/>
+      <g id="spNet" class="sp-net" stroke="#ffffff" stroke-width="1.2" opacity=".35" fill="none">
+        <path d="M70 60 H250 M70 85 H250 M70 110 H250 M70 135 H250 M70 160 H250 M70 185 H250"/>
+        <path d="M70 60 V200 M100 60 V200 M130 60 V200 M160 60 V200 M190 60 V200 M220 60 V200 M250 60 V200"/>
+        <path d="M40 30 L70 60 M280 30 L250 60 M40 200 L70 200 M280 200 L250 200 M40 115 L70 130 M280 115 L250 130"/>
+      </g>
+      <path d="M40 200 V30 H280 V200" fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
+      <path d="M40 30 H280" stroke="#e0571d" stroke-width="9" stroke-dasharray="24 24"/>
+      <path d="M40 30 V200 M280 30 V200" stroke="#e0571d" stroke-width="9" stroke-dasharray="24 24"/>
+    </svg>
+    <div class="sp-shadow" id="spShadow"></div>
+    <div class="sp-ball" id="spBall"><svg viewBox="-130 -130 260 260"><g id="spBallG"><circle r="124" fill="#e0571d"/><clipPath id="spcb"><circle r="124"/></clipPath>
+<g clip-path="url(#spcb)" fill="none" stroke="#11202a" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"><path d="M0.0,-44.6 L38.7,-22.3 L38.7,22.3 L0.0,44.6 L-38.7,22.3 L-38.7,-22.3Z" fill="#11202a" fill-opacity=".12"/><path d="M0.0,-44.6 Q-11.2,-84.8 -24.8,-130.2"/><path d="M38.7,-22.3 Q67.9,-52.1 100.4,-86.6"/><path d="M38.7,22.3 Q79.0,32.7 125.2,43.6"/><path d="M0.0,44.6 Q11.2,84.8 24.8,130.2"/><path d="M-38.7,22.3 Q-67.9,52.1 -100.4,86.6"/><path d="M-38.7,-22.3 Q-79.0,-32.7 -125.2,-43.6"/></g>
+<circle r="124" fill="none" stroke="#11202a" stroke-width="12.1"/><path d="M-76.9,-69.4 A99.2,99.2 0 0 1 -19.8,-99.2" stroke="#fff" stroke-width="12.1" stroke-linecap="round" fill="none" opacity=".5"/></g></svg></div>
+    <div class="sp-flash" id="spFlash"></div>
+    <div class="sp-title" id="spTitle"><img src="icon-192.png" alt="" width="64" height="64"><b>Carnet de tirs</b><span>Analyse handball</span></div>
+  </div>
+</div>
+<script>
+/* Animation d'ouverture : le ballon file dans la lucarne (une fois par lancement de l'appli) */
+(function(){
+  const sp=document.getElementById("splash");if(!sp)return;
+  let seen=false;try{seen=sessionStorage.getItem("hb-splash")==="1";sessionStorage.setItem("hb-splash","1")}catch(e){}
+  const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if(seen||reduce||!sp.animate||/[?&](code|token_hash|type)=/.test(location.search+location.hash)){sp.remove();return}
+  sp.hidden=false;
+  let done=false;const end=()=>{if(done)return;done=true;sp.animate([{opacity:1},{opacity:0}],{duration:350,easing:"ease-in",fill:"forwards"}).onfinish=()=>sp.remove()};
+  sp.addEventListener("click",end);
+  requestAnimationFrame(()=>{
+    const vw=innerWidth,vh=innerHeight,ball=document.getElementById("spBall"),goal=document.getElementById("spGoal"),net=document.getElementById("spNet"),
+      sh=document.getElementById("spShadow"),fl=document.getElementById("spFlash"),title=document.getElementById("spTitle"),st=document.getElementById("spStage");
+    const B=Math.round(Math.min(vw*.3,170));sp.style.setProperty("--b",B+"px");
+    const r=goal.getBoundingClientRect(),gx=r.left+r.width*250/320,gy=r.top+r.height*62/220,floor=r.top+r.height*200/220,sEnd=(r.width*.13)/B;
+    const P=[[vw*-.12,vh*1.02,2.8,0],[vw*.18,vh*.62,1.9,240],[vw*.42,vh*.30,1.05,520],[gx,gy,sEnd,800]];
+    const tf=([x,y,s,a])=>`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${s.toFixed(3)}) rotate(${a}deg)`;
+    const kf=P.map((p,i)=>({transform:tf(p),offset:[0,.32,.66,1][i]}));
+    kf[0].filter="blur(4px) drop-shadow(0 6px 10px rgba(0,0,0,.45))";kf[3].filter="blur(0px) drop-shadow(0 3px 4px rgba(0,0,0,.4))";
+    const D=950,DL=250,ease="cubic-bezier(.35,.05,.55,1)";
+    [3,2,1].forEach(k=>{const g=ball.cloneNode(true);g.removeAttribute("id");g.classList.add("sp-ghost");st.insertBefore(g,ball);
+      g.animate(kf,{duration:D,delay:DL+k*45,easing:ease,fill:"both"}).onfinish=()=>g.remove()});
+    const fly=ball.animate(kf,{duration:D,delay:DL,easing:ease,fill:"both"});
+    sh.animate([{transform:`translate(${vw*-.12-B/2}px,${vh*.98}px) scale(2.4,2.4)`,opacity:.0},{transform:`translate(${vw*.3-B/2}px,${floor+20}px) scale(1.2,1.2)`,opacity:.5,offset:.5},{transform:`translate(${gx-B/2}px,${floor}px) scale(${sEnd*1.4},${sEnd*1.4})`,opacity:.35}],{duration:D,delay:DL,easing:ease,fill:"both"});
+    fly.onfinish=()=>{
+      // le ballon s'écrase dans le filet puis retombe
+      ball.animate([{transform:tf([gx,gy,sEnd,800])},{transform:tf([gx+r.width*.02,gy-r.height*.02,sEnd*.82,860])},{transform:tf([gx-r.width*.03,floor-r.height*.12,sEnd*.86,980])}],{duration:650,easing:"cubic-bezier(.2,.7,.4,1)",fill:"forwards"});
+      net.animate([{transform:"none"},{transform:"translate(5px,-7px) scale(1.06)"},{transform:"translate(-2px,2px) scale(.99)"},{transform:"none"}],{duration:600,easing:"ease-out"});
+      fl.style.left=gx+"px";fl.style.top=gy+"px";
+      fl.animate([{opacity:0,transform:"scale(.3)"},{opacity:.9,transform:"scale(1)"},{opacity:0,transform:"scale(1.8)"}],{duration:520,easing:"ease-out"});
+      st.animate([{transform:"translate(0,0)"},{transform:"translate(-5px,3px)"},{transform:"translate(4px,-2px)"},{transform:"translate(0,0)"}],{duration:260});
+      title.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:450,delay:250,easing:"ease-out",fill:"forwards"});
+      setTimeout(end,1350);
+    };
+    setTimeout(end,4500);
+  });
+})();
+</script>
 
 
 <section class="screen" id="viewLogin" hidden>
@@ -602,7 +677,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 32</span>
+      <span class="status" id="appVersion">Version 33</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
