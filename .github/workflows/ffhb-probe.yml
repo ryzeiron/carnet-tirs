@@ -1,0 +1,18 @@
+name: ffhb-probe
+on:
+  workflow_dispatch:
+  push:
+    paths: [".github/workflows/ffhb-probe.yml"]
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          mkdir out; cd out
+          UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/128 Safari/537.36"
+          curl -sSL -A "$UA" -o poule.html "https://www.ffhandball.fr/competitions/saison-2023-2024-19/regional/poule-des-as-masculin-24919/poule-144506/" || true
+          curl -sSL -A "$UA" -o saison.html "https://www.ffhandball.fr/competitions/saison-2026-2027-22/" || true
+          curl -sSL -A "$UA" -o wpjson.json "https://www.ffhandball.fr/wp-json/" || true
+          ls -la
+      - uses: actions/upload-artifact@v4
+        with: { name: ffhb, path: out }
