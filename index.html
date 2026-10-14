@@ -279,6 +279,24 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .syncinfo .err{color:var(--r-arret)}
 .tbsel{font-size:13px;padding:5px 8px}
 .screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg)}
+.pickscreen{align-items:flex-start}
+.pk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pk-sec{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 2px -4px}
+.pkf .chip{padding:7px 13px;font-size:14px}
+.hubcard.mpick{min-height:130px;padding:18px}
+.hubcard.mpick b{font-size:26px;overflow-wrap:anywhere}
+.hubcard.mpick em{font-style:normal;font-weight:700;color:var(--ink)}
+.hubcard.mpick.cur{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent) inset}
+.hubcard.mpick.today .hc-n{color:var(--bg);background:var(--accent);padding:2px 8px;border-radius:999px}
+.hubcard.newm{border-style:dashed}
+.pk-more{align-self:center}
+.pk-foot{text-align:center}
+.pkgrid{grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:8px}
+.pkgrid .pcheck{min-height:70px}
+.pkgrid .pcheck .jn{font-size:24px}
+.pk-squad .warn{color:#d23b3b}
+.pk-actions{position:sticky;bottom:0;display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:var(--bg)}
+.pk-actions .btn.primary{flex:1 1 220px;font-size:17px;padding:12px}
 .lc-kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .login-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;padding:26px 22px}
 .lc-brand h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1;margin:6px 0 8px;text-transform:uppercase}
@@ -450,6 +468,14 @@ img{max-width:100%}
   </div>
 </section>
 
+<section class="screen pickscreen" id="viewPick" hidden>
+  <div class="hub">
+    <div class="pk-head"><button class="btn small" type="button" id="pkHome">← Accueil</button><span class="hint" id="pkSpace"></span></div>
+    <div class="hub-top"><span class="lc-kicker" id="pkKicker">Match</span><h1 id="pkTitle">Quel match ?</h1><p class="hint" id="pkSub"></p></div>
+    <div id="pkBody"></div>
+  </div>
+</section>
+
 <section id="viewTrain" hidden>
   <div class="wrap">
     <header class="trhead">
@@ -511,7 +537,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 23</span>
+      <span class="status" id="appVersion">Version 24</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1164,6 +1190,7 @@ function render(){
   renderTeamBar();
   if(MODE==="train"){renderTrain();return}
   if(MODE==="hub"){renderHub();return}
+  if(MODE==="pick"){renderPick();return}
   if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="roster")renderRoster();else if(tab==="team")renderTeam();else renderAnalysis();
 }
 function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewRoster").hidden=t!=="roster";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry"||MODE!=="app";
@@ -1330,7 +1357,7 @@ function bindMatches(){
     const data={adv,date:$("mDate").value||today(),time:$("mTime").value||"",grp:$("mGrp").value||"",lieu:mLieu,comp:$("mComp").value.trim().slice(0,40),squad:roster("nous").map(p=>p.id).filter(id=>sqSel.has(id))};
     if(editId){const m=matchById(editId);Object.assign(m,data);toast("Match modifié",false)}
     else{const m={id:"m"+rid(),...data,t:Date.now()};S.matches.push(m);S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);toast(`Match créé : ${matchLabel(m.id)}`,false)}
-    saveLocal();$("matchSheet").hidden=true;render()});
+    saveLocal();$("matchSheet").hidden=true;if(MODE==="pick"&&!editId){showMode("app");setTab("entry")}else render()});
   $("pnlPlayer").addEventListener("click",e=>{if(e.target.closest("#editSquad")&&S.cur)openMatchForm(S.cur)});
   $("mGrp").addEventListener("change",e=>{const gp=grpPlayers(e.target.value);if(gp.length){sqSel=new Set(gp);renderSquad()}});
   $("sqGrpBtns").addEventListener("click",e=>{const b=e.target.closest("[data-sqg]");if(!b)return;sqSel=new Set(grpPlayers(b.dataset.sqg));renderSquad()});
@@ -1493,6 +1520,71 @@ function bindRoster(){
       const ff={url:r.url,team:t.id,teamName:t.name,title:r.title+(r.sub?" · "+r.sub:""),poule:r.poule};
       G.pick=ff;G.ff=null;renderFF(true);
       g.ff=ff;G.setup=false;saveCfg();ffSync(g).finally(()=>{G.pick=null;if(tab==="roster")renderRoster()})}});
+}
+
+/* ---------- CHOIX DU MATCH puis DES JOUEURS (avant la saisie) ---------- */
+const PK={step:"match",id:"",sel:new Set(),grp:"",moreUp:false,morePast:false};
+function openPick(){PK.step="match";PK.id="";PK.moreUp=false;PK.morePast=false;showMode("pick")}
+function pickCard(m){
+  const g=m.grp?grpById(m.grp):null,sc=matchScore(m.id),isToday=m.date===today(),cur=m.id===S.cur;
+  const when=isToday?"Aujourd'hui":m.date?fmtDate(m.date):"Date à venir";
+  const meta=[m.lieu==="ext"?"Extérieur":"Domicile",m.salle,g?g.name:m.comp].filter(Boolean).map(esc).join(" · ");
+  const res=sc.any?`Saisie : ${sc.n}-${sc.a}`:m.fs?`Score officiel ${esc(m.fs[0])}-${esc(m.fs[1])}`:"";
+  return `<button class="hubcard mpick${cur?" cur":""}${isToday?" today":""}" type="button" data-pkm="${esc(m.id)}"><span class="hc-n">${esc(when)}${m.time?" · "+esc(m.time):""}${cur?" · en cours":""}</span><b>${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</b><span>${meta}${res?`<br><em>${res}</em>`:""}</span></button>`;
+}
+function renderPick(){
+  const body=$("pkBody");if(!body)return;
+  const t=TEAMS.find(x=>x.id===WS);$("pkSpace").textContent=t?(t.perso?"👤 Mon espace":"👥 "+t.name):"📱 Cet appareil";
+  if(PK.step==="squad"&&!matchById(PK.id))PK.step="match";
+  if(PK.step==="match"){
+    $("pkKicker").textContent="Match · étape 1 sur 2";$("pkTitle").textContent="Quel match ?";$("pkSub").textContent="Touche le match dans lequel tu vas faire la saisie.";
+    const gs=groups();if(PK.grp&&!grpById(PK.grp))PK.grp="";
+    const ok=m=>!PK.grp||m.grp===PK.grp;
+    const up=upcomingMatches().filter(ok),past=sortedMatches().filter(m=>!isUpcoming(m)&&ok(m));
+    const curM=matchById(S.cur);
+    const upS=PK.moreUp?up:up.slice(0,6),pastS=PK.morePast?past:past.slice(0,3);
+    body.innerHTML=(gs.length?`<div class="chipwrap pkf">${[["","Toutes les catégories"],...gs.map(g=>[g.id,g.name])].map(([id,n])=>`<button type="button" class="chip" data-pkg="${esc(id)}" aria-pressed="${PK.grp===id}">${esc(n)}</button>`).join("")}</div>`:"")+
+      (curM&&ok(curM)&&!upS.includes(curM)&&!pastS.includes(curM)?`<div class="pk-sec">Match en cours</div><div class="hub-cards">${pickCard(curM)}</div>`:"")+
+      `<div class="pk-sec">À venir${up.length?" · "+up.length:""}</div><div class="hub-cards"><button class="hubcard mpick newm" type="button" data-pknew><span class="hc-n">Nouveau</span><b>+ Créer un match</b><span>Amical, coupe, tournoi… ou un match absent du calendrier</span></button>${upS.map(pickCard).join("")}</div>`+
+      (up.length>upS.length?`<button class="btn small pk-more" type="button" data-pkmore="up">Voir les ${up.length-upS.length} autres matchs à venir</button>`:"")+
+      (past.length?`<div class="pk-sec">Déjà joués · ${past.length}</div><div class="hub-cards">${pastS.map(pickCard).join("")}</div>`+(past.length>pastS.length?`<button class="btn small pk-more" type="button" data-pkmore="past">Voir les ${past.length-pastS.length} autres matchs joués</button>`:""):"")+
+      `<div class="pk-foot"><button type="button" class="linkbtn" data-pkall>Voir tous les matchs, les stats et les exports</button></div>`;
+    return}
+  const m=matchById(PK.id),g=m.grp?grpById(m.grp):null;
+  $("pkKicker").textContent="Match · étape 2 sur 2";$("pkTitle").textContent="Qui joue ?";
+  $("pkSub").textContent=`${m.lieu==="ext"?"à":"vs"} ${m.adv} · ${m.date?fmtDate(m.date):"date à venir"}${m.time?" · "+m.time:""}${g?" · "+g.name:""}`;
+  const all=roster("nous"),n=PK.sel.size,last=lastSquad();
+  body.innerHTML=`<div class="panel pk-squad">
+      <div class="panel-head"><h2>Joueurs pris <span class="${n>16?"warn":""}">· ${n} sélectionné${n>1?"s":""}${n>16?" (max. 16 sur une feuille de match)":""}</span></h2></div>
+      <div class="sqtools"><button type="button" class="btn small" data-pks="all">Tous</button><button type="button" class="btn small" data-pks="none">Aucun</button>${last?`<button type="button" class="btn small" data-pks="last">Comme le dernier match</button>`:""}<span class="sqgrp">${grpButtons("pksg")}</span></div>
+      ${all.length?`<div class="sqgrid pkgrid">${all.map(p=>`<button type="button" class="pcheck" data-pkp="${esc(p.id)}" aria-pressed="${PK.sel.has(p.id)}"><span class="jn">${p.num??"–"}</span><span class="nm">${esc(p.name)}${isGK(p)?" (GB)":""}</span></button>`).join("")}</div>`
+        :`<p class="hint">Aucun joueur pour l'instant. Ajoute-les dans <button type="button" class="linkbtn" data-pkros>Effectif</button>.</p>`}
+    </div>
+    <div class="pk-actions"><button class="btn" type="button" data-pkback>← Changer de match</button><button class="btn primary" type="button" data-pkgo ${all.length&&!n?"disabled":""}>Commencer la saisie →</button></div>`;
+}
+function pickMatch(id){
+  const m=matchById(id);if(!m)return;PK.id=id;PK.step="squad";
+  const sq=squadOf(m),gp=m.grp?grpPlayers(m.grp):[];
+  PK.sel=new Set(sq&&sq.length?sq:gp.length?gp:(lastSquad()||S.players.map(p=>p.id)));
+  renderPick();window.scrollTo(0,0);
+}
+function bindPick(){
+  $("pkHome").onclick=()=>showMode("hub");
+  $("pkBody").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+    if(d.pkm){if(ROLE==="lecteur"){A.match=d.pkm;showMode("app");setTab("ana");return}pickMatch(d.pkm);return}
+    if("pknew" in d){openMatchForm();return}
+    if("pkg" in d){PK.grp=d.pkg;renderPick();return}
+    if(d.pkmore){if(d.pkmore==="up")PK.moreUp=true;else PK.morePast=true;renderPick();return}
+    if("pkall" in d){showMode("app");setTab("match");return}
+    if("pkros" in d){showMode("app");setTab("roster");return}
+    if(d.pkp){PK.sel.has(d.pkp)?PK.sel.delete(d.pkp):PK.sel.add(d.pkp);renderPick();return}
+    if(d.pks){PK.sel=new Set(d.pks==="all"?S.players.map(p=>p.id):d.pks==="none"?[]:(lastSquad()||[]));renderPick();return}
+    if(d.pksg){PK.sel=new Set(grpPlayers(d.pksg));renderPick();return}
+    if("pkback" in d){PK.step="match";renderPick();window.scrollTo(0,0);return}
+    if("pkgo" in d){const m=matchById(PK.id);if(!m)return;
+      if(S.players.length){m.squad=roster("nous").map(p=>p.id).filter(id=>PK.sel.has(id))}
+      S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);E=blankEntry();saveLocal();showMode("app");setTab("entry");toast(`C'est parti : ${matchLabel(m.id)}`,false)}
+  });
 }
 
 /* ---------- Interactions ---------- */
@@ -2067,10 +2159,10 @@ async function landingSendCode(email){
 let MODE="app";
 function showMode(m){
   MODE=m;lsSet("hb-mode",m==="login"?"hub":m);
-  $("viewLogin").hidden=m!=="login";$("viewHub").hidden=m!=="hub";$("viewTrain").hidden=m!=="train";$("appWrap").hidden=m!=="app";
+  $("viewLogin").hidden=m!=="login";$("viewHub").hidden=m!=="hub";$("viewPick").hidden=m!=="pick";$("viewTrain").hidden=m!=="train";$("appWrap").hidden=m!=="app";
   $("savebar").hidden=!(m==="app"&&tab==="entry");
   document.body.dataset.mode=m;window.scrollTo(0,0);
-  if(m==="hub")renderHub();else if(m==="train")renderTrain();else if(m==="login")lcSet(lcState||"login");else render();
+  if(m==="hub")renderHub();else if(m==="pick")renderPick();else if(m==="train")renderTrain();else if(m==="login")lcSet(lcState||"login");else render();
 }
 function renderHub(){
   const on=!!session;
@@ -2170,6 +2262,7 @@ function bindNav(){
   $("hubSpace").addEventListener("change",e=>{setWorkspace(e.target.value);renderHub()});
   document.querySelector(".hub-cards").addEventListener("click",e=>{const c=e.target.closest("[data-go]");if(!c)return;const g=c.dataset.go;
     if(g==="train"){showMode("train");return}
+    if(g==="match"&&ROLE!=="lecteur"){openPick();return}
     showMode("app");if(g==="team")setTab("team");else if(g==="roster")setTab("roster");else setTab(ROLE==="lecteur"?"ana":(S.cur&&matchById(S.cur)?"entry":"match"))});
   $("homeBtn").onclick=()=>showMode("hub");$("trHome").onclick=()=>showMode("hub");
   $("pwForm").addEventListener("submit",async e=>{e.preventDefault();const pw=$("pwNew").value;if(pw.length<6){toast("Mot de passe trop court : 6 caractères minimum",false);return}
@@ -2326,7 +2419,7 @@ function start(){
   bind();
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
-  bindMatches();bindClock();bindRoster();
+  bindMatches();bindClock();bindRoster();bindPick();
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
   S.mode="local";
   loadWorkspaceData();bindTeam();
