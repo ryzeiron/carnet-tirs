@@ -3,8 +3,6 @@ on:
   workflow_dispatch:
   push:
     paths: ["supabase/functions/**", ".github/workflows/supabase-functions.yml"]
-permissions:
-  contents: write
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -15,18 +13,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: supabase/setup-cli@v1
         with: { version: latest }
-      - name: Déployer la fonction FFHB
+      - name: Déployer la fonction FFHB (lecture des calendriers)
         run: supabase functions deploy ffhb --project-ref "$REF" --no-verify-jwt --use-api
-      - name: Tester la fonction
+      - name: Vérifier qu'elle répond
         run: |
           sleep 5
-          mkdir out
-          curl -sS -X POST "https://$REF.supabase.co/functions/v1/ffhb" -H "Content-Type: application/json" \
-            -d '{"url":"https://www.ffhandball.fr/competitions/saison-2023-2024-19/regional/poule-des-as-masculin-24919/poule-144506/journee-2/"}' -o out/test1.json -w "%{http_code}\n"
-          curl -sS -X POST "https://$REF.supabase.co/functions/v1/ffhb" -H "Content-Type: application/json" \
-            -d '{"url":"https://www.ffhandball.fr/competitions/saison-2026-2027-22/national/nationale-1-masculine-2026-2027-32469/"}' -o out/test2.json -w "%{http_code}\n"
-          T=$(python3 -c "import json;d=json.load(open('out/test2.json'));print(d['teams'][0]['id'] if d.get('teams') else '')")
-          U=$(python3 -c "import json;d=json.load(open('out/test2.json'));print(d.get('url',''))")
-          curl -sS -X POST "https://$REF.supabase.co/functions/v1/ffhb" -H "Content-Type: application/json" \
-            -d "{\"url\":\"$U\",\"team\":\"$T\"}" -o out/test3.json -w "%{http_code} %{time_total}\n"
-          cd out && git init -q && git checkout -q -b ffhb-probe-out && git config user.email bot@x && git config user.name bot && git add -A && git commit -qm out && git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ffhb-probe-out
+          curl -sS -f -X POST "https://$REF.supabase.co/functions/v1/ffhb" -H "Content-Type: application/json" \
+            -d '{"url":"https://www.ffhandball.fr/competitions/saison-2026-2027-22/national/nationale-1-masculine-2026-2027-32469/"}' | head -c 300

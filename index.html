@@ -134,6 +134,36 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .fld input{font-size:16px}
 .sheet{max-height:calc(100vh - 32px);overflow:auto}
 .sqtools{display:flex;gap:6px;flex-wrap:wrap}
+.sqgrp{display:contents}
+.sqgrp .btn{border-style:dashed}
+.frow{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.rosgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;align-items:start;margin-top:14px}
+.grpchips .chip{padding:7px 13px;font-size:14px}
+.grpchips .cnt{opacity:.6;font-weight:500;margin-left:2px}
+.grptools{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.roslist{list-style:none;margin:0;padding:0}
+.roslist li{display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px;padding:9px 2px;border-bottom:1px solid var(--line)}
+.roslist li.empty{display:block;color:var(--muted);border:0}
+.roslist .jn{font-family:var(--display);font-weight:700;font-size:20px;min-width:32px;text-align:center}
+.roslist .nm{flex:1 1 140px;font-weight:600;min-width:0}
+.roslist .nm small{display:block;color:var(--muted);font-weight:500;font-size:12px}
+.roslist .gch{display:flex;flex-wrap:wrap;gap:4px;flex:1 1 100%;padding-left:42px}
+.roslist .gch:empty{display:none}
+.roslist form{flex:1 1 100%;display:grid;grid-template-columns:62px 1fr;gap:8px}
+.roslist form .acts2{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
+.chip.mini{padding:3px 9px;font-size:12px}
+.rosadd{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
+.ffsteps{margin:4px 0 12px;padding-left:20px;font-size:14px;line-height:1.55}
+.ffbox{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.45}
+.ffm{list-style:none;margin:6px 0 0;padding:0}
+.ffm li{display:grid;grid-template-columns:auto 1fr;gap:1px 12px;padding:8px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ffm .d{font-weight:700;white-space:nowrap}
+.ffm .s{color:var(--muted);font-size:12.5px;grid-column:2}
+.fferr{color:#d23b3b;font-size:14px}
+.msec{grid-column:1/-1;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 2px 6px}
+.mlist .more{grid-column:1/-1;justify-self:center}
+@media (max-width:640px){.tabs{display:flex;width:100%;overflow-x:auto}.tab{padding:6px 4px;font-size:13px;letter-spacing:0;flex:1 0 auto}}
+.res-pill{white-space:nowrap}
 .sqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:6px}
 .sqgrid .pcheck{min-height:54px;padding:6px 4px}
 .sqgrid .pcheck .jn{font-size:20px}
@@ -412,8 +442,9 @@ img{max-width:100%}
     <label class="hub-space panel"><span class="lbl">Espace</span><select id="hubSpace"></select><span class="hint" id="hubSpaceHint"></span></label>
     <div class="hub-cards">
       <button class="hubcard" type="button" data-go="team"><span class="hc-n">01</span><b>Mon équipe</b><span>Choisir l'équipe, gérer le staff et les invitations</span></button>
-      <button class="hubcard" type="button" data-go="match"><span class="hc-n">02</span><b>Match</b><span>Saisie en direct, chrono, score, analyses et exports</span></button>
-      <button class="hubcard" type="button" data-go="train"><span class="hc-n">03</span><b>Entraînement</b><span>Tirs au poste : impact dans la cage et style de tir</span></button>
+      <button class="hubcard" type="button" data-go="roster"><span class="hc-n">02</span><b>Effectif</b><span>Joueurs par catégorie (-18 région, -18 France…) et calendrier FFHB</span></button>
+      <button class="hubcard" type="button" data-go="match"><span class="hc-n">03</span><b>Match</b><span>Saisie en direct, chrono, score, analyses et exports</span></button>
+      <button class="hubcard" type="button" data-go="train"><span class="hc-n">04</span><b>Entraînement</b><span>Tirs au poste : impact dans la cage et style de tir</span></button>
     </div>
     <div class="hub-foot"><button type="button" class="linkbtn" id="hubLogin" hidden>Se connecter pour synchroniser</button><button type="button" class="linkbtn" id="hubLogout" hidden>Se déconnecter</button></div>
   </div>
@@ -471,6 +502,7 @@ img{max-width:100%}
         <button class="tab" role="tab" id="tabEntry" aria-selected="true">Saisie</button>
         <button class="tab" role="tab" id="tabAna" aria-selected="false">Analyse</button>
         <button class="tab" role="tab" id="tabMatch" aria-selected="false">Matchs</button>
+        <button class="tab" role="tab" id="tabRoster" aria-selected="false">Effectif</button>
         <button class="tab" role="tab" id="tabTeam" aria-selected="false">Équipe</button>
       </div>
     </div>
@@ -479,7 +511,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 21</span>
+      <span class="status" id="appVersion">Version 22</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -651,6 +683,35 @@ img{max-width:100%}
     <div class="mlist" id="matchCards"></div>
   </section>
 
+  <section id="viewRoster" hidden>
+    <div class="panel">
+      <div class="panel-head"><h2>Catégories</h2><span class="hint" id="rosCount"></span></div>
+      <div class="chipwrap grpchips" id="grpChips"></div>
+      <form id="grpForm" class="addopt" autocomplete="off"><input type="text" id="grpName" maxlength="40" placeholder="Nouvelle catégorie (ex. -18 région)" aria-label="Nom de la nouvelle catégorie"><button class="btn small primary" type="submit">Créer</button></form>
+    </div>
+    <div class="rosgrid">
+      <div class="panel">
+        <div class="panel-head"><h2 id="rosTitle">Joueurs</h2><span class="grptools" id="grpTools"></span></div>
+        <ul class="roslist" id="rosList"></ul>
+        <form class="addform rosadd" id="rosAdd" autocomplete="off">
+          <input type="number" id="rNum" placeholder="N°" min="0" max="99" aria-label="Numéro">
+          <input type="text" id="rName" placeholder="Nom du joueur" aria-label="Nom du joueur" required>
+          <select id="rPos" aria-label="Poste">
+            <option value="ALG">Ailier gauche</option><option value="ARG">Arrière gauche</option>
+            <option value="DC">Demi-centre</option><option value="ARD">Arrière droit</option>
+            <option value="ALD">Ailier droit</option><option value="PIV">Pivot</option><option value="GB">Gardien</option>
+          </select>
+          <button class="btn primary" type="submit" id="rAddBtn">Ajouter</button>
+        </form>
+        <p class="hint" id="rosHint"></p>
+      </div>
+      <div class="panel" id="ffPanel">
+        <div class="panel-head"><h2>Calendrier FFHB</h2></div>
+        <div id="ffBody"></div>
+      </div>
+    </div>
+  </section>
+
   <section id="viewAna" hidden>
     <div class="layout">
       <aside class="panel roster">
@@ -710,12 +771,14 @@ img{max-width:100%}
   <form class="sheet panel" id="matchForm" autocomplete="off">
     <h2 id="matchFormTitle">Nouveau match</h2>
     <label class="fld"><span class="lbl">Adversaire</span><input type="text" id="mAdv" placeholder="ex. Lille HB" required></label>
-    <label class="fld"><span class="lbl">Date</span><input type="date" id="mDate" required></label>
+    <div class="frow"><label class="fld"><span class="lbl">Date</span><input type="date" id="mDate" required></label>
+    <label class="fld"><span class="lbl">Heure</span><input type="time" id="mTime"></label></div>
+    <label class="fld" id="mGrpFld"><span class="lbl">Catégorie</span><select id="mGrp"></select></label>
     <div class="fld"><span class="lbl">Lieu</span><div class="chipwrap" id="mLieu">
       <button type="button" class="chip" data-lieu="dom" aria-pressed="true">Domicile</button><button type="button" class="chip" data-lieu="ext" aria-pressed="false">Extérieur</button></div></div>
     <label class="fld"><span class="lbl">Compétition (facultatif)</span><input type="text" id="mComp" placeholder="ex. Championnat, Coupe"></label>
     <div class="fld"><span class="lbl">Joueurs du match <span id="sqCount"></span></span>
-      <div class="sqtools"><button type="button" class="btn small" data-sq="all">Tous</button><button type="button" class="btn small" data-sq="none">Aucun</button><button type="button" class="btn small" data-sq="last" id="sqLast">Comme le dernier match</button></div>
+      <div class="sqtools"><button type="button" class="btn small" data-sq="all">Tous</button><button type="button" class="btn small" data-sq="none">Aucun</button><button type="button" class="btn small" data-sq="last" id="sqLast">Comme le dernier match</button><span class="sqgrp" id="sqGrpBtns"></span></div>
       <div class="sqgrid" id="sqGrid"></div></div>
     <div class="sheet-actions"><button class="btn" type="button" id="matchCancel">Annuler</button><button class="btn primary" type="submit" id="matchSubmit">Créer le match</button></div>
   </form>
@@ -738,7 +801,7 @@ img{max-width:100%}
     <label class="fld"><span class="lbl">Nom de la séance</span><input type="text" id="trSName" maxlength="60"></label>
     <label class="fld"><span class="lbl">Date</span><input type="date" id="trSDate"></label>
     <div class="fld"><span class="lbl">Qui est présent ? <span id="trSCount"></span></span>
-      <div class="sqtools"><button type="button" class="btn small" data-trsq="all">Tous</button><button type="button" class="btn small" data-trsq="none">Aucun</button><button type="button" class="btn small" data-trsq="last" id="trSLast">Comme la dernière séance</button></div>
+      <div class="sqtools"><button type="button" class="btn small" data-trsq="all">Tous</button><button type="button" class="btn small" data-trsq="none">Aucun</button><button type="button" class="btn small" data-trsq="last" id="trSLast">Comme la dernière séance</button><span class="sqgrp" id="trSGrpBtns"></span></div>
       <div class="sqgrid" id="trSGrid"></div></div>
     <div class="sheet-actions"><button class="btn" type="button" id="trSCancel">Annuler</button><button class="btn primary" type="submit" id="trSSubmit">Créer la séance</button></div>
   </form>
@@ -831,8 +894,11 @@ function saveLocal(){lsSet(K("hb-data"),{players:S.players,shots:S.shots});lsSet
 const fmtDate=d=>{if(!d)return"";const [y,m,j]=d.split("-");return `${j}/${m}/${y.slice(2)}`};
 const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10)};
 function matchById(id){return S.matches.find(m=>m.id===id)}
-function matchLabel(id){const m=matchById(id);if(!m)return id?"Match inconnu":"";return `${fmtDate(m.date)} · ${m.lieu==="ext"?"à":"vs"} ${m.adv}`}
+function matchLabel(id){const m=matchById(id);if(!m)return id?"Match inconnu":"";const g=m.grp&&typeof grpById==="function"?grpById(m.grp):null;return `${m.date?fmtDate(m.date):"Date à venir"}${m.time?" "+m.time:""} · ${m.lieu==="ext"?"à":"vs"} ${m.adv}${g?" ("+g.name+")":""}`}
 function sortedMatches(){return [...S.matches].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0))}
+const isUpcoming=m=>!m.date||m.date>=today();
+function upcomingMatches(){return S.matches.filter(isUpcoming).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")||(a.time||"").localeCompare(b.time||"")||(a.j||0)-(b.j||0))}
+function uiMatches(){return [...upcomingMatches(),...sortedMatches().filter(m=>!isUpcoming(m))]}
 function matchScore(id){let n=0,a=0;S.shots.forEach(s=>{if(s.match===id&&s.res==="but"){if(teamOf(s)==="adv")a++;else n++}});
   const any=S.shots.some(s=>s.match===id);return {n,a,any,r:!any?"0":n>a?"V":n<a?"D":"N"}}
 function migrateMatches(){
@@ -1094,14 +1160,14 @@ function render(){
   GK=false;
   if(S.cur&&!matchById(S.cur))S.cur="";
   $("matchSel").innerHTML=(S.matches.length?"":`<option value="">Crée d'abord un match →</option>`)+(S.matches.length&&!S.cur?`<option value="">Choisis le match…</option>`:"")+
-    sortedMatches().map(m=>`<option value="${esc(m.id)}" ${m.id===S.cur?"selected":""}>${esc(matchLabel(m.id))}</option>`).join("");
+    uiMatches().map(m=>`<option value="${esc(m.id)}" ${m.id===S.cur?"selected":""}>${esc(matchLabel(m.id))}</option>`).join("");
   renderTeamBar();
   if(MODE==="train"){renderTrain();return}
   if(MODE==="hub"){renderHub();return}
-  if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="team")renderTeam();else renderAnalysis();
+  if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="roster")renderRoster();else if(tab==="team")renderTeam();else renderAnalysis();
 }
-function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry"||MODE!=="app";
-  $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");$("tabTeam").setAttribute("aria-selected",t==="team");render()}
+function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewRoster").hidden=t!=="roster";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry"||MODE!=="app";
+  $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");$("tabRoster").setAttribute("aria-selected",t==="roster");$("tabTeam").setAttribute("aria-selected",t==="team");render()}
 
 /* ---------- CHRONO ---------- */
 const HALF=1800;
@@ -1192,7 +1258,7 @@ function timeline(id){
 }
 
 /* ---------- MATCHS ---------- */
-let mDelArm=null,editId=null,mLieu="dom";const openTL=new Set();
+let mDelArm=null,editId=null,mLieu="dom",mShowAll=false;const openTL=new Set();
 function sancTxt(l){const c=k=>l.filter(s=>s.res===k).length;const parts=[[c("s2min"),"× 2'"],[c("sjaune"),"J"],[c("srouge"),"R"],[c("sbleu"),"B"]].filter(x=>x[0]).map(x=>x[0]+" "+x[1]);return parts.join(" · ")||"–"}
 function renderMatches(){
   const ms=sortedMatches();
@@ -1203,14 +1269,15 @@ function renderMatches(){
   $("seasonKpis").innerHTML=[["Matchs",played.length],["Victoires",rec.V],["Nuls",rec.N],["Défaites",rec.D],["Buts marqués",bp],["Buts encaissés",bc],["Notre efficacité",pct(sn.g,sn.t)+" %","eff"],["Efficacité adverse",pct(sa.g,sa.t)+" %"],["Nos pertes",sn.perte,"perte"]]
     .map(([k,v,c])=>`<div class="kpi ${c||""}"><div class="v">${v}</div><div class="k">${k}</div></div>`).join("");
   if(!ms.length){$("matchCards").innerHTML=`<div class="panel empty">Aucun match pour l'instant. Touche « + Nouveau match » pour créer le premier, puis fais tes saisies dedans.</div>`;return}
-  $("matchCards").innerHTML=ms.map(m=>{
+  const up=upcomingMatches(),past=sortedMatches().filter(m=>!isUpcoming(m)),showUp=mShowAll?up:up.slice(0,3);
+  const card=m=>{
     const sc=matchScore(m.id),l=S.shots.filter(s=>s.match===m.id);
     const a=stats(l.filter(s=>teamOf(s)==="nous")),b=stats(l.filter(s=>teamOf(s)==="adv"));
-    const lab={V:"Victoire",N:"Nul",D:"Défaite","0":"Pas de saisie"}[sc.r];
+    const lab={V:"Victoire",N:"Nul",D:"Défaite","0":isUpcoming(m)&&!m.fs?"À venir":"Pas de saisie"}[sc.r];const gg=m.grp?grpById(m.grp):null;
     const arm=mDelArm===m.id;
     return `<article class="panel mcard${m.id===S.cur?" current":""}">
-      <div class="mtop"><div><div class="mdate">${esc(fmtDate(m.date))}${m.comp?" · "+esc(m.comp):""}${m.id===S.cur?" · match en cours":""}</div>
-        <div class="mname">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</div><div class="mmeta">${m.lieu==="ext"?"Extérieur":"Domicile"}${squadOf(m)?` · ${squadOf(m).length} joueurs`:""} · ${l.length} action${l.length>1?"s":""}</div></div>
+      <div class="mtop"><div><div class="mdate">${m.date?esc(fmtDate(m.date)):"Date à venir"}${m.time?" · "+esc(m.time):""}${gg?" · "+esc(gg.name):m.comp?" · "+esc(m.comp):""}${m.j?" · J"+esc(m.j):""}${m.id===S.cur?" · match en cours":""}</div>
+        <div class="mname">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</div><div class="mmeta">${m.lieu==="ext"?"Extérieur":"Domicile"}${m.salle?" · "+esc(m.salle):""}${squadOf(m)?` · ${squadOf(m).length} joueurs`:""} · ${l.length} action${l.length>1?"s":""}${m.fs?` · <b>score officiel ${esc(m.fs[0])}-${esc(m.fs[1])}</b>`:""}</div></div>
         <div><div class="score">${sc.any?`${sc.n}<span style="color:var(--muted)">-</span>${sc.a}`:"–"}</div><div style="text-align:right"><span class="res-pill res-${sc.r}">${lab}</span></div></div></div>
       ${sc.any?`<div class="mstats"><span></span><span class="h">Nous</span><span class="h">Adversaire</span>
         <span>Tirs</span><span>${a.g}/${a.t} · ${pct(a.g,a.t)} %</span><span>${b.g}/${b.t} · ${pct(b.g,b.t)} %</span>
@@ -1224,24 +1291,31 @@ function renderMatches(){
         <button class="btn small" data-mtl="${esc(m.id)}" type="button">${openTL.has(m.id)?"Masquer le déroulé":"Déroulé du match"}</button>
         <button class="btn small" data-medit="${esc(m.id)}" type="button">Modifier</button>
         <button class="btn small danger" data-mdel="${esc(m.id)}" type="button">${arm?`Confirmer : supprimer avec ${l.length} action${l.length>1?"s":""}`:"Supprimer"}</button>
-      </div></article>`}).join("");
+      </div></article>`};
+  $("matchCards").innerHTML=(up.length?`<div class="msec">À venir · ${up.length}</div>`+showUp.map(card).join("")+(up.length>showUp.length?`<button class="btn small more" type="button" data-mmore>Voir les ${up.length-showUp.length} autres matchs à venir</button>`:mShowAll&&up.length>3?`<button class="btn small more" type="button" data-mmore>Réduire</button>`:""):"")+
+    (past.length?(up.length?`<div class="msec">Joués · ${past.length}</div>`:"")+past.map(card).join(""):"");
 }
 let sqSel=new Set();
-function lastSquad(){const m=sortedMatches().find(x=>Array.isArray(x.squad)&&x.id!==editId);return m?m.squad.filter(id=>S.players.some(p=>p.id===id)):null}
+function lastSquad(){const m=sortedMatches().find(x=>Array.isArray(x.squad)&&x.id!==editId&&!(x.ffhb&&isUpcoming(x)));return m?m.squad.filter(id=>S.players.some(p=>p.id===id)):null}
 function renderSquad(){
   const all=roster("nous");
   $("sqGrid").innerHTML=all.length?all.map(p=>`<button type="button" class="pcheck" data-sqp="${esc(p.id)}" aria-pressed="${sqSel.has(p.id)}"><span class="jn">${p.num??"–"}</span><span class="nm">${esc(p.name)}${isGK(p)?" (GB)":""}</span></button>`).join("")
     :`<div class="hint">Aucun joueur dans ta liste. Ajoute-les dans Saisie, côté « Nous ».</div>`;
   const n=sqSel.size;$("sqCount").textContent=`· ${n} sélectionné${n>1?"s":""}${n>16?" (max. 16 sur une feuille de match)":""}`;$("sqCount").classList.toggle("warn",n>16);
   $("sqLast").disabled=!lastSquad();
+  $("sqGrpBtns").innerHTML=grpButtons("sqg");
 }
+function grpButtons(attr){return groups().filter(g=>grpPlayers(g.id).length).map(g=>`<button type="button" class="btn small" data-${attr}="${esc(g.id)}">${esc(g.name)}</button>`).join("")}
 function squadOf(m){return m&&Array.isArray(m.squad)?m.squad:null}
 function openMatchForm(id){
   editId=id||null;const m=id?matchById(id):null;
   $("matchFormTitle").textContent=m?"Modifier le match":"Nouveau match";$("matchSubmit").textContent=m?"Enregistrer":"Créer le match";
-  $("mAdv").value=m?m.adv:"";$("mDate").value=m?m.date:today();$("mComp").value=m?(m.comp||""):"";mLieu=m?m.lieu:"dom";
+  $("mAdv").value=m?m.adv:"";$("mDate").value=m?(m.date||""):today();$("mTime").value=m?(m.time||""):"";$("mComp").value=m?(m.comp||""):"";mLieu=m?m.lieu:"dom";
+  const gs=groups(),g0=m?(m.grp||""):(grpById(G.sel)?G.sel:"");$("mGrpFld").hidden=!gs.length;
+  $("mGrp").innerHTML=`<option value="">Aucune</option>`+gs.map(g=>`<option value="${esc(g.id)}" ${g.id===g0?"selected":""}>${esc(g.name)}</option>`).join("");
   $("mLieu").querySelectorAll("[data-lieu]").forEach(b=>b.setAttribute("aria-pressed",b.dataset.lieu===mLieu));
-  const sq=m?squadOf(m):lastSquad();sqSel=new Set(sq||S.players.map(p=>p.id));renderSquad();
+  const gp=!m&&g0?grpPlayers(g0):[];
+  const sq=m?squadOf(m):(gp.length?gp:lastSquad());sqSel=new Set(sq||S.players.map(p=>p.id));renderSquad();
   $("matchSheet").hidden=false;setTimeout(()=>$("mAdv").focus(),50);
 }
 function bindMatches(){
@@ -1253,17 +1327,20 @@ function bindMatches(){
   $("matchForm").addEventListener("submit",e=>{e.preventDefault();
     const adv=$("mAdv").value.trim().slice(0,60);if(!adv)return;
     if(S.players.length&&!sqSel.size){toast("Coche au moins un joueur pour ce match.",false);return}
-    const data={adv,date:$("mDate").value||today(),lieu:mLieu,comp:$("mComp").value.trim().slice(0,40),squad:roster("nous").map(p=>p.id).filter(id=>sqSel.has(id))};
+    const data={adv,date:$("mDate").value||today(),time:$("mTime").value||"",grp:$("mGrp").value||"",lieu:mLieu,comp:$("mComp").value.trim().slice(0,40),squad:roster("nous").map(p=>p.id).filter(id=>sqSel.has(id))};
     if(editId){const m=matchById(editId);Object.assign(m,data);toast("Match modifié",false)}
     else{const m={id:"m"+rid(),...data,t:Date.now()};S.matches.push(m);S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);toast(`Match créé : ${matchLabel(m.id)}`,false)}
     saveLocal();$("matchSheet").hidden=true;render()});
   $("pnlPlayer").addEventListener("click",e=>{if(e.target.closest("#editSquad")&&S.cur)openMatchForm(S.cur)});
+  $("mGrp").addEventListener("change",e=>{const gp=grpPlayers(e.target.value);if(gp.length){sqSel=new Set(gp);renderSquad()}});
+  $("sqGrpBtns").addEventListener("click",e=>{const b=e.target.closest("[data-sqg]");if(!b)return;sqSel=new Set(grpPlayers(b.dataset.sqg));renderSquad()});
   $("sqGrid").addEventListener("click",e=>{const b=e.target.closest("[data-sqp]");if(!b)return;const id=b.dataset.sqp;sqSel.has(id)?sqSel.delete(id):sqSel.add(id);renderSquad()});
   document.querySelectorAll("[data-sq]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.sq;
     sqSel=new Set(k==="all"?S.players.map(p=>p.id):k==="none"?[]:(lastSquad()||[]));renderSquad()}));
   $("matchSel").addEventListener("change",e=>{S.cur=e.target.value;lsSet(K("hb-curMatch"),S.cur);render()});
   $("matchCards").addEventListener("click",e=>{
     const t=e.target.closest("button");if(!t)return;
+    if("mmore" in t.dataset){mShowAll=!mShowAll;renderMatches();return}
     if(t.dataset.mstats){A.match=t.dataset.mstats;A.sel=null;setTab("ana");window.scrollTo(0,0);return}
     if(t.dataset.mcur){S.cur=t.dataset.mcur;lsSet(K("hb-curMatch"),S.cur);setTab("entry");window.scrollTo(0,0);return}
     if(t.dataset.medit){openMatchForm(t.dataset.medit);return}
@@ -1273,6 +1350,146 @@ function bindMatches(){
       mDelArm=null;S.shots=S.shots.filter(s=>s.match!==id);S.matches=S.matches.filter(m=>m.id!==id);if(S.cur===id)S.cur="";if(A.match===id)A.match="";
       saveLocal();toast("Match supprimé",false);render()}
   });
+}
+
+/* ---------- EFFECTIF : catégories de joueurs + calendrier FFHB ---------- */
+const G={sel:lsGet("hb-grpSel",""),edit:"",pDelArm:"",gDelArm:"",ren:false,setup:false,ff:null,busy:false,err:"",url:""};
+const groups=()=>Array.isArray(S.cfg.groups)?S.cfg.groups:[];
+const grpById=id=>id?groups().find(g=>g.id===id):null;
+const pGroups=p=>Array.isArray(p&&p.grp)?p.grp:[];
+const grpPlayers=gid=>gid?roster("nous").filter(p=>pGroups(p).includes(gid)).map(p=>p.id):[];
+const canEdit=()=>ROLE!=="lecteur";
+const canAdmin=()=>!WS||ROLE==="admin";
+const POS_OPTS=v=>Object.entries(POS).map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("");
+function selGrp(id){G.sel=id;lsSet("hb-grpSel",id);G.edit="";G.ren=false;G.gDelArm="";G.setup=false;G.ff=null;G.err="";G.url="";renderRoster()}
+function renderRoster(){
+  const gs=groups();if(G.sel&&G.sel!=="_none"&&!grpById(G.sel))G.sel="";
+  const all=roster("nous"),noGrp=p=>!pGroups(p).some(id=>grpById(id));
+  const inSel=p=>!G.sel||(G.sel==="_none"?noGrp(p):pGroups(p).includes(G.sel));
+  const cnt=id=>all.filter(p=>!id||(id==="_none"?noGrp(p):pGroups(p).includes(id))).length;
+  $("grpChips").innerHTML=[["","Tous"],...gs.map(g=>[g.id,g.name]),...(gs.length?[["_none","Sans catégorie"]]:[])]
+    .map(([id,n])=>`<button type="button" class="chip" data-grp="${esc(id)}" aria-pressed="${G.sel===id}">${esc(n)} <span class="cnt">${cnt(id)}</span></button>`).join("");
+  $("rosCount").textContent=`${all.length} joueur${all.length>1?"s":""}`;
+  $("grpForm").hidden=!canEdit();
+  const g=grpById(G.sel),ed=canEdit();
+  $("rosTitle").textContent=g?g.name:G.sel==="_none"?"Sans catégorie":"Tous les joueurs";
+  $("grpTools").innerHTML=!g||!ed?"":G.ren
+    ?`<form data-grenform class="addopt" autocomplete="off"><input type="text" name="n" maxlength="40" value="${esc(g.name)}" aria-label="Nouveau nom"><button class="btn small primary" type="submit">OK</button><button class="btn small" type="button" data-grencancel>Annuler</button></form>`
+    :`<button class="btn small" type="button" data-gren>Renommer</button><button class="btn small danger" type="button" data-gdel>${G.gDelArm===g.id?"Confirmer la suppression":"Supprimer"}</button>`;
+  const list=all.filter(inSel);
+  $("rosList").innerHTML=list.length?list.map(p=>{
+    if(G.edit===p.id&&ed){const nt=S.shots.filter(s=>s.p===p.id).length+S.tshots.filter(s=>s.p===p.id).length;
+      return `<li data-rp="${esc(p.id)}"><form data-pform autocomplete="off"><input type="number" name="num" min="0" max="99" placeholder="N°" value="${p.num??""}" aria-label="Numéro"><input type="text" name="name" required value="${esc(p.name)}" aria-label="Nom">
+        <select name="pos" aria-label="Poste" style="grid-column:1/-1">${POS_OPTS(p.pos)}</select>
+        <span class="acts2"><button class="btn small primary" type="submit">Enregistrer</button><button class="btn small" type="button" data-pcancel>Annuler</button><button class="btn small danger" type="button" data-pdel>${G.pDelArm===p.id?`Confirmer : supprimer${nt?` avec ses ${nt} tir(s)`:""}`:"Supprimer le joueur"}</button></span></form></li>`}
+    return `<li data-rp="${esc(p.id)}"><span class="jn">${p.num??"–"}</span><span class="nm">${esc(p.name)}<small>${POS[p.pos]||""}</small></span>${ed?`<button class="btn small" type="button" data-pedit>Modifier</button>`:""}
+      <span class="gch">${gs.map(x=>`<button type="button" class="chip mini" data-pg="${esc(x.id)}" aria-pressed="${pGroups(p).includes(x.id)}" ${ed?"":"disabled"}>${pGroups(p).includes(x.id)?"✓ ":""}${esc(x.name)}</button>`).join("")}</span></li>`}).join("")
+    :`<li class="empty">${all.length?(g?`Personne dans « ${esc(g.name)} » pour l'instant. Ajoute un joueur ci-dessous, ou touche « Tous » et coche cette catégorie sous chaque joueur.`:"Aucun joueur ici."):"Aucun joueur pour l'instant : ajoute le premier ci-dessous."}</li>`;
+  $("rosAdd").hidden=!ed;$("rAddBtn").textContent=g?`Ajouter dans ${g.name}`:"Ajouter";
+  $("rosHint").textContent=gs.length?"Sous chaque joueur, touche une catégorie pour l'y mettre ou l'en retirer. Un joueur peut être dans plusieurs catégories.":"Crée tes catégories en haut (ex. « -18 région », « -18 France »), puis range tes joueurs dedans.";
+  renderFF();
+}
+function renderFF(force){
+  const el=$("ffBody"),g=grpById(G.sel);if(!el)return;
+  if(!force&&document.activeElement&&document.activeElement.id==="ffUrl")return;
+  if(!g){el.innerHTML=`<p class="hint">${groups().length?"Choisis une catégorie ci-dessus":"Crée d'abord une catégorie (ex. « -18 région »)"} pour la relier à son championnat sur le site de la FFHB : ses matchs arrivent alors dans l'onglet Matchs, avec la date, l'heure et le gymnase.</p>`;return}
+  const f=g.ff,errH=G.err?`<p class="fferr">${esc(G.err)}</p>`:"";
+  if(f&&!G.setup){
+    const nx=S.matches.filter(m=>m.grp===g.id&&isUpcoming(m)).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")||(a.time||"").localeCompare(b.time||"")).slice(0,5);
+    el.innerHTML=`<div class="ffbox"><b>${esc(f.title||"Compétition")}</b>${f.poule?"<br>"+esc(f.poule):""}<br>Notre équipe : <b>${esc(f.teamName||"?")}</b></div>
+      <p class="hint">${f.at?"Matchs mis à jour le "+new Date(f.at).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"Matchs pas encore récupérés."}</p>
+      <div class="sqtools">${canEdit()?`<button class="btn primary" type="button" data-ffsync ${G.busy?"disabled":""}>${G.busy?"Mise à jour…":"Mettre à jour les matchs"}</button>`:""}${canAdmin()?`<button class="btn small" type="button" data-ffchange>Changer</button>`:""}<a class="btn small" href="${esc(f.url)}" target="_blank" rel="noopener">Voir sur ffhandball.fr</a></div>${errH}
+      <div class="subhead">Prochains matchs</div>${nx.length?`<ul class="ffm">${nx.map(m=>`<li><span class="d">${m.date?esc(fmtDate(m.date)):"À fixer"}${m.time?" · "+esc(m.time):""}</span><span>${m.lieu==="ext"?"à ":"vs "}<b>${esc(m.adv)}</b></span><span class="s">${m.lieu==="ext"?"Extérieur":"Domicile"}${m.salle?" · "+esc(m.salle):""}${m.j?" · journée "+esc(m.j):""}</span></li>`).join("")}</ul>`:`<p class="hint">Aucun match à venir.</p>`}`;
+    return}
+  if(!canAdmin()){el.innerHTML=`<p class="hint">Cette catégorie n'est pas encore reliée à la FFHB. C'est l'admin de l'équipe qui s'en occupe.</p>`;return}
+  const r=G.ff;
+  el.innerHTML=`<ol class="ffsteps"><li>Sur <a href="https://www.ffhandball.fr/competitions/" target="_blank" rel="noopener">ffhandball.fr</a>, ouvre le championnat de « ${esc(g.name)} », puis la poule de ton équipe.</li><li>Copie l'adresse de la page (bouton Partager, puis Copier).</li><li>Colle-la ici et touche « Chercher ».</li></ol>
+    <form id="ffForm" class="stack" autocomplete="off"><label class="fld"><span class="lbl">Adresse de la poule (ou du championnat)</span><input type="url" id="ffUrl" inputmode="url" placeholder="https://www.ffhandball.fr/competitions/…" value="${esc(G.url)}" required></label>
+    <div class="sqtools"><button class="btn primary" type="submit" ${G.busy?"disabled":""}>${G.busy?"Recherche…":"Chercher"}</button>${f?`<button class="btn small" type="button" data-ffcancel>Annuler</button>`:""}</div></form>${errH}
+    ${r?`<div class="ffbox"><b>${esc(r.title)}</b>${r.sub?" · "+esc(r.sub):""}<br>${esc(r.poule)} · ${r.matches.length} matchs</div>
+      ${(r.poules||[]).length>1?`<div class="subhead">Poule</div><div class="chipwrap">${r.poules.map(x=>`<button type="button" class="chip" data-ffpoule="${esc(x.id)}" aria-pressed="${x.id===r.pouleId}">${esc(x.name)}</button>`).join("")}</div>`:""}
+      <div class="subhead">Quelle est ton équipe ?</div>${r.teams.length?`<div class="chipwrap">${r.teams.map(t=>`<button type="button" class="chip" data-ffteam="${esc(t.id)}" ${G.busy?"disabled":""}>${esc(t.name)}</button>`).join("")}</div>`:`<p class="hint">Aucune équipe trouvée dans cette poule.</p>`}`:""}`;
+}
+async function ffCall(url,team){
+  let r;
+  try{r=await fetch(SB_URL+"/functions/v1/ffhb",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({url,team:team||""})})}
+  catch(e){throw new Error(navigator.onLine?"Le serveur ne répond pas. Réessaie dans un instant.":"Pas de connexion internet.")}
+  let d=null;try{d=await r.json()}catch(e){}
+  if(!r.ok||!d||d.error)throw new Error((d&&d.error)||`Le serveur ne répond pas (erreur ${r.status}).`);
+  return d;
+}
+async function ffSearch(url){
+  G.busy=true;G.err="";renderFF(true);
+  try{G.ff=await ffCall(url);G.url=G.ff.url}catch(e){G.err=e.message;G.ff=null}
+  G.busy=false;renderFF(true);
+}
+function ffImport(g,d){
+  const tid=g.ff.team;let add=0,upd=0;
+  d.matches.filter(x=>x.homeId===tid||x.awayId===tid).forEach(x=>{
+    const dom=x.homeId===tid,dt=String(x.date||"");
+    const fs=x.sh!=null&&x.sa!=null?(dom?[+x.sh,+x.sa]:[+x.sa,+x.sh]):null;
+    const patch={adv:String((dom?x.away:x.home)||"?").slice(0,60),date:dt.slice(0,10),time:dt.slice(11,16),lieu:dom?"dom":"ext",grp:g.id,ffhb:x.id,j:x.j||null,salle:x.salle||"",fs};
+    if(!patch.salle)delete patch.salle;
+    let m=S.matches.find(mm=>mm.ffhb===x.id);
+    if(m){const before=stab(m);Object.assign(m,patch);if(!m.comp)m.comp=g.name.slice(0,40);if(stab(m)!==before)upd++}
+    else{const sq=grpPlayers(g.id);m={id:"mff"+x.id,...patch,comp:g.name.slice(0,40),t:Date.now()};if(sq.length)m.squad=sq;S.matches.push(m);add++}
+  });
+  return {add,upd};
+}
+async function ffSync(g){
+  if(!g||!g.ff)return;G.busy=true;G.err="";renderFF(true);
+  try{const d=await ffCall(g.ff.url,g.ff.team);const {add,upd}=ffImport(g,d);g.ff.at=Date.now();saveLocal();saveCfg();
+    toast(add||upd?`${add?add+" match(s) ajouté(s)":""}${add&&upd?", ":""}${upd?upd+" mis à jour":""}`:"Les matchs sont déjà à jour",false)}
+  catch(e){G.err=e.message}
+  G.busy=false;if(tab==="roster")renderRoster();
+}
+function delPlayerEverywhere(id){
+  S.tshots=S.tshots.filter(s=>s.p!==id);S.tshots.forEach(s=>{if(s.gk===id)s.gk=null});
+  S.trains.forEach(t=>{if(Array.isArray(t.present))t.present=t.present.filter(x=>x!==id)});
+  S.matches.forEach(m=>{if(Array.isArray(m.squad))m.squad=m.squad.filter(x=>x!==id)});
+  return removePlayer(id);
+}
+function bindRoster(){
+  $("tabRoster").onclick=()=>setTab("roster");
+  $("grpChips").addEventListener("click",e=>{const b=e.target.closest("[data-grp]");if(b)selGrp(b.dataset.grp)});
+  $("grpForm").addEventListener("submit",e=>{e.preventDefault();const n=$("grpName").value.trim().slice(0,40);if(!n)return;
+    if(groups().some(g=>g.name.toLowerCase()===n.toLowerCase())){toast("Cette catégorie existe déjà",false);return}
+    const g={id:"g"+rid(),name:n};S.cfg.groups=[...groups(),g];$("grpName").value="";G.sel=g.id;lsSet("hb-grpSel",g.id);saveCfg();toast(`Catégorie « ${n} » créée`,false)});
+  $("grpTools").addEventListener("click",e=>{const g=grpById(G.sel);if(!g)return;
+    if(e.target.closest("[data-gren]")){G.ren=true;renderRoster();const i=$("grpTools").querySelector("input");if(i)i.focus();return}
+    if(e.target.closest("[data-grencancel]")){G.ren=false;renderRoster();return}
+    if(e.target.closest("[data-gdel]")){
+      if(G.gDelArm!==g.id){G.gDelArm=g.id;renderRoster();setTimeout(()=>{if(G.gDelArm===g.id){G.gDelArm="";if(tab==="roster")renderRoster()}},5000);return}
+      G.gDelArm="";S.cfg.groups=groups().filter(x=>x.id!==g.id);
+      S.players.forEach(p=>{if(Array.isArray(p.grp))p.grp=p.grp.filter(x=>x!==g.id)});
+      G.sel="";lsSet("hb-grpSel","");saveLocal();saveCfg();toast(`Catégorie « ${g.name} » supprimée (les joueurs et les matchs restent)`,false)}});
+  $("grpTools").addEventListener("submit",e=>{e.preventDefault();const g=grpById(G.sel);const n=(e.target.n.value||"").trim().slice(0,40);if(!g||!n)return;
+    g.name=n;G.ren=false;saveCfg()});
+  $("rosList").addEventListener("click",async e=>{const li=e.target.closest("[data-rp]");if(!li||!canEdit())return;const id=li.dataset.rp,p=S.players.find(x=>x.id===id);if(!p)return;
+    const pg=e.target.closest("[data-pg]");
+    if(pg){const gid=pg.dataset.pg,cur=pGroups(p);p.grp=cur.includes(gid)?cur.filter(x=>x!==gid):[...cur,gid];saveLocal();renderRoster();return}
+    if(e.target.closest("[data-pedit]")){G.edit=id;G.pDelArm="";renderRoster();return}
+    if(e.target.closest("[data-pcancel]")){G.edit="";renderRoster();return}
+    if(e.target.closest("[data-pdel]")){
+      if(G.pDelArm!==id){G.pDelArm=id;renderRoster();setTimeout(()=>{if(G.pDelArm===id){G.pDelArm="";if(tab==="roster")renderRoster()}},5000);return}
+      G.pDelArm="";G.edit="";await delPlayerEverywhere(id);saveLocal();renderRoster();toast("Joueur supprimé",false)}});
+  $("rosList").addEventListener("submit",e=>{e.preventDefault();const f=e.target,li=f.closest("[data-rp]"),p=li&&S.players.find(x=>x.id===li.dataset.rp);if(!p)return;
+    const name=f.name.value.trim().slice(0,60);if(!name)return;const n=f.num.value;
+    Object.assign(p,{name,num:n===""?null:Math.max(0,Math.min(99,parseInt(n,10))),pos:f.pos.value});G.edit="";saveLocal();render();toast("Joueur modifié",false)});
+  $("rosAdd").addEventListener("submit",async e=>{e.preventDefault();const name=$("rName").value.trim().slice(0,60);if(!name)return;
+    const n=$("rNum").value,g=grpById(G.sel);const p={name,num:n===""?null:Math.max(0,Math.min(99,parseInt(n,10))),pos:$("rPos").value};if(g)p.grp=[g.id];
+    try{await addPlayer(p);$("rName").value="";$("rNum").value="";$("rName").focus();toast(`${name} ajouté${g?" dans "+g.name:""}`,false)}catch(err){toast(saveError(err),false)}});
+  const body=$("ffBody");
+  body.addEventListener("input",e=>{if(e.target.id==="ffUrl")G.url=e.target.value});
+  body.addEventListener("submit",e=>{e.preventDefault();if(e.target.id!=="ffForm")return;const u=$("ffUrl").value.trim();G.url=u;$("ffUrl").blur();if(u)ffSearch(u)});
+  body.addEventListener("click",e=>{const g=grpById(G.sel);if(!g)return;const b=e.target.closest("button");if(!b)return;
+    if("ffsync" in b.dataset){ffSync(g);return}
+    if("ffchange" in b.dataset){G.setup=true;G.ff=null;G.err="";G.url=g.ff?g.ff.url:"";renderFF(true);return}
+    if("ffcancel" in b.dataset){G.setup=false;G.ff=null;G.err="";renderFF(true);return}
+    if(b.dataset.ffpoule&&G.ff){ffSearch(G.ff.url.replace(/poule-\d+\/?$/,"poule-"+b.dataset.ffpoule+"/"));return}
+    if(b.dataset.ffteam&&G.ff){const r=G.ff,t=r.teams.find(x=>x.id===b.dataset.ffteam);if(!t)return;
+      g.ff={url:r.url,team:t.id,teamName:t.name,title:r.title+(r.sub?" · "+r.sub:""),poule:r.poule};
+      G.setup=false;G.ff=null;saveCfg();ffSync(g)}});
 }
 
 /* ---------- Interactions ---------- */
@@ -1309,7 +1526,7 @@ function bind(){
     render()});
   $("playChips").addEventListener("click",e=>{if(e.target.closest("[data-rm]"))return removeOpt(e);const b=e.target.closest("[data-play]");if(!b)return;E.play=E.play===b.dataset.play?null:b.dataset.play;render()});
   $("styleChips").addEventListener("click",e=>{if(e.target.closest("[data-rm]"))return removeOpt(e);const b=e.target.closest("[data-style]");if(!b)return;E.style=E.style===b.dataset.style?null:b.dataset.style;render()});
-  document.querySelectorAll(".addopt").forEach(f=>f.addEventListener("submit",async e=>{e.preventDefault();
+  document.querySelectorAll(".addopt[data-list]").forEach(f=>f.addEventListener("submit",async e=>{e.preventDefault();
     const key=f.dataset.list,inp=f.querySelector("input"),v=inp.value.trim().slice(0,40);if(!v)return;
     const all=key==="plays"?allPlays():allStyles();
     const hit=all.find(x=>x.toLowerCase()===v.toLowerCase());
@@ -1335,7 +1552,7 @@ function bind(){
     catch(err){toast(saveError(err),false);render()}
   };
   $("addForm").addEventListener("submit",async e=>{e.preventDefault();const name=$("pName").value.trim();if(!name)return;
-    const n=$("pNum").value;const p={name,num:n===""?null:Math.max(0,Math.min(99,parseInt(n,10))),pos:$("pPos").value};
+    const n=$("pNum").value;const p={name,num:n===""?null:Math.max(0,Math.min(99,parseInt(n,10))),pos:$("pPos").value};const cm0=matchById(S.cur);if(cm0&&cm0.grp&&grpById(cm0.grp))p.grp=[cm0.grp];
     try{const id=await addPlayer(p);const cm=matchById(S.cur);if(cm&&Array.isArray(cm.squad)){cm.squad.push(id);saveLocal()}E.p=id;$("pName").value="";$("pNum").value="";render()}catch(err){toast(saveError(err),false)}});
   $("clearEx").onclick=async()=>{for(const p of S.players.filter(p=>p.ex))await removePlayer(p.id)};
 
@@ -1513,7 +1730,7 @@ function restore(file){
     S.players=[...S.players,...np];S.shots=[...S.shots,...ns];migrateMatches();
     const tIds=new Set(S.trains.map(x=>x.id)),tsIds=new Set(S.tshots.map(x=>x.id));
     S.trains=[...S.trains,...(d.trains||[]).filter(x=>x&&x.id&&!tIds.has(x.id))];S.tshots=[...S.tshots,...(d.tshots||[]).filter(x=>x&&x.id&&!tsIds.has(x.id))];
-    const c=d.cfg||{};S.cfg={plays:[...new Set([...(S.cfg.plays||[]),...(c.plays||[])])],styles:[...new Set([...(S.cfg.styles||[]),...(c.styles||[])])]};
+    const c=d.cfg||{},gIds=new Set((S.cfg.groups||[]).map(g=>g.id));S.cfg={plays:[...new Set([...(S.cfg.plays||[]),...(c.plays||[])])],styles:[...new Set([...(S.cfg.styles||[]),...(c.styles||[])])],groups:[...(S.cfg.groups||[]),...(c.groups||[]).filter(g=>g&&g.id&&!gIds.has(g.id))]};
     saveLocal();lsSet(K("hb-cfg"),S.cfg);render();
     toast(`Sauvegarde restaurée : ${np.length} joueur${np.length>1?"s":""} et ${ns.length} action${ns.length>1?"s":""} ajoutés`,false);
   }catch(e){toast("Ce fichier n'est pas une sauvegarde du Carnet de tirs.",false)}};
@@ -1543,7 +1760,8 @@ function loadWorkspaceData(){
 }
 function localItems(){const m=new Map();S.players.forEach(p=>m.set("player:"+p.id,p));S.matches.forEach(x=>m.set("match:"+x.id,x));S.shots.forEach(x=>m.set("shot:"+x.id,x));
   S.trains.forEach(x=>m.set("train:"+x.id,x));S.tshots.forEach(x=>m.set("tshot:"+x.id,x));
-  m.set("cfg:lists",{plays:S.cfg.plays||[],styles:S.cfg.styles||[]});return m}
+  m.set("cfg:lists",{plays:S.cfg.plays||[],styles:S.cfg.styles||[]});
+  if((S.cfg.groups||[]).length||("cfg:groups" in SY))m.set("cfg:groups",{groups:S.cfg.groups||[]});return m}
 function setSync(state,txt){const el=$("syncStatus");if(!WS){el.hidden=true;return}el.hidden=false;el.className="status syncst "+state;el.textContent=txt}
 function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?(t.perso?"Mon espace":t.name):"Équipe";
   if(!session)return setSync("warn",`☁ ${nm} · connecte-toi dans « Équipe »`);
@@ -1582,8 +1800,15 @@ function applyRemote(r){
   const k=r.kind+":"+r.id,loc=localItems(),lo=loc.get(k);
   const dirty=lo?SY[k]!==stab(lo):(k in SY);
   if(r.updated_at&&r.updated_at>CURSOR)CURSOR=r.updated_at;
+  if(r.kind==="cfg"&&dirty&&!(k in SY)&&r.data&&!r.deleted){
+    // réglages jamais synchronisés sur cet appareil : on fusionne au lieu d'écraser ceux de l'équipe
+    if(r.id==="groups"){const ids=new Set((S.cfg.groups||[]).map(g=>g.id));S.cfg.groups=[...(S.cfg.groups||[]),...(r.data.groups||[]).filter(g=>g&&!ids.has(g.id))]}
+    else{S.cfg.plays=[...new Set([...(r.data.plays||[]),...(S.cfg.plays||[])])];S.cfg.styles=[...new Set([...(r.data.styles||[]),...(S.cfg.styles||[])])]}
+    return true}
   if(dirty&&!(r.data&&lo&&stab(r.data)===stab(lo)))return false;   // modification locale pas encore envoyée : elle gagnera
-  if(r.kind==="cfg"){if(r.deleted||!r.data)return false;S.cfg={plays:[...(r.data.plays||[])],styles:[...(r.data.styles||[])]};SY[k]=stab(localItems().get(k));return true}
+  if(r.kind==="cfg"){if(r.deleted||!r.data)return false;
+    if(r.id==="groups")S.cfg.groups=[...(r.data.groups||[])];else{S.cfg.plays=[...(r.data.plays||[])];S.cfg.styles=[...(r.data.styles||[])]}
+    SY[k]=stab(localItems().get(k));return true}
   const coll=COLL[r.kind];if(!coll)return false;
   const arr=S[coll],idx=arr.findIndex(x=>x.id===r.id);
   if(r.deleted||!r.data){if(idx>=0)arr.splice(idx,1);delete SY[k];return idx>=0}
@@ -1638,7 +1863,8 @@ function moveLocalInto(id){
   const P=lsGet(k("hb-data"),{players:[],shots:[]}),Pm=lsGet(k("hb-matches"),[]),Pc=lsGet(k("hb-cfg"),{plays:[],styles:[]});
   const uni=(a,b)=>{const ids=new Set((a||[]).map(x=>x.id));return [...(a||[]),...(b||[]).filter(x=>x&&x.id&&!ids.has(x.id))]};
   lsSet(k("hb-data"),{players:uni(P.players,L.players),shots:uni(P.shots,L.shots)});lsSet(k("hb-matches"),uni(Pm,Lm));
-  lsSet(k("hb-cfg"),{plays:[...new Set([...(Pc.plays||[]),...(Lc.plays||[])])],styles:[...new Set([...(Pc.styles||[]),...(Lc.styles||[])])]});
+  const pg=new Set((Pc.groups||[]).map(g=>g.id));
+  lsSet(k("hb-cfg"),{plays:[...new Set([...(Pc.plays||[]),...(Lc.plays||[])])],styles:[...new Set([...(Pc.styles||[]),...(Lc.styles||[])])],groups:[...(Pc.groups||[]),...(Lc.groups||[]).filter(g=>g&&!pg.has(g.id))]});
   const cur=lsGet("hb-curMatch","");if(cur&&!lsGet(k("hb-curMatch"),""))lsSet(k("hb-curMatch"),cur);
   const Lt=lsGet("hb-train",{trains:[],tshots:[]}),Pt=lsGet(k("hb-train"),{trains:[],tshots:[]});
   lsSet(k("hb-train"),{trains:uni(Pt.trains,Lt.trains),tshots:uni(Pt.tshots,Lt.tshots)});
@@ -1941,7 +2167,7 @@ function bindNav(){
   $("hubSpace").addEventListener("change",e=>{setWorkspace(e.target.value);renderHub()});
   document.querySelector(".hub-cards").addEventListener("click",e=>{const c=e.target.closest("[data-go]");if(!c)return;const g=c.dataset.go;
     if(g==="train"){showMode("train");return}
-    showMode("app");if(g==="team")setTab("team");else setTab(ROLE==="lecteur"?"ana":(S.cur&&matchById(S.cur)?"entry":"match"))});
+    showMode("app");if(g==="team")setTab("team");else if(g==="roster")setTab("roster");else setTab(ROLE==="lecteur"?"ana":(S.cur&&matchById(S.cur)?"entry":"match"))});
   $("homeBtn").onclick=()=>showMode("hub");$("trHome").onclick=()=>showMode("hub");
   $("pwForm").addEventListener("submit",async e=>{e.preventDefault();const pw=$("pwNew").value;if(pw.length<6){toast("Mot de passe trop court : 6 caractères minimum",false);return}
     const {error}=await sb.auth.updateUser({password:pw});$("pwNew").value="";toast(error?authMsg(error):"Mot de passe enregistré : tu peux maintenant te connecter avec ton e-mail et ce mot de passe",false)});
@@ -1959,7 +2185,7 @@ function lastTrainPresent(){const t=[...S.trains].filter(x=>Array.isArray(x.pres
 function renderTrSheet(){
   const pl=roster("nous");
   $("trSGrid").innerHTML=pl.length?pl.map(x=>`<button type="button" class="pcheck" data-trsp="${esc(x.id)}" aria-pressed="${trSel.has(x.id)}"><span class="jn">${x.num??"–"}</span><span class="nm">${esc(x.name)}${isGK(x)?" (GB)":""}</span></button>`).join(""):`<div class="hint">Aucun joueur pour l'instant : tu pourras les ajouter sur la page Entraînement.</div>`;
-  $("trSCount").textContent=`· ${trSel.size} présent${trSel.size>1?"s":""}`;$("trSLast").disabled=!lastTrainPresent();
+  $("trSCount").textContent=`· ${trSel.size} présent${trSel.size>1?"s":""}`;$("trSLast").disabled=!lastTrainPresent();$("trSGrpBtns").innerHTML=grpButtons("trsg");
 }
 function openTrSheet(id){
   trEdit=id||null;const tr=id?S.trains.find(x=>x.id===id):null;
@@ -2082,6 +2308,7 @@ function bindTrain(){
   $("trPresentBtn").onclick=()=>{const tr=S.trains.find(x=>x.id===T.sess);if(tr)openTrSheet(tr.id);else openTrSheet()};
   $("trSGrid").addEventListener("click",e=>{const b=e.target.closest("[data-trsp]");if(!b)return;const id=b.dataset.trsp;trSel.has(id)?trSel.delete(id):trSel.add(id);renderTrSheet()});
   document.querySelectorAll("[data-trsq]").forEach(b=>b.addEventListener("click",()=>{const k=b.dataset.trsq;trSel=new Set(k==="all"?S.players.map(x=>x.id):k==="none"?[]:(lastTrainPresent()||[]));renderTrSheet()}));
+  $("trSGrpBtns").addEventListener("click",e=>{const b=e.target.closest("[data-trsg]");if(!b)return;trSel=new Set(grpPlayers(b.dataset.trsg));renderTrSheet()});
   $("trSCancel").onclick=()=>{$("trSheet").hidden=true};
   $("trSheet").addEventListener("click",e=>{if(e.target===$("trSheet"))$("trSheet").hidden=true});
   $("trSheetForm").addEventListener("submit",e=>{e.preventDefault();
@@ -2096,11 +2323,11 @@ function start(){
   bind();
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
-  bindMatches();bindClock();
+  bindMatches();bindClock();bindRoster();
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
   S.mode="local";
   loadWorkspaceData();bindTeam();
-  const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match","team"].includes(t0)?t0:"entry");updateStatus();
+  const t0=lsGet("hb-tab","entry");setTab(["entry","ana","match","roster","team"].includes(t0)?t0:"entry");updateStatus();
   bindNav();bindTrain();
   const hasAuth=(()=>{try{return !!localStorage.getItem("hb-auth")}catch(e){return false}})();
   showMode(hasAuth||lsGet("hb-nologin",false)?"hub":"login");
