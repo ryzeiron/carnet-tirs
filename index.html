@@ -511,7 +511,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 22</span>
+      <span class="status" id="appVersion">Version 23</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1353,7 +1353,7 @@ function bindMatches(){
 }
 
 /* ---------- EFFECTIF : catégories de joueurs + calendrier FFHB ---------- */
-const G={sel:lsGet("hb-grpSel",""),edit:"",pDelArm:"",gDelArm:"",ren:false,setup:false,ff:null,busy:false,err:"",url:""};
+const G={pick:null,sel:lsGet("hb-grpSel",""),edit:"",pDelArm:"",gDelArm:"",ren:false,setup:false,ff:null,busy:false,err:"",url:""};
 const groups=()=>Array.isArray(S.cfg.groups)?S.cfg.groups:[];
 const grpById=id=>id?groups().find(g=>g.id===id):null;
 const pGroups=p=>Array.isArray(p&&p.grp)?p.grp:[];
@@ -1394,15 +1394,16 @@ function renderFF(force){
   if(!force&&document.activeElement&&document.activeElement.id==="ffUrl")return;
   if(!g){el.innerHTML=`<p class="hint">${groups().length?"Choisis une catégorie ci-dessus":"Crée d'abord une catégorie (ex. « -18 région »)"} pour la relier à son championnat sur le site de la FFHB : ses matchs arrivent alors dans l'onglet Matchs, avec la date, l'heure et le gymnase.</p>`;return}
   const f=g.ff,errH=G.err?`<p class="fferr">${esc(G.err)}</p>`:"";
-  if(f&&!G.setup){
+  if(f&&!G.setup&&!G.pick){
     const nx=S.matches.filter(m=>m.grp===g.id&&isUpcoming(m)).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")||(a.time||"").localeCompare(b.time||"")).slice(0,5);
     el.innerHTML=`<div class="ffbox"><b>${esc(f.title||"Compétition")}</b>${f.poule?"<br>"+esc(f.poule):""}<br>Notre équipe : <b>${esc(f.teamName||"?")}</b></div>
       <p class="hint">${f.at?"Matchs mis à jour le "+new Date(f.at).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"Matchs pas encore récupérés."}</p>
       <div class="sqtools">${canEdit()?`<button class="btn primary" type="button" data-ffsync ${G.busy?"disabled":""}>${G.busy?"Mise à jour…":"Mettre à jour les matchs"}</button>`:""}${canAdmin()?`<button class="btn small" type="button" data-ffchange>Changer</button>`:""}<a class="btn small" href="${esc(f.url)}" target="_blank" rel="noopener">Voir sur ffhandball.fr</a></div>${errH}
-      <div class="subhead">Prochains matchs</div>${nx.length?`<ul class="ffm">${nx.map(m=>`<li><span class="d">${m.date?esc(fmtDate(m.date)):"À fixer"}${m.time?" · "+esc(m.time):""}</span><span>${m.lieu==="ext"?"à ":"vs "}<b>${esc(m.adv)}</b></span><span class="s">${m.lieu==="ext"?"Extérieur":"Domicile"}${m.salle?" · "+esc(m.salle):""}${m.j?" · journée "+esc(m.j):""}</span></li>`).join("")}</ul>`:`<p class="hint">Aucun match à venir.</p>`}`;
+      <div class="subhead">Prochains matchs</div>${nx.length?`<ul class="ffm">${nx.map(m=>`<li><span class="d">${m.date?esc(fmtDate(m.date)):"À fixer"}${m.time?" · "+esc(m.time):""}</span><span>${m.lieu==="ext"?`${esc(m.adv)} – <b>${esc(f.teamName||"Nous")}</b>`:`<b>${esc(f.teamName||"Nous")}</b> – ${esc(m.adv)}`}</span><span class="s">${m.lieu==="ext"?"Extérieur":"Domicile"}${m.salle?" · "+esc(m.salle):""}${m.j?" · journée "+esc(m.j):""}</span></li>`).join("")}</ul>`:`<p class="hint">Aucun match à venir.</p>`}`;
     return}
   if(!canAdmin()){el.innerHTML=`<p class="hint">Cette catégorie n'est pas encore reliée à la FFHB. C'est l'admin de l'équipe qui s'en occupe.</p>`;return}
   const r=G.ff;
+  if(G.pick){el.innerHTML=`<div class="ffbox"><b>${esc(G.pick.title)}</b><br>${esc(G.pick.poule||"")}</div><div class="subhead">Ton équipe</div><div class="chipwrap"><button type="button" class="chip" aria-pressed="true">✓ ${esc(G.pick.teamName)}</button></div><p class="hint">Récupération des matchs…</p>`;return}
   el.innerHTML=`<ol class="ffsteps"><li>Sur <a href="https://www.ffhandball.fr/competitions/" target="_blank" rel="noopener">ffhandball.fr</a>, ouvre le championnat de « ${esc(g.name)} », puis la poule de ton équipe.</li><li>Copie l'adresse de la page (bouton Partager, puis Copier).</li><li>Colle-la ici et touche « Chercher ».</li></ol>
     <form id="ffForm" class="stack" autocomplete="off"><label class="fld"><span class="lbl">Adresse de la poule (ou du championnat)</span><input type="url" id="ffUrl" inputmode="url" placeholder="https://www.ffhandball.fr/competitions/…" value="${esc(G.url)}" required></label>
     <div class="sqtools"><button class="btn primary" type="submit" ${G.busy?"disabled":""}>${G.busy?"Recherche…":"Chercher"}</button>${f?`<button class="btn small" type="button" data-ffcancel>Annuler</button>`:""}</div></form>${errH}
@@ -1437,7 +1438,7 @@ function ffImport(g,d){
   return {add,upd};
 }
 async function ffSync(g){
-  if(!g||!g.ff)return;G.busy=true;G.err="";renderFF(true);
+  if(!g||!g.ff)return;G.busy=true;G.err="";if(!G.pick)renderFF(true);
   try{const d=await ffCall(g.ff.url,g.ff.team);const {add,upd}=ffImport(g,d);g.ff.at=Date.now();saveLocal();saveCfg();
     toast(add||upd?`${add?add+" match(s) ajouté(s)":""}${add&&upd?", ":""}${upd?upd+" mis à jour":""}`:"Les matchs sont déjà à jour",false)}
   catch(e){G.err=e.message}
@@ -1488,8 +1489,10 @@ function bindRoster(){
     if("ffcancel" in b.dataset){G.setup=false;G.ff=null;G.err="";renderFF(true);return}
     if(b.dataset.ffpoule&&G.ff){ffSearch(G.ff.url.replace(/poule-\d+\/?$/,"poule-"+b.dataset.ffpoule+"/"));return}
     if(b.dataset.ffteam&&G.ff){const r=G.ff,t=r.teams.find(x=>x.id===b.dataset.ffteam);if(!t)return;
-      g.ff={url:r.url,team:t.id,teamName:t.name,title:r.title+(r.sub?" · "+r.sub:""),poule:r.poule};
-      G.setup=false;G.ff=null;saveCfg();ffSync(g)}});
+      if(document.activeElement&&document.activeElement.blur)document.activeElement.blur();
+      const ff={url:r.url,team:t.id,teamName:t.name,title:r.title+(r.sub?" · "+r.sub:""),poule:r.poule};
+      G.pick=ff;G.ff=null;renderFF(true);
+      g.ff=ff;G.setup=false;saveCfg();ffSync(g).finally(()=>{G.pick=null;if(tab==="roster")renderRoster()})}});
 }
 
 /* ---------- Interactions ---------- */
