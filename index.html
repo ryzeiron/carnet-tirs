@@ -337,6 +337,11 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 @media (prefers-reduced-motion:reduce){.hubcard{transition:none}.hubcard:hover{transform:none}}
 .hub-foot{display:flex;gap:16px;justify-content:center}
 .homebtn{align-self:center}
+.brand{align-items:center}
+.ctxbtns{display:flex;gap:6px;flex-wrap:wrap}
+.ctxbtns:empty{display:none}
+.tabs[hidden]{display:none!important}
+body[data-tab="entry"] .top-tools,body[data-tab="roster"] .top-tools{display:none}
 .trhead{display:flex;align-items:center;gap:10px 14px;flex-wrap:wrap;margin-bottom:14px}
 .trhead h1{font-family:var(--display);font-weight:700;font-size:30px;margin:0;text-transform:uppercase}
 .trsess{display:flex;align-items:center;gap:6px}
@@ -537,9 +542,10 @@ img{max-width:100%}
 <div class="wrap" id="appWrap">
   <header class="top">
     <div class="brand">
-      <button class="btn small homebtn" type="button" id="homeBtn">⌂ Accueil</button>
-      <h1>Carnet de tirs</h1>
-      <div class="tabs" role="tablist">
+      <button class="btn small homebtn" type="button" id="homeBtn">← Accueil</button>
+      <h1 id="secTitle">Carnet de tirs</h1>
+      <span class="ctxbtns" id="ctxBtns"></span>
+      <div class="tabs" role="tablist" hidden>
         <button class="tab" role="tab" id="tabEntry" aria-selected="true">Saisie</button>
         <button class="tab" role="tab" id="tabAna" aria-selected="false">Analyse</button>
         <button class="tab" role="tab" id="tabMatch" aria-selected="false">Matchs</button>
@@ -552,7 +558,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 25</span>
+      <span class="status" id="appVersion">Version 26</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1200,7 +1206,7 @@ function renderGoalA(list){
   $("goalA-dots").innerHTML=list.filter(s=>s.gx!=null).map(s=>`<circle cx="${s.gx}" cy="${s.gy}" r=".055" fill="${resColor(s.res)}" stroke="var(--panel)" stroke-width=".015"/>`).join("");
 }
 
-function render(){
+function render(){if(typeof renderCtx==="function"&&MODE==="app")renderCtx();
   GK=false;
   if(S.cur&&!matchById(S.cur))S.cur="";
   $("matchSel").innerHTML=(S.matches.length?"":`<option value="">Crée d'abord un match →</option>`)+(S.matches.length&&!S.cur?`<option value="">Choisis le match…</option>`:"")+
@@ -1211,7 +1217,13 @@ function render(){
   if(MODE==="pick"){renderPick();return}
   if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="roster")renderRoster();else if(tab==="team")renderTeam();else renderAnalysis();
 }
-function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewRoster").hidden=t!=="roster";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry"||MODE!=="app";
+const SEC_TITLE={entry:"Saisie",ana:"Analyse",match:"Matchs",roster:"Effectif",team:"Mon équipe"};
+function renderCtx(){const t=tab,el=$("ctxBtns");if(!el)return;$("secTitle").textContent=SEC_TITLE[t]||"Carnet de tirs";document.body.dataset.tab=t;
+  const b=(k,l,pr)=>`<button class="btn small${pr?" primary":""}" type="button" data-ctx="${k}">${l}</button>`;
+  el.innerHTML=t==="entry"?b("pick","Changer de match")+(S.cur?b("stats","Stats du match"):""):
+    t==="ana"?b("matchs","Tous les matchs"):
+    t==="match"?(ROLE!=="lecteur"?b("pick","Saisir un match",true):""):"";}
+function setTab(t){if(t==="entry"&&ROLE==="lecteur")t="ana";tab=t;lsSet("hb-tab",t);renderCtx();$("viewEntry").hidden=t!=="entry";$("viewAna").hidden=t!=="ana";$("viewMatch").hidden=t!=="match";$("viewRoster").hidden=t!=="roster";$("viewTeam").hidden=t!=="team";$("savebar").hidden=t!=="entry"||MODE!=="app";
   $("tabEntry").setAttribute("aria-selected",t==="entry");$("tabAna").setAttribute("aria-selected",t==="ana");$("tabMatch").setAttribute("aria-selected",t==="match");$("tabRoster").setAttribute("aria-selected",t==="roster");$("tabTeam").setAttribute("aria-selected",t==="team");render()}
 
 /* ---------- CHRONO ---------- */
@@ -2452,6 +2464,8 @@ function start(){
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
   bindMatches();bindClock();bindRoster();bindPick();
+  $("ctxBtns").addEventListener("click",e=>{const b=e.target.closest("[data-ctx]");if(!b)return;const k=b.dataset.ctx;
+    if(k==="pick")openPick();else if(k==="stats"){A.match=S.cur;A.sel=null;setTab("ana");window.scrollTo(0,0)}else if(k==="matchs")setTab("match")});
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
   S.mode="local";
   loadWorkspaceData();bindTeam();
