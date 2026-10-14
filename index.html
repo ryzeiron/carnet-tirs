@@ -187,6 +187,10 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .ffm .d{font-weight:700;white-space:nowrap}
 .ffm .s{color:var(--muted);font-size:12.5px;grid-column:2}
 .fferr{color:#d23b3b;font-size:14px}
+.msub{grid-column:1/-1;display:flex;width:max-content;max-width:100%}
+.msub .tab{font-size:15px;padding:7px 14px}
+.msub .cnt{opacity:.6;margin-left:4px}
+.msubempty{grid-column:1/-1}
 .msec{grid-column:1/-1;font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:16px 2px 6px}
 .mlist .more{grid-column:1/-1;justify-self:center}
 @media (max-width:640px){.tabs{display:flex;width:100%;overflow-x:auto}.tab{padding:6px 4px;font-size:13px;letter-spacing:0;flex:1 0 auto}}
@@ -598,7 +602,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 31</span>
+      <span class="status" id="appVersion">Version 32</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1361,7 +1365,7 @@ function timeline(id){
 }
 
 /* ---------- MATCHS ---------- */
-let mDelArm=null,editId=null,mLieu="dom",mShowAll=false;const openTL=new Set();
+let mDelArm=null,editId=null,mLieu="dom",mShowAll=false,mSub=lsGet("hb-msub","up");const openTL=new Set();
 function sancTxt(l){const c=k=>l.filter(s=>s.res===k).length;const parts=[[c("s2min"),"× 2'"],[c("sjaune"),"J"],[c("srouge"),"R"],[c("sbleu"),"B"]].filter(x=>x[0]).map(x=>x[0]+" "+x[1]);return parts.join(" · ")||"–"}
 function renderMatches(){
   const ms=sortedMatches();
@@ -1395,8 +1399,10 @@ function renderMatches(){
         <button class="btn small" data-medit="${esc(m.id)}" type="button">Modifier</button>
         <button class="btn small danger" data-mdel="${esc(m.id)}" type="button">${arm?`Confirmer : supprimer avec ${l.length} action${l.length>1?"s":""}`:"Supprimer"}</button>
       </div></article>`};
-  $("matchCards").innerHTML=(up.length?`<div class="msec">À venir · ${up.length}</div>`+showUp.map(card).join("")+(up.length>showUp.length?`<button class="btn small more" type="button" data-mmore>Voir les ${up.length-showUp.length} autres matchs à venir</button>`:mShowAll&&up.length>3?`<button class="btn small more" type="button" data-mmore>Réduire</button>`:""):"")+
-    (past.length?(up.length?`<div class="msec">Joués · ${past.length}</div>`:"")+past.map(card).join(""):"");
+  const sw=`<div class="tabs teamsw msub">${[["up","Matchs à venir",up.length],["past","Matchs joués",past.length]].map(([k,l,n])=>`<button type="button" class="tab" data-msub="${k}" aria-selected="${mSub===k}">${l} <span class="cnt">${n}</span></button>`).join("")}</div>`;
+  $("matchCards").innerHTML=sw+(mSub==="up"
+    ?(up.length?showUp.map(card).join("")+(up.length>showUp.length?`<button class="btn small more" type="button" data-mmore>Voir les ${up.length-showUp.length} autres matchs à venir</button>`:mShowAll&&up.length>3?`<button class="btn small more" type="button" data-mmore>Réduire</button>`:""):`<div class="panel empty msubempty">Aucun match à venir.</div>`)
+    :(past.length?past.map(card).join(""):`<div class="panel empty msubempty">Aucun match joué pour l'instant.</div>`));
 }
 let sqSel=new Set();
 function lastSquad(){const m=sortedMatches().find(x=>Array.isArray(x.squad)&&x.id!==editId&&!(x.ffhb&&isUpcoming(x)));return m?m.squad.filter(id=>S.players.some(p=>p.id===id)):null}
@@ -1444,6 +1450,7 @@ function bindMatches(){
   $("matchCards").addEventListener("click",e=>{
     const t=e.target.closest("button");if(!t)return;
     if("mmore" in t.dataset){mShowAll=!mShowAll;renderMatches();return}
+    if(t.dataset.msub){mSub=t.dataset.msub;lsSet("hb-msub",mSub);renderMatches();return}
     if(t.dataset.mstats){A.match=t.dataset.mstats;A.sel=null;setTab("ana");window.scrollTo(0,0);return}
     if(t.dataset.mcur){S.cur=t.dataset.mcur;lsSet(K("hb-curMatch"),S.cur);setTab("entry");window.scrollTo(0,0);return}
     if(t.dataset.medit){openMatchForm(t.dataset.medit);return}
@@ -1686,8 +1693,8 @@ function renderPerf(){
     ${trAsp.length?`<div class="subhead">À l'entraînement · par poste</div>${pfBars(trAsp,trWeak,unit)}`:""}`;
 }
 /* ---------- CHOIX DU MATCH puis DES JOUEURS (avant la saisie) ---------- */
-const PK={kind:"match",step:"match",id:"",sel:new Set(),grp:"",moreUp:false,morePast:false};
-function openPick(){PK.kind="match";PK.step="match";PK.id="";PK.moreUp=false;PK.morePast=false;showMode("pick")}
+const PK={sub:"up",kind:"match",step:"match",id:"",sel:new Set(),grp:"",moreUp:false,morePast:false};
+function openPick(){PK.kind="match";PK.step="match";PK.sub="up";PK.id="";PK.moreUp=false;PK.morePast=false;showMode("pick")}
 function pickCard(m){
   const g=m.grp?grpById(m.grp):null,sc=matchScore(m.id),isToday=m.date===today(),cur=m.id===S.cur;
   const when=isToday?"Aujourd'hui":m.date?fmtDate(m.date):"Date à venir";
@@ -1706,12 +1713,13 @@ function renderPick(){
     const ok=m=>!PK.grp||m.grp===PK.grp;
     const up=upcomingMatches().filter(ok),past=sortedMatches().filter(m=>!isUpcoming(m)&&ok(m));
     const curM=matchById(S.cur);
-    const upS=PK.moreUp?up:up.slice(0,6),pastS=PK.morePast?past:past.slice(0,3);
+    const upS=PK.moreUp?up:up.slice(0,6),pastS=PK.morePast?past:past.slice(0,9);
     body.innerHTML=(gs.length?`<div class="chipwrap pkf">${[["","Toutes les catégories"],...gs.map(g=>[g.id,g.name])].map(([id,n])=>`<button type="button" class="chip" data-pkg="${esc(id)}" aria-pressed="${PK.grp===id}">${esc(n)}</button>`).join("")}</div>`:"")+
       (curM&&ok(curM)&&!upS.includes(curM)&&!pastS.includes(curM)?`<div class="pk-sec">Match en cours</div><div class="hub-cards">${pickCard(curM)}</div>`:"")+
-      `<div class="pk-sec">À venir${up.length?" · "+up.length:""}</div><div class="hub-cards"><button class="hubcard mpick newm" type="button" data-pknew><span class="hc-n">Nouveau</span><b>+ Créer un match</b><span>Amical, coupe, tournoi… ou un match absent du calendrier</span></button>${upS.map(pickCard).join("")}</div>`+
-      (up.length>upS.length?`<button class="btn small pk-more" type="button" data-pkmore="up">Voir les ${up.length-upS.length} autres matchs à venir</button>`:"")+
-      (past.length?`<div class="pk-sec">Déjà joués · ${past.length}</div><div class="hub-cards">${pastS.map(pickCard).join("")}</div>`+(past.length>pastS.length?`<button class="btn small pk-more" type="button" data-pkmore="past">Voir les ${past.length-pastS.length} autres matchs joués</button>`:""):"")+
+      `<div class="tabs teamsw msub">${[["up","Matchs à venir",up.length],["past","Matchs joués",past.length]].map(([k,l,n])=>`<button type="button" class="tab" data-pksub="${k}" aria-selected="${PK.sub===k}">${l} <span class="cnt">${n}</span></button>`).join("")}</div>`+
+      (PK.sub==="past"?(past.length?`<div class="hub-cards">${pastS.map(pickCard).join("")}</div>`+(past.length>pastS.length?`<button class="btn small pk-more" type="button" data-pkmore="past">Voir les ${past.length-pastS.length} autres matchs joués</button>`:""):`<p class="hint">Aucun match joué pour l'instant.</p>`):
+      `<div class="hub-cards"><button class="hubcard mpick newm" type="button" data-pknew><span class="hc-n">Nouveau</span><b>+ Créer un match</b><span>Amical, coupe, tournoi… ou un match absent du calendrier</span></button>${upS.map(pickCard).join("")}</div>`+
+      (up.length>upS.length?`<button class="btn small pk-more" type="button" data-pkmore="up">Voir les ${up.length-upS.length} autres matchs à venir</button>`:""))+
       `<div class="pk-foot"><button type="button" class="linkbtn" data-pkall>Voir tous les matchs, les stats et les exports</button></div>`;
     return}
   const m=matchById(PK.id),g=m.grp?grpById(m.grp):null;
@@ -1739,6 +1747,7 @@ function bindPick(){
     if(d.pkm){if(ROLE==="lecteur"){A.match=d.pkm;showMode("app");setTab("ana");return}pickMatch(d.pkm);return}
     if("pknew" in d){openMatchForm();return}
     if("pkg" in d){PK.grp=d.pkg;renderPick();return}
+    if(d.pksub){PK.sub=d.pksub;renderPick();return}
     if(d.pkmore){if(d.pkmore==="up")PK.moreUp=true;else PK.morePast=true;renderPick();return}
     if("pkall" in d){showMode("app");setTab("match");return}
     if("pkros" in d){showMode("app");setTab("roster");return}
