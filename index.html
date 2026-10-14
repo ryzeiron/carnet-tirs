@@ -491,7 +491,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .sp-net{transform-box:fill-box;transform-origin:50% 50%}
 .sp-ball{position:absolute;left:0;top:0;width:var(--b,120px);height:var(--b,120px);will-change:transform,filter;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
 .sp-ball svg{width:100%;height:100%;display:block;overflow:visible}
-.sp-ghost{opacity:.18;filter:blur(2px)}
+.sp-fire{position:absolute;border-radius:50%;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(closest-side,#fff6c2 0%,#ffd23f 25%,#ff7a1a 55%,rgba(220,40,10,.6) 75%,rgba(220,40,10,0) 100%);filter:blur(1px)}
 .sp-shadow{position:absolute;left:0;top:0;width:var(--b,120px);height:calc(var(--b,120px)*.22);border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0));opacity:0}
 .sp-flash{position:absolute;left:0;top:0;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(224,87,29,.5) 45%,rgba(224,87,29,0));opacity:0;pointer-events:none}
 .sp-title{position:absolute;left:0;right:0;bottom:16%;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;color:#fff;text-align:center}
@@ -552,20 +552,25 @@ img{max-width:100%}
     const tf=([x,y,s,a])=>`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${s.toFixed(3)}) rotate(${a}deg)`;
     const kf=P.map((p,i)=>({transform:tf(p),offset:[0,.32,.66,1][i]}));
     kf[0].filter="blur(4px) drop-shadow(0 6px 10px rgba(0,0,0,.45))";kf[3].filter="blur(0px) drop-shadow(0 3px 4px rgba(0,0,0,.4))";
-    const D=950,DL=250,ease="cubic-bezier(.35,.05,.55,1)";
-    [3,2,1].forEach(k=>{const g=ball.cloneNode(true);g.removeAttribute("id");g.classList.add("sp-ghost");st.insertBefore(g,ball);
-      g.animate(kf,{duration:D,delay:DL+k*45,easing:ease,fill:"both"}).onfinish=()=>g.remove()});
+    const D=520,DL=120,ease="cubic-bezier(.25,.1,.45,1)";
     const fly=ball.animate(kf,{duration:D,delay:DL,easing:ease,fill:"both"});
+    // flamme : des braises naissent derrière le ballon à chaque image
+    let burning=true;const fire=()=>{if(!burning)return;const bb=ball.getBoundingClientRect();
+      if(bb.width>2&&bb.right>0&&bb.top<vh){for(let k=0;k<2;k++){const f=document.createElement("i");f.className="sp-fire";const sz=bb.width*(.7+Math.random()*.5);
+        f.style.width=f.style.height=sz+"px";f.style.left=(bb.left+bb.width/2-sz/2+(Math.random()-.5)*bb.width*.25)+"px";f.style.top=(bb.top+bb.height/2-sz/2+(Math.random()-.5)*bb.height*.25)+"px";st.insertBefore(f,ball);
+        f.animate([{opacity:.95,transform:"scale(1)"},{opacity:0,transform:`translate(${-bb.width*.5}px,${bb.height*.35}px) scale(.25)`}],{duration:260+Math.random()*140,easing:"ease-out",fill:"forwards"}).onfinish=()=>f.remove()}}
+      requestAnimationFrame(fire)};
+    setTimeout(()=>requestAnimationFrame(fire),DL);
     sh.animate([{transform:`translate(${vw*-.12-B/2}px,${vh*.98}px) scale(2.4,2.4)`,opacity:.0},{transform:`translate(${vw*.3-B/2}px,${floor+20}px) scale(1.2,1.2)`,opacity:.5,offset:.5},{transform:`translate(${gx-B/2}px,${floor}px) scale(${sEnd*1.4},${sEnd*1.4})`,opacity:.35}],{duration:D,delay:DL,easing:ease,fill:"both"});
-    fly.onfinish=()=>{
+    fly.onfinish=()=>{burning=false;
       // le ballon s'écrase dans le filet puis retombe
       ball.animate([{transform:tf([gx,gy,sEnd,800])},{transform:tf([gx+r.width*.02,gy-r.height*.02,sEnd*.82,860])},{transform:tf([gx-r.width*.03,floor-r.height*.12,sEnd*.86,980])}],{duration:650,easing:"cubic-bezier(.2,.7,.4,1)",fill:"forwards"});
       net.animate([{transform:"none"},{transform:"translate(5px,-7px) scale(1.06)"},{transform:"translate(-2px,2px) scale(.99)"},{transform:"none"}],{duration:600,easing:"ease-out"});
       fl.style.left=gx+"px";fl.style.top=gy+"px";
       fl.animate([{opacity:0,transform:"scale(.3)"},{opacity:.9,transform:"scale(1)"},{opacity:0,transform:"scale(1.8)"}],{duration:520,easing:"ease-out"});
       st.animate([{transform:"translate(0,0)"},{transform:"translate(-5px,3px)"},{transform:"translate(4px,-2px)"},{transform:"translate(0,0)"}],{duration:260});
-      title.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:450,delay:250,easing:"ease-out",fill:"forwards"});
-      setTimeout(end,1350);
+      title.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:350,delay:150,easing:"ease-out",fill:"forwards"});
+      setTimeout(end,1000);
     };
     setTimeout(end,4500);
   });
@@ -677,7 +682,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 33</span>
+      <span class="status" id="appVersion">Version 34</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
