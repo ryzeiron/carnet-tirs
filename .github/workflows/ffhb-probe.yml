@@ -12,9 +12,12 @@ jobs:
       - run: |
           mkdir out; cd out
           UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/128 Safari/537.36"
-          curl -sSL -A "$UA" -o poule.html "https://www.ffhandball.fr/competitions/saison-2023-2024-19/regional/poule-des-as-masculin-24919/poule-144506/" || true
-          curl -sSL -A "$UA" -o saison.html "https://www.ffhandball.fr/competitions/saison-2026-2027-22/" || true
-          curl -sSL -A "$UA" -o wpjson.json "https://www.ffhandball.fr/wp-json/" || true
+          true || "https://www.ffhandball.fr/competitions/saison-2023-2024-19/regional/poule-des-as-masculin-24919/poule-144506/" || true
+          true || "https://www.ffhandball.fr/competitions/saison-2026-2027-22/" || true
+          B="https://www.ffhandball.fr/competitions/saison-2023-2024-19/regional/poule-des-as-masculin-24919/poule-144506"
+          curl -sSL -A "$UA" -o equipe.html "$B/equipe-1746591/" -w "equipe %{http_code}\n" || true
+          curl -sSL -A "$UA" -o journee1.html "$B/journee-1/" -w "j1 %{http_code}\n" || true
+          curl -sSL -A "$UA" -o d2.html "https://www.ffhandball.fr/competitions/saison-2026-2027-22/national/" -w "nat %{http_code}\n" || true
           ls -la
           git init -q; git checkout -q -b ffhb-probe-out
           git config user.email bot@x; git config user.name bot
