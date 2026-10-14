@@ -153,6 +153,33 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .roslist form .acts2{grid-column:1/-1;display:flex;gap:6px;flex-wrap:wrap}
 .chip.mini{padding:3px 9px;font-size:12px}
 .rosadd{border-top:1px dashed var(--line);padding-top:10px;margin-top:10px}
+.rossub{display:flex;width:max-content;max-width:100%;margin:12px 0 0}
+.rossub .tab{font-size:15px;padding:6px 16px}
+.perfgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:14px;align-items:start;margin-top:14px}
+.perfgrid .panel-head select{max-width:60%}
+.pftable tr[data-pfp]{cursor:pointer}
+.pftable tr.sel td{background:var(--panel-2)}
+.pftable td.pfw{color:#d23b3b;font-size:13px}
+.pfmini{display:inline-block;width:46px;height:6px;border-radius:3px;background:var(--panel-2);margin-right:6px;vertical-align:middle;overflow:hidden}
+.pfmini i{display:block;height:100%;background:var(--accent);border-radius:3px}
+.pfk{margin-bottom:10px}
+.pfwork{background:var(--panel-2);border:1px solid var(--line);border-left:4px solid #d23b3b;border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.5}
+.pfwork ul{margin:4px 0 0;padding-left:4px;list-style:none}
+.pflegend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin:12px 0 0}
+.pflegend span{display:inline-flex;align-items:center;gap:6px}
+.pflegend i{display:inline-block}
+.lg-bar{width:14px;height:10px;border-radius:0 4px 4px 0;background:var(--accent)}
+.lg-avg{width:2px;height:14px;background:var(--ink)}
+.lg-weak{width:14px;height:10px;border-radius:0 4px 4px 0;background:#d23b3b}
+.pfchart{display:flex;flex-direction:column;gap:6px}
+.pfrow{display:grid;grid-template-columns:minmax(96px,34%) 1fr auto;align-items:center;gap:10px;font-size:13.5px}
+.pfl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pfrow.weak .pfl{color:#d23b3b;font-weight:700}
+.pftrack{position:relative;height:16px;background:var(--panel-2);border-radius:0 4px 4px 0;border-left:1px solid var(--line)}
+.pfbar{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:0 4px 4px 0}
+.pfrow.weak .pfbar{background:#d23b3b}
+.pfavg{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:var(--ink)}
+.pfv{font-variant-numeric:tabular-nums;white-space:nowrap;min-width:92px;text-align:right}
 .ffsteps{margin:4px 0 12px;padding-left:20px;font-size:14px;line-height:1.55}
 .ffbox{background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;margin:8px 0;font-size:14px;line-height:1.45}
 .ffm{list-style:none;margin:6px 0 0;padding:0}
@@ -558,7 +585,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 26</span>
+      <span class="status" id="appVersion">Version 27</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -737,9 +764,14 @@ img{max-width:100%}
     <div class="panel">
       <div class="panel-head"><h2>Catégories</h2><span class="hint" id="rosCount"></span></div>
       <div class="chipwrap grpchips" id="grpChips"></div>
+      <div class="tabs teamsw rossub" id="rosSub"><button type="button" class="tab" data-rsub="list">Joueurs</button><button type="button" class="tab" data-rsub="perf">Performance</button></div>
       <form id="grpForm" class="addopt" autocomplete="off"><input type="text" id="grpName" maxlength="40" placeholder="Nouvelle catégorie (ex. -18 région)" aria-label="Nom de la nouvelle catégorie"><button class="btn small primary" type="submit">Créer</button></form>
     </div>
-    <div class="rosgrid">
+    <div id="perfView" class="perfgrid" hidden>
+      <div class="panel"><div class="panel-head"><h2>Efficacité au tir</h2><select id="pfScope" aria-label="Période"></select></div><div id="pfTable"></div></div>
+      <div class="panel" id="pfDetail" hidden></div>
+    </div>
+    <div class="rosgrid" id="rosList0">
       <div class="panel">
         <div class="panel-head"><h2 id="rosTitle">Joueurs</h2><span class="grptools" id="grpTools"></span></div>
         <ul class="roslist" id="rosList"></ul>
@@ -1410,7 +1442,7 @@ function bindMatches(){
 }
 
 /* ---------- EFFECTIF : catégories de joueurs + calendrier FFHB ---------- */
-const G={pick:null,sel:lsGet("hb-grpSel",""),edit:"",pDelArm:"",gDelArm:"",ren:false,setup:false,ff:null,busy:false,err:"",url:""};
+const G={sub:lsGet("hb-rsub","list"),pick:null,sel:lsGet("hb-grpSel",""),edit:"",pDelArm:"",gDelArm:"",ren:false,setup:false,ff:null,busy:false,err:"",url:""};
 const groups=()=>Array.isArray(S.cfg.groups)?S.cfg.groups:[];
 const grpById=id=>id?groups().find(g=>g.id===id):null;
 const pGroups=p=>Array.isArray(p&&p.grp)?p.grp:[];
@@ -1420,6 +1452,8 @@ const canAdmin=()=>!WS||ROLE==="admin";
 const POS_OPTS=v=>Object.entries(POS).map(([k,l])=>`<option value="${k}" ${k===v?"selected":""}>${l}</option>`).join("");
 function selGrp(id){G.sel=id;lsSet("hb-grpSel",id);G.edit="";G.ren=false;G.gDelArm="";G.setup=false;G.ff=null;G.err="";G.url="";renderRoster()}
 function renderRoster(){
+  const perf=G.sub==="perf";$("perfView").hidden=!perf;$("rosList0").hidden=perf;$("grpForm").hidden=perf||!canEdit();
+  $("rosSub").querySelectorAll("[data-rsub]").forEach(b=>b.setAttribute("aria-selected",b.dataset.rsub===(perf?"perf":"list")));
   const gs=groups();if(G.sel&&G.sel!=="_none"&&!grpById(G.sel))G.sel="";
   const all=roster("nous"),noGrp=p=>!pGroups(p).some(id=>grpById(id));
   const inSel=p=>!G.sel||(G.sel==="_none"?noGrp(p):pGroups(p).includes(G.sel));
@@ -1427,7 +1461,7 @@ function renderRoster(){
   $("grpChips").innerHTML=[["","Tous"],...gs.map(g=>[g.id,g.name]),...(gs.length?[["_none","Sans catégorie"]]:[])]
     .map(([id,n])=>`<button type="button" class="chip" data-grp="${esc(id)}" aria-pressed="${G.sel===id}">${esc(n)} <span class="cnt">${cnt(id)}</span></button>`).join("");
   $("rosCount").textContent=`${all.length} joueur${all.length>1?"s":""}`;
-  $("grpForm").hidden=!canEdit();
+  if(perf){renderPerf();return}
   const g=grpById(G.sel),ed=canEdit();
   $("rosTitle").textContent=g?g.name:G.sel==="_none"?"Sans catégorie":"Tous les joueurs";
   $("grpTools").innerHTML=!g||!ed?"":G.ren
@@ -1509,6 +1543,10 @@ function delPlayerEverywhere(id){
 }
 function bindRoster(){
   $("tabRoster").onclick=()=>setTab("roster");
+  $("rosSub").addEventListener("click",e=>{const b=e.target.closest("[data-rsub]");if(!b)return;G.sub=b.dataset.rsub;lsSet("hb-rsub",G.sub);renderRoster()});
+  $("pfScope").addEventListener("change",e=>{PF.scope=e.target.value;lsSet("hb-pfScope",PF.scope);renderPerf()});
+  $("pfTable").addEventListener("click",e=>{const r=e.target.closest("[data-pfp]");if(!r)return;PF.p=PF.p===r.dataset.pfp?"":r.dataset.pfp;renderPerf();
+    if(PF.p&&window.innerWidth<900)setTimeout(()=>$("pfDetail").scrollIntoView({behavior:"smooth",block:"start"}),50)});
   $("grpChips").addEventListener("click",e=>{const b=e.target.closest("[data-grp]");if(b)selGrp(b.dataset.grp)});
   $("grpForm").addEventListener("submit",e=>{e.preventDefault();const n=$("grpName").value.trim().slice(0,40);if(!n)return;
     if(groups().some(g=>g.name.toLowerCase()===n.toLowerCase())){toast("Cette catégorie existe déjà",false);return}
@@ -1552,6 +1590,87 @@ function bindRoster(){
       g.ff=ff;G.setup=false;saveCfg();ffSync(g).finally(()=>{G.pick=null;if(tab==="roster")renderRoster()})}});
 }
 
+/* ---------- EFFECTIF > PERFORMANCE : efficacité joueur par joueur ---------- */
+const PF={scope:lsGet("hb-pfScope","all"),p:""};
+const pctTxt=(g,t)=>t?Math.round(g*100/t)+" %":"–";
+function pfMatchIds(){
+  const sc=PF.scope;
+  if(sc==="all")return null;
+  if(sc==="last5")return new Set(sortedMatches().filter(m=>S.shots.some(s=>s.match===m.id)).slice(0,5).map(m=>m.id));
+  if(sc.startsWith("g:"))return new Set(S.matches.filter(m=>m.grp===sc.slice(2)).map(m=>m.id));
+  if(sc.startsWith("m:"))return new Set([sc.slice(2)]);
+  return null;
+}
+function pfShots(){const ids=pfMatchIds();return S.shots.filter(s=>!isSanc(s)&&(!ids||ids.has(s.match)))}
+// tirs d'un joueur de champ (g = buts) ou d'un gardien (g = arrêts, t = tirs cadrés)
+function pfList(p,base){return isGK(p)?base.filter(s=>teamOf(s)==="adv"&&s.gk===p.id&&(s.res==="but"||s.res==="arret"))
+  :base.filter(s=>teamOf(s)==="nous"&&s.p===p.id&&s.res!=="perte")}
+function pfTeam(gk,base){return gk?base.filter(s=>teamOf(s)==="adv"&&s.gk&&(s.res==="but"||s.res==="arret")):base.filter(s=>teamOf(s)==="nous"&&s.res!=="perte")}
+const pfOk=gk=>s=>gk?s.res==="arret":s.res==="but";
+function pfAspects(list,team,gk){
+  const ok=pfOk(gk),agg=(l,f)=>{const x=l.filter(f);return {g:x.filter(ok).length,t:x.length}};
+  const mk=(sec,label,f)=>{const a=agg(list,f),b=agg(team,f);return {sec,label,g:a.g,t:a.t,tg:b.g,tt:b.t}};
+  const out=[];
+  PHASES.forEach(ph=>out.push(mk("Par phase de jeu",ph.label,s=>s.kind===ph.id)));
+  out.push(mk("Par phase de jeu","Phase non notée",s=>!s.kind||!PH[s.kind]));
+  ZONES.forEach(z=>out.push(mk("Par intervalle de tir",z.name,s=>s.zone===z.id)));
+  out.push(mk("Par distance","Près (6-9 m)",s=>s.zone!=="7m"&&s.dist==="6m"));
+  out.push(mk("Par distance","Loin (9 m et +)",s=>s.zone!=="7m"&&s.dist==="9m"));
+  return out.filter(a=>a.t>0);
+}
+function pfWeak(asp,gk){const low=gk?.25:.4;
+  // un point faible : au moins 3 tirs, nettement sous la moyenne de l'équipe (ou sous 40 %)
+  return asp.filter(a=>a.t>=3&&a.label!=="Phase non notée").map(a=>{const e=a.g/a.t,te=a.tt?a.tg/a.tt:.5;return {...a,gap:(te-e)*Math.sqrt(a.t),e,te}})
+    .filter(a=>(a.tt>a.t&&a.e<a.te-.15)||a.e<low).sort((x,y)=>y.gap-x.gap).slice(0,3);
+}
+function pfBars(rows,weakSet,unit){
+  return `<div class="pfchart">${rows.map(a=>{const e=a.t?a.g/a.t:0,te=a.tt?a.tg/a.tt:null,w=weakSet.has(a.sec+a.label);
+    const tip=`${a.label} : ${a.g} ${unit} sur ${a.t} (${pctTxt(a.g,a.t)})${te!=null?` · moyenne de l'équipe ${Math.round(te*100)} %`:""}`;
+    return `<div class="pfrow${w?" weak":""}" title="${esc(tip)}"><span class="pfl">${w?"⚠ ":""}${esc(a.label)}</span><span class="pftrack"><i class="pfbar" style="width:${Math.max(e*100,a.g?2:0).toFixed(1)}%"></i>${te!=null?`<b class="pfavg" style="left:${(te*100).toFixed(1)}%"></b>`:""}</span><span class="pfv"><b>${a.g}/${a.t}</b> · ${pctTxt(a.g,a.t)}</span></div>`}).join("")}</div>`;
+}
+function renderPerf(){
+  const el=$("perfView");if(!el)return;
+  const base=pfShots();
+  // sélecteur de période
+  const gs=groups(),ms=sortedMatches().filter(m=>S.shots.some(s=>s.match===m.id));
+  const opts=[["all","Toute la saison"],["last5","5 derniers matchs"],...gs.map(g=>["g:"+g.id,"Matchs "+g.name]),...ms.map(m=>["m:"+m.id,matchLabel(m.id)])];
+  if(!opts.some(o=>o[0]===PF.scope))PF.scope="all";
+  $("pfScope").innerHTML=opts.map(([v,l])=>`<option value="${esc(v)}" ${v===PF.scope?"selected":""}>${esc(l)}</option>`).join("");
+  const all=roster("nous"),noGrp=p=>!pGroups(p).some(id=>grpById(id));
+  const pl=all.filter(p=>!G.sel||(G.sel==="_none"?noGrp(p):pGroups(p).includes(G.sel)));
+  const tmF=pfTeam(false,base),tmG=pfTeam(true,base);
+  const row=p=>{const gk=isGK(p),l=pfList(p,base),ok=pfOk(gk),g=l.filter(ok).length,t=l.length;
+    const sept=gk?null:l.filter(s=>s.zone==="7m"||s.kind==="7m"),pert=gk?null:base.filter(s=>teamOf(s)==="nous"&&s.p===p.id&&s.res==="perte").length;
+    const wk=t?pfWeak(pfAspects(l,gk?tmG:tmF,gk),gk)[0]:null;
+    return {p,gk,g,t,html:`<tr data-pfp="${esc(p.id)}" class="${PF.p===p.id?"sel":""}"><td><b>${p.num??"–"}</b> ${esc(p.name)}</td><td>${g}/${t}</td><td><span class="pfmini"><i style="width:${t?Math.round(g*100/t):0}%"></i></span>${pctTxt(g,t)}</td><td>${gk?"–":sept.length?`${sept.filter(ok).length}/${sept.length}`:"–"}</td><td>${gk?"–":pert}</td><td class="pfw">${wk?"⚠ "+esc(wk.label):t?"—":""}</td></tr>`}};
+  const fr=pl.filter(p=>!isGK(p)).map(row).sort((a,b)=>b.t-a.t),gr=pl.filter(isGK).map(row).sort((a,b)=>b.t-a.t);
+  const head=gk=>`<tr><th>Joueur</th><th>${gk?"Arrêts":"Buts/tirs"}</th><th>${gk?"% arrêts":"Efficacité"}</th><th>7 m</th><th>Pertes</th><th>À travailler</th></tr>`;
+  $("pfTable").innerHTML=pl.length?`<div class="tbl-wrap"><table class="pftable">${head(false)}${fr.map(r=>r.html).join("")||`<tr><td colspan="6" class="hint">Aucun joueur de champ.</td></tr>`}</table></div>`+
+    (gr.length?`<div class="subhead">Gardiens · arrêts sur tirs cadrés</div><div class="tbl-wrap"><table class="pftable">${head(true)}${gr.map(r=>r.html).join("")}</table></div>`:"")+
+    `<p class="hint">Touche un joueur pour voir le détail et le graphique. Équipe sur la période : ${tmF.filter(pfOk(false)).length}/${tmF.length} (${pctTxt(tmF.filter(pfOk(false)).length,tmF.length)}).</p>`
+    :`<p class="hint">Aucun joueur dans cette catégorie.</p>`;
+  // fiche joueur
+  const p=S.players.find(x=>x.id===PF.p);
+  if(!p||!pl.includes(p)){$("pfDetail").hidden=true;return}
+  $("pfDetail").hidden=false;
+  const gk=isGK(p),l=pfList(p,base),team=gk?tmG:tmF,ok=pfOk(gk),unit=gk?"arrêts":"buts";
+  const asp=pfAspects(l,team,gk),weak=pfWeak(asp,gk),ws=new Set(weak.map(a=>a.sec+a.label));
+  const g=l.filter(ok).length,t=l.length,te=team.length?team.filter(ok).length/team.length:null;
+  const secs=[...new Set(asp.map(a=>a.sec))];
+  // entraînement (tirs au poste)
+  const tr=gk?S.tshots.filter(s=>s.gk===p.id&&s.res!=="hors"&&s.res!=="poteau"):S.tshots.filter(s=>s.p===p.id);
+  const trOk=s=>gk?s.res==="arret":s.res==="but";
+  const trAsp=TPOS.map(([k,lab])=>{const x=tr.filter(s=>s.pos===k),y=(gk?S.tshots.filter(s=>s.gk&&s.res!=="hors"&&s.res!=="poteau"):S.tshots).filter(s=>s.pos===k);return {sec:"tr",label:lab,g:x.filter(trOk).length,t:x.length,tg:y.filter(trOk).length,tt:y.length}}).filter(a=>a.t);
+  const trWeak=new Set(pfWeak(trAsp,gk).map(a=>a.sec+a.label));
+  $("pfDetail").innerHTML=`<div class="panel-head"><h2>${p.num!=null?"#"+p.num+" ":""}${esc(p.name)}</h2><span class="hint">${POS[p.pos]||""}</span></div>
+    <div class="kpis pfk"><div class="kpi"><div class="v">${g}/${t}</div><div class="k">${gk?"Arrêts / cadrés":"Buts / tirs"}</div></div><div class="kpi eff"><div class="v">${pctTxt(g,t)}</div><div class="k">${gk?"% d'arrêts":"Efficacité"}</div></div><div class="kpi"><div class="v">${te!=null?Math.round(te*100)+" %":"–"}</div><div class="k">${gk?"Moyenne des gardiens":"Moyenne équipe"}</div></div>${gk?"":`<div class="kpi perte"><div class="v">${base.filter(s=>teamOf(s)==="nous"&&s.p===p.id&&s.res==="perte").length}</div><div class="k">Pertes de balle</div></div>`}</div>
+    ${!t?`<p class="hint">Aucun tir ${gk?"face à ce gardien":"de ce joueur"} sur cette période.</p>`:
+      `<div class="pfwork">${weak.length?`<b>À travailler en priorité</b><ul>${weak.map(a=>`<li>⚠ <b>${esc(a.label)}</b> : ${a.g}/${a.t} (${pctTxt(a.g,a.t)})${a.tt>a.t?` contre ${Math.round(a.te*100)} % pour ${gk?"les gardiens":"l'équipe"}`:""}</li>`).join("")}</ul>`
+        :t<5?"Pas encore assez de tirs pour dégager un point faible.":"<b>Pas de point faible net</b> : ses résultats sont proches ou au-dessus de la moyenne de l'équipe partout."}</div>
+      <div class="pflegend"><span><i class="lg-bar"></i>${gk?"% d'arrêts":"Efficacité"} du joueur</span><span><i class="lg-avg"></i>${gk?"Moyenne des gardiens":"Moyenne de l'équipe"}</span><span><i class="lg-weak"></i>À travailler</span></div>
+      ${secs.map(sc=>`<div class="subhead">${esc(sc)}</div>${pfBars(asp.filter(a=>a.sec===sc),ws,unit)}`).join("")}`}
+    ${trAsp.length?`<div class="subhead">À l'entraînement · par poste</div>${pfBars(trAsp,trWeak,unit)}`:""}`;
+}
 /* ---------- CHOIX DU MATCH puis DES JOUEURS (avant la saisie) ---------- */
 const PK={step:"match",id:"",sel:new Set(),grp:"",moreUp:false,morePast:false};
 function openPick(){PK.step="match";PK.id="";PK.moreUp=false;PK.morePast=false;showMode("pick")}
