@@ -21,7 +21,7 @@
 :root{
   --bg:#eaeff1; --panel:#ffffff; --panel-2:#f4f7f8; --ink:#11202a; --muted:#5a6a74; --line:#d3dce1;
   --floor:#2c6a87; --area:#c98a55; --chalk:#ffffff;
-  --accent:#e0571d; --accent-ink:#ffffff;
+  --accent:#e0571d; --accent-ink:#ffffff; --dom:#1f6fd1; --dom-bg:#e3eefb; --ext:#8b3fc9; --ext-bg:#f1e6fa;
   --r-but:#2a9a58; --r-arret:#d23b3b; --r-poteau:#d79a12; --r-hors:#7d8a92; --r-contre:#7b52c4; --r-perte:#c2307a;
   --net:#c5ced3;
   --display:"Barlow Condensed","Avenir Next Condensed","Arial Narrow",system-ui,sans-serif;
@@ -30,11 +30,11 @@
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0d171d; --panel:#14222a; --panel-2:#1a2b34; --ink:#e6eef2; --muted:#93a5af; --line:#2a3d48;
   --floor:#1f5470; --area:#a8683a; --chalk:#eef4f7;
-  --accent:#ff7a3d; --accent-ink:#1a0d05; --net:#3b4f5a; --r-perte:#e0559a; color-scheme:dark}}
+  --accent:#ff7a3d; --accent-ink:#1a0d05; --dom:#6aa8f5; --dom-bg:#16304a; --ext:#c48af0; --ext-bg:#2e1d40; --net:#3b4f5a; --r-perte:#e0559a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d171d; --panel:#14222a; --panel-2:#1a2b34; --ink:#e6eef2; --muted:#93a5af; --line:#2a3d48;
   --floor:#1f5470; --area:#a8683a; --chalk:#eef4f7;
-  --accent:#ff7a3d; --accent-ink:#1a0d05; --net:#3b4f5a; --r-perte:#e0559a; color-scheme:dark}
+  --accent:#ff7a3d; --accent-ink:#1a0d05; --dom:#6aa8f5; --dom-bg:#16304a; --ext:#c48af0; --ext-bg:#2e1d40; --net:#3b4f5a; --r-perte:#e0559a; color-scheme:dark}
 
 [hidden]{display:none!important}
 body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
@@ -191,6 +191,16 @@ details.addp summary{cursor:pointer;font-weight:600;font-size:14px}
 .mlist .more{grid-column:1/-1;justify-self:center}
 @media (max-width:640px){.tabs{display:flex;width:100%;overflow-x:auto}.tab{padding:6px 4px;font-size:13px;letter-spacing:0;flex:1 0 auto}}
 .res-pill{white-space:nowrap}
+.lieu{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap;vertical-align:middle}
+.lieu.dom{color:var(--dom);background:var(--dom-bg)}
+.lieu.ext{color:var(--ext);background:var(--ext-bg)}
+#mLieu [data-lieu="dom"][aria-pressed="true"]{background:var(--dom);border-color:var(--dom);color:#fff}
+#mLieu [data-lieu="ext"][aria-pressed="true"]{background:var(--ext);border-color:var(--ext);color:#fff}
+.mcard.lieu-dom,.hubcard.mpick.lieu-dom{border-left:6px solid var(--dom)}
+.mcard.lieu-ext,.hubcard.mpick.lieu-ext{border-left:6px solid var(--ext)}
+.ffm li.lieu-dom{border-left:4px solid var(--dom);padding-left:10px}
+.ffm li.lieu-ext{border-left:4px solid var(--ext);padding-left:10px}
+.lieulegend{display:flex;gap:8px;flex-wrap:wrap;grid-column:1/-1;margin:2px}
 .sqgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:6px;margin-top:6px}
 .sqgrid .pcheck{min-height:54px;padding:6px 4px}
 .sqgrid .pcheck .jn{font-size:20px}
@@ -586,7 +596,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 29</span>
+      <span class="status" id="appVersion">Version 30</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -979,6 +989,7 @@ const today=()=>{const d=new Date();return new Date(d.getTime()-d.getTimezoneOff
 function matchById(id){return S.matches.find(m=>m.id===id)}
 function matchLabel(id){const m=matchById(id);if(!m)return id?"Match inconnu":"";const g=m.grp&&typeof grpById==="function"?grpById(m.grp):null;return `${m.date?fmtDate(m.date):"Date à venir"}${m.time?" "+m.time:""} · ${m.lieu==="ext"?"à":"vs"} ${m.adv}${g?" ("+g.name+")":""}`}
 function sortedMatches(){return [...S.matches].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0))}
+const lieuBadge=m=>m.lieu==="ext"?`<span class="lieu ext">✈ Extérieur</span>`:`<span class="lieu dom">🏠 Domicile</span>`;
 const isUpcoming=m=>!m.date||m.date>=today();
 function upcomingMatches(){return S.matches.filter(isUpcoming).sort((a,b)=>(a.date||"9999").localeCompare(b.date||"9999")||(a.time||"").localeCompare(b.time||"")||(a.j||0)-(b.j||0))}
 function uiMatches(){return [...upcomingMatches(),...sortedMatches().filter(m=>!isUpcoming(m))]}
@@ -1365,9 +1376,9 @@ function renderMatches(){
     const a=stats(l.filter(s=>teamOf(s)==="nous")),b=stats(l.filter(s=>teamOf(s)==="adv"));
     const lab={V:"Victoire",N:"Nul",D:"Défaite","0":isUpcoming(m)&&!m.fs?"À venir":"Pas de saisie"}[sc.r];const gg=m.grp?grpById(m.grp):null;
     const arm=mDelArm===m.id;
-    return `<article class="panel mcard${m.id===S.cur?" current":""}">
+    return `<article class="panel mcard lieu-${m.lieu==="ext"?"ext":"dom"}${m.id===S.cur?" current":""}">
       <div class="mtop"><div><div class="mdate">${m.date?esc(fmtDate(m.date)):"Date à venir"}${m.time?" · "+esc(m.time):""}${gg?" · "+esc(gg.name):m.comp?" · "+esc(m.comp):""}${m.j?" · J"+esc(m.j):""}${m.id===S.cur?" · match en cours":""}</div>
-        <div class="mname">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</div><div class="mmeta">${m.lieu==="ext"?"Extérieur":"Domicile"}${m.salle?" · "+esc(m.salle):""}${squadOf(m)?` · ${squadOf(m).length} joueurs`:""} · ${l.length} action${l.length>1?"s":""}${m.fs?` · <b>score officiel ${esc(m.fs[0])}-${esc(m.fs[1])}</b>`:""}</div></div>
+        <div class="mname">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</div><div class="mmeta">${lieuBadge(m)}${m.salle?" "+esc(m.salle):""}${squadOf(m)?` · ${squadOf(m).length} joueurs`:""} · ${l.length} action${l.length>1?"s":""}${m.fs?` · <b>score officiel ${esc(m.fs[0])}-${esc(m.fs[1])}</b>`:""}</div></div>
         <div><div class="score">${sc.any?`${sc.n}<span style="color:var(--muted)">-</span>${sc.a}`:"–"}</div><div style="text-align:right"><span class="res-pill res-${sc.r}">${lab}</span></div></div></div>
       ${sc.any?`<div class="mstats"><span></span><span class="h">Nous</span><span class="h">Adversaire</span>
         <span>Tirs</span><span>${a.g}/${a.t} · ${pct(a.g,a.t)} %</span><span>${b.g}/${b.t} · ${pct(b.g,b.t)} %</span>
@@ -1491,7 +1502,7 @@ function renderFF(force){
     el.innerHTML=`<div class="ffbox"><b>${esc(f.title||"Compétition")}</b>${f.poule?"<br>"+esc(f.poule):""}<br>Notre équipe : <b>${esc(f.teamName||"?")}</b></div>
       <p class="hint">${f.at?"Matchs mis à jour le "+new Date(f.at).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",hour:"2-digit",minute:"2-digit"}):"Matchs pas encore récupérés."}</p>
       <div class="sqtools">${canEdit()?`<button class="btn primary" type="button" data-ffsync ${G.busy?"disabled":""}>${G.busy?"Mise à jour…":"Mettre à jour les matchs"}</button>`:""}${canAdmin()?`<button class="btn small" type="button" data-ffchange>Changer</button>`:""}<a class="btn small" href="${esc(f.url)}" target="_blank" rel="noopener">Voir sur ffhandball.fr</a></div>${errH}
-      <div class="subhead">Prochains matchs</div>${nx.length?`<ul class="ffm">${nx.map(m=>`<li><span class="d">${m.date?esc(fmtDate(m.date)):"À fixer"}${m.time?" · "+esc(m.time):""}</span><span>${m.lieu==="ext"?`${esc(m.adv)} – <b>${esc(f.teamName||"Nous")}</b>`:`<b>${esc(f.teamName||"Nous")}</b> – ${esc(m.adv)}`}</span><span class="s">${m.lieu==="ext"?"Extérieur":"Domicile"}${m.salle?" · "+esc(m.salle):""}${m.j?" · journée "+esc(m.j):""}</span></li>`).join("")}</ul>`:`<p class="hint">Aucun match à venir.</p>`}`;
+      <div class="subhead">Prochains matchs</div>${nx.length?`<ul class="ffm">${nx.map(m=>`<li class="lieu-${m.lieu==="ext"?"ext":"dom"}"><span class="d">${m.date?esc(fmtDate(m.date)):"À fixer"}${m.time?" · "+esc(m.time):""}</span><span>${m.lieu==="ext"?`${esc(m.adv)} – <b>${esc(f.teamName||"Nous")}</b>`:`<b>${esc(f.teamName||"Nous")}</b> – ${esc(m.adv)}`}</span><span class="s">${lieuBadge(m)}${m.salle?" "+esc(m.salle):""}${m.j?" · journée "+esc(m.j):""}</span></li>`).join("")}</ul>`:`<p class="hint">Aucun match à venir.</p>`}`;
     return}
   if(!canAdmin()){el.innerHTML=`<p class="hint">Cette catégorie n'est pas encore reliée à la FFHB. C'est l'admin de l'équipe qui s'en occupe.</p>`;return}
   const r=G.ff;
@@ -1678,9 +1689,9 @@ function openPick(){PK.step="match";PK.id="";PK.moreUp=false;PK.morePast=false;s
 function pickCard(m){
   const g=m.grp?grpById(m.grp):null,sc=matchScore(m.id),isToday=m.date===today(),cur=m.id===S.cur;
   const when=isToday?"Aujourd'hui":m.date?fmtDate(m.date):"Date à venir";
-  const meta=[m.lieu==="ext"?"Extérieur":"Domicile",m.salle,g?g.name:m.comp].filter(Boolean).map(esc).join(" · ");
+  const meta=lieuBadge(m)+" "+[m.salle,g?g.name:m.comp].filter(Boolean).map(esc).join(" · ");
   const res=sc.any?`Saisie : ${sc.n}-${sc.a}`:m.fs?`Score officiel ${esc(m.fs[0])}-${esc(m.fs[1])}`:"";
-  return `<button class="hubcard mpick${cur?" cur":""}${isToday?" today":""}" type="button" data-pkm="${esc(m.id)}"><span class="hc-n">${esc(when)}${m.time?" · "+esc(m.time):""}${cur?" · en cours":""}</span><b>${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</b><span>${meta}${res?`<br><em>${res}</em>`:""}</span></button>`;
+  return `<button class="hubcard mpick lieu-${m.lieu==="ext"?"ext":"dom"}${cur?" cur":""}${isToday?" today":""}" type="button" data-pkm="${esc(m.id)}"><span class="hc-n">${esc(when)}${m.time?" · "+esc(m.time):""}${cur?" · en cours":""}</span><b>${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</b><span>${meta}${res?`<br><em>${res}</em>`:""}</span></button>`;
 }
 function renderPick(){
   const body=$("pkBody");if(!body)return;
