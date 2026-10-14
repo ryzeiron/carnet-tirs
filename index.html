@@ -332,6 +332,8 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .tbsel{font-size:13px;padding:5px 8px}
 .screen{min-height:100vh;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:24px 16px;background:var(--bg)}
 .pickscreen{align-items:flex-start}
+.tpnew{display:flex;flex-direction:column;gap:10px}
+.tpnew .btn.primary{font-size:17px;padding:12px;align-self:stretch}
 .pk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pk-sec{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 2px -4px}
 .pkf .chip{padding:7px 13px;font-size:14px}
@@ -596,7 +598,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 30</span>
+      <span class="status" id="appVersion">Version 31</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -1684,8 +1686,8 @@ function renderPerf(){
     ${trAsp.length?`<div class="subhead">À l'entraînement · par poste</div>${pfBars(trAsp,trWeak,unit)}`:""}`;
 }
 /* ---------- CHOIX DU MATCH puis DES JOUEURS (avant la saisie) ---------- */
-const PK={step:"match",id:"",sel:new Set(),grp:"",moreUp:false,morePast:false};
-function openPick(){PK.step="match";PK.id="";PK.moreUp=false;PK.morePast=false;showMode("pick")}
+const PK={kind:"match",step:"match",id:"",sel:new Set(),grp:"",moreUp:false,morePast:false};
+function openPick(){PK.kind="match";PK.step="match";PK.id="";PK.moreUp=false;PK.morePast=false;showMode("pick")}
 function pickCard(m){
   const g=m.grp?grpById(m.grp):null,sc=matchScore(m.id),isToday=m.date===today(),cur=m.id===S.cur;
   const when=isToday?"Aujourd'hui":m.date?fmtDate(m.date):"Date à venir";
@@ -1696,6 +1698,7 @@ function pickCard(m){
 function renderPick(){
   const body=$("pkBody");if(!body)return;
   const t=TEAMS.find(x=>x.id===WS);$("pkSpace").textContent=t?(t.perso?"👤 Mon espace":"👥 "+t.name):"📱 Cet appareil";
+  if(PK.kind==="train"){if(!(document.activeElement&&/^tp/.test(document.activeElement.id||"")))renderTPick();return}
   if(PK.step==="squad"&&!matchById(PK.id))PK.step="match";
   if(PK.step==="match"){
     $("pkKicker").textContent="Match · étape 1 sur 2";$("pkTitle").textContent="Quel match ?";$("pkSub").textContent="Touche le match dans lequel tu vas faire la saisie.";
@@ -1732,6 +1735,7 @@ function pickMatch(id){
 function bindPick(){
   $("pkHome").onclick=()=>showMode("hub");
   $("pkBody").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+    if(PK.kind==="train"&&!("pkmore" in d)&&!("pkros" in d))return;
     if(d.pkm){if(ROLE==="lecteur"){A.match=d.pkm;showMode("app");setTab("ana");return}pickMatch(d.pkm);return}
     if("pknew" in d){openMatchForm();return}
     if("pkg" in d){PK.grp=d.pkg;renderPick();return}
@@ -1746,6 +1750,60 @@ function bindPick(){
       if(S.players.length){m.squad=roster("nous").map(p=>p.id).filter(id=>PK.sel.has(id))}
       S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);E=blankEntry();saveLocal();showMode("app");setTab("entry");toast(`C'est parti : ${matchLabel(m.id)}`,false)}
   });
+}
+
+/* ---------- ENTRAÎNEMENT : choix / création de la séance puis des présents ---------- */
+const TP={draft:null,id:""};
+function openTPick(){PK.kind="train";PK.step="match";TP.draft=null;TP.id="";PK.moreUp=false;showMode("pick")}
+function renderTPick(){
+  const body=$("pkBody");
+  if(PK.step==="squad"){
+    const tr=TP.id?S.trains.find(x=>x.id===TP.id):null;if(!tr&&!TP.draft){PK.step="match";return renderTPick()}
+    const name=tr?(tr.name||"Séance du "+fmtDate(tr.date)):TP.draft.name,date=tr?tr.date:TP.draft.date;
+    $("pkKicker").textContent="Entraînement · étape 2 sur 2";$("pkTitle").textContent="Qui est présent ?";$("pkSub").textContent=`${name} · ${fmtDate(date)}`;
+    const all=roster("nous"),n=PK.sel.size,last=lastTrainPresent();
+    body.innerHTML=`<div class="panel pk-squad">
+      <div class="panel-head"><h2>Présents <span>· ${n}</span></h2></div>
+      <div class="sqtools"><button type="button" class="btn small" data-tps="all">Tous</button><button type="button" class="btn small" data-tps="none">Aucun</button>${last?`<button type="button" class="btn small" data-tps="last">Comme la dernière séance</button>`:""}<span class="sqgrp">${grpButtons("tpsg")}</span></div>
+      ${all.length?`<div class="sqgrid pkgrid">${all.map(p=>`<button type="button" class="pcheck" data-tpp="${esc(p.id)}" aria-pressed="${PK.sel.has(p.id)}"><span class="jn">${p.num??"–"}</span><span class="nm">${esc(p.name)}${isGK(p)?" (GB)":""}</span></button>`).join("")}</div>`
+        :`<p class="hint">Aucun joueur pour l'instant. Ajoute-les dans <button type="button" class="linkbtn" data-pkros>Effectif</button>.</p>`}
+    </div>
+    <div class="pk-actions"><button class="btn" type="button" data-tpback>← Changer de séance</button><button class="btn primary" type="button" data-tpgo>${tr?"Reprendre la séance →":"Créer la séance →"}</button></div>`;
+    return}
+  $("pkKicker").textContent="Entraînement · étape 1 sur 2";$("pkTitle").textContent="Quelle séance ?";$("pkSub").textContent="Crée la séance du jour ou reprends une séance déjà commencée.";
+  const n=S.trains.filter(x=>x.date===today()).length;
+  const ses=[...S.trains].sort((a,b)=>(b.date||"").localeCompare(a.date||"")||(b.t||0)-(a.t||0)),shown=PK.moreUp?ses:ses.slice(0,6);
+  const card=x=>{const nt=S.tshots.filter(s=>s.tr===x.id).length,np=presentIds(x).length,isT=x.date===today();
+    return `<button class="hubcard mpick${isT?" today":""}" type="button" data-tpm="${esc(x.id)}"><span class="hc-n">${isT?"Aujourd'hui":esc(fmtDate(x.date))}</span><b>${esc(x.name||"Séance du "+fmtDate(x.date))}</b><span>${np} présent${np>1?"s":""} · ${nt} tir${nt>1?"s":""}</span></button>`};
+  body.innerHTML=`<form class="panel tpnew" id="tpForm" autocomplete="off">
+      <div class="panel-head"><h2>Nouvelle séance</h2></div>
+      <label class="fld"><span class="lbl">Titre</span><input type="text" id="tpName" maxlength="60" value="${esc(`Séance du ${fmtDate(today())}${n?" ("+(n+1)+")":""}`)}"></label>
+      <div class="frow"><label class="fld"><span class="lbl">Date</span><input type="date" id="tpDate" value="${today()}"></label>
+      ${groups().length?`<label class="fld"><span class="lbl">Catégorie</span><select id="tpGrp"><option value="">Toutes</option>${groups().map(g=>`<option value="${esc(g.id)}" ${G.sel===g.id?"selected":""}>${esc(g.name)}</option>`).join("")}</select></label>`:""}</div>
+      <button class="btn primary" type="submit">Choisir les présents →</button>
+    </form>
+    ${ses.length?`<div class="pk-sec">Séances déjà faites · ${ses.length}</div><div class="hub-cards">${shown.map(card).join("")}</div>${ses.length>shown.length?`<button class="btn small pk-more" type="button" data-pkmore="up">Voir les ${ses.length-shown.length} autres séances</button>`:""}`:""}`;
+}
+function tpOpen(id,draft){
+  TP.id=id||"";TP.draft=draft||null;PK.step="squad";
+  const tr=id?S.trains.find(x=>x.id===id):null,gp=draft&&draft.grp?grpPlayers(draft.grp):[];
+  PK.sel=new Set(tr?presentIds(tr):gp.length?gp:(lastTrainPresent()||S.players.map(p=>p.id)));
+  renderPick();window.scrollTo(0,0);
+}
+function bindTPick(){
+  const body=$("pkBody");
+  body.addEventListener("submit",e=>{if(e.target.id!=="tpForm")return;e.preventDefault();
+    const date=$("tpDate").value||today(),name=$("tpName").value.trim().slice(0,60)||"Séance du "+fmtDate(date);
+    tpOpen("",{name,date,grp:$("tpGrp")?$("tpGrp").value:""})});
+  body.addEventListener("click",e=>{if(PK.kind!=="train")return;const b=e.target.closest("button");if(!b)return;const d=b.dataset;
+    if(d.tpm){tpOpen(d.tpm);return}
+    if(d.tpp){PK.sel.has(d.tpp)?PK.sel.delete(d.tpp):PK.sel.add(d.tpp);renderPick();return}
+    if(d.tps){PK.sel=new Set(d.tps==="all"?S.players.map(p=>p.id):d.tps==="none"?[]:(lastTrainPresent()||[]));renderPick();return}
+    if(d.tpsg){PK.sel=new Set(grpPlayers(d.tpsg));renderPick();return}
+    if("tpback" in d){PK.step="match";renderPick();window.scrollTo(0,0);return}
+    if("tpgo" in d){const present=roster("nous").map(p=>p.id).filter(id=>PK.sel.has(id));let tr=TP.id?S.trains.find(x=>x.id===TP.id):null;
+      if(tr)tr.present=present;else{tr={id:"tr"+rid(),date:TP.draft.date,name:TP.draft.name,present,t:Date.now()};S.trains.push(tr)}
+      T.sess=tr.id;saveLocal();showMode("train");toast(`C'est parti : ${tr.name}`,false)}});
 }
 
 /* ---------- Interactions ---------- */
@@ -2436,7 +2494,7 @@ function bindNav(){
   $("hubLogout").onclick=async()=>{await doLogout()};
   $("hubSpace").addEventListener("change",e=>{setWorkspace(e.target.value);renderHub()});
   document.querySelector(".hub-cards").addEventListener("click",e=>{const c=e.target.closest("[data-go]");if(!c)return;const g=c.dataset.go;
-    if(g==="train"){showMode("train");return}
+    if(g==="train"){if(ROLE==="lecteur")showMode("train");else openTPick();return}
     if(g==="match"&&ROLE!=="lecteur"){openPick();return}
     showMode("app");if(g==="team")setTab("team");else if(g==="roster")setTab("roster");else setTab(ROLE==="lecteur"?"ana":(S.cur&&matchById(S.cur)?"entry":"match"))});
   $("homeBtn").onclick=()=>showMode("hub");$("trHome").onclick=()=>showMode("hub");
@@ -2594,7 +2652,7 @@ function start(){
   bind();
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
-  bindMatches();bindClock();bindRoster();bindPick();
+  bindMatches();bindClock();bindRoster();bindPick();bindTPick();
   $("ctxBtns").addEventListener("click",e=>{const b=e.target.closest("[data-ctx]");if(!b)return;const k=b.dataset.ctx;
     if(k==="pick")openPick();else if(k==="stats"){A.match=S.cur;A.sel=null;setTab("ana");window.scrollTo(0,0)}else if(k==="matchs")setTab("match")});
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
