@@ -39,13 +39,30 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json().catch(() => ({}));
     const raw = String(body.url || "").trim();
-    const m = raw.match(/^https?:\/\/(?:www\.)?ffhandball\.fr\/competitions\/((?:[a-z0-9-]+\/)*?poule-\d+)/i);
-    if (!m) return json({ error: "Adresse non reconnue : copie l'adresse d'une poule sur ffhandball.fr (elle contient « /poule-… »)." }, 400);
-    const base = "https://www.ffhandball.fr/competitions/" + m[1].toLowerCase() + "/";
-    const first = await page(base);
+    const m = raw.match(/^https?:\/\/(?:www\.)?ffhandball\.fr\/competitions\/([a-z0-9\/-]+)/i);
+    if (!m) return json({ error: "Adresse non reconnue : copie l'adresse d'une compétition ou d'une poule sur ffhandball.fr." }, 400);
+    let path = m[1].toLowerCase().replace(/\/+$/, "");
+    const pm = path.match(/^(.*?\/poule-\d+)/);
+    let first: Record<string, any>;
+    let base: string;
+    if (pm) {
+      base = "https://www.ffhandball.fr/competitions/" + pm[1] + "/";
+      first = await page(base);
+    } else {
+      // adresse d'une compétition : on prend la poule affichée par défaut
+      first = await page("https://www.ffhandball.fr/competitions/" + path + "/");
+      const any = Object.values(first).find((c: any) => c && c.ext_poule_id && c.url_competition) as any;
+      if (!any) return json({ error: "Aucune poule trouvée à cette adresse. Ouvre la poule de ton équipe sur ffhandball.fr et copie son adresse." }, 404);
+      base = "https://www.ffhandball.fr/competitions/saison-" + path.split("/")[0].replace(/^saison-/, "") + "/" + any.url_competition_type + "/" +
+        (any.url_structure ? any.url_structure + "/" : "") + any.url_competition + "/poule-" + any.ext_poule_id + "/";
+      first = await page(base);
+    }
     const head = first["page-header"] || {};
     const list = first["competitions---rencontre-list"] || {};
     const poule = list.poule || first["competitions---journee-selector"]?.poule || {};
+    const ps = first["competitions---poule-selector"] || {};
+    const phases = new Map((ps.phases || []).map((x: any) => [String(x.id), x.libelle]));
+    const poules = (ps.poules || []).map((x: any) => ({ id: String(x.ext_pouleId), name: x.libelle || "", phase: phases.get(String(x.phaseId)) || "" }));
     const js = parseJ(poule);
     const all = new Map<string, any>();
     const add = (rs: any[]) => (rs || []).forEach((r) => all.set(String(r.ext_rencontreId || r.id), r));
@@ -57,6 +74,21 @@ Deno.serve(async (req) => {
         page(base + "journee-" + n + "/").then((c) => c["competitions---rencontre-list"]?.rencontres || []).catch(() => [])));
       res.forEach(add);
     }
+    // salle de chaque match de l'équipe choisie
+    const team = String(body.team || "");
+    const salle = new Map<string, string>();
+    if (team) {
+      const mine = [...all.values()].filter((r) => String(r.equipe1Id) === team || String(r.equipe2Id) === team).slice(0, 40);
+      for (let i = 0; i < mine.length; i += 6) {
+        await Promise.all(mine.slice(i, i + 6).map((r) => {
+          const id = String(r.ext_rencontreId || r.id);
+          return page(base + "rencontre-" + id + "/").then((c) => {
+            const e = c["competitions---rencontre-salle"]?.equipement;
+            if (e) salle.set(id, [e.libelle, e.ville].filter(Boolean).join(", "));
+          }).catch(() => {});
+        }));
+      }
+    }
     const teams = new Map<string, string>();
     const matches = [...all.values()].map((r) => {
       teams.set(String(r.equipe1Id), r.equipe1Libelle);
@@ -66,10 +98,11 @@ Deno.serve(async (req) => {
         homeId: String(r.equipe1Id), home: r.equipe1Libelle || "", awayId: String(r.equipe2Id), away: r.equipe2Libelle || "",
         sh: r.equipe1Score === null || r.equipe1Score === "" ? null : r.equipe1Score,
         sa: r.equipe2Score === null || r.equipe2Score === "" ? null : r.equipe2Score,
+        salle: salle.get(String(r.ext_rencontreId || r.id)) || "",
       };
     }).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
     return json({
-      url: base, title: head.title || "", sub: head.subTitle || "", poule: poule.libelle || "",
+      url: base, title: head.title || "", sub: head.subTitle || "", poule: poule.libelle || "", pouleId: String(poule.ext_pouleId || ""), poules,
       journees: js.length,
       teams: [...teams].filter(([id]) => id && id !== "undefined").map(([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name)),
       matches,
