@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   push:
     paths: [".github/workflows/ffhb-probe.yml"]
+permissions:
+  contents: write
 jobs:
   probe:
     runs-on: ubuntu-latest
@@ -14,5 +16,7 @@ jobs:
           curl -sSL -A "$UA" -o saison.html "https://www.ffhandball.fr/competitions/saison-2026-2027-22/" || true
           curl -sSL -A "$UA" -o wpjson.json "https://www.ffhandball.fr/wp-json/" || true
           ls -la
-      - uses: actions/upload-artifact@v4
-        with: { name: ffhb, path: out }
+          git init -q; git checkout -q -b ffhb-probe-out
+          git config user.email bot@x; git config user.name bot
+          git add -A; git commit -qm out
+          git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" ffhb-probe-out
