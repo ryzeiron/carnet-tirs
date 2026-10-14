@@ -484,21 +484,24 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 .pulse{animation:pulse 1.2s ease-out infinite}
 @media (prefers-reduced-motion:reduce){.pulse{animation:none}}
 
-#splash{position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 90% at 50% 30%,#1a3040 0%,#11202a 60%,#0b161d 100%);overflow:hidden;cursor:pointer}
+#splash{position:fixed;inset:0;z-index:9999;background:radial-gradient(130% 80% at 50% 0%,#24405a 0%,#152836 45%,#0b161d 100%);overflow:hidden;cursor:pointer;contain:strict}
 #splash[hidden]{display:none}
-.sp-stage{position:absolute;inset:0}
 .sp-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
 .sp-goal{position:absolute;left:50%;top:40%;width:min(86vw,560px);transform:translate(-50%,-50%);overflow:visible}
-.sp-net{transform-box:fill-box;transform-origin:50% 50%}
-.sp-ball{position:absolute;left:0;top:0;width:var(--b,120px);height:var(--b,120px);will-change:transform,filter;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
-.sp-ball svg{width:100%;height:100%;display:block;overflow:visible}
-.sp-fire{position:absolute;border-radius:50%;pointer-events:none;mix-blend-mode:screen;background:radial-gradient(closest-side,#fff6c2 0%,#ffd23f 25%,#ff7a1a 55%,rgba(220,40,10,.6) 75%,rgba(220,40,10,0) 100%);filter:blur(1px)}
-.sp-shadow{position:absolute;left:0;top:0;width:var(--b,120px);height:calc(var(--b,120px)*.22);border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.55),rgba(0,0,0,0));opacity:0}
-.sp-flash{position:absolute;left:0;top:0;width:160px;height:160px;margin:-80px 0 0 -80px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.95),rgba(224,87,29,.5) 45%,rgba(224,87,29,0));opacity:0;pointer-events:none}
-.sp-title{position:absolute;left:0;right:0;bottom:16%;display:flex;flex-direction:column;align-items:center;gap:8px;opacity:0;color:#fff;text-align:center}
-.sp-title img{width:64px;height:64px;border-radius:16px;box-shadow:0 4px 16px rgba(0,0,0,.4)}
-.sp-title b{font-family:var(--display);font-size:38px;letter-spacing:.04em;text-transform:uppercase;line-height:1}
-.sp-title span{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:#ff8a52;font-weight:700}
+.sp-net{transform-box:fill-box;transform-origin:50% 60%}
+.sp-ball{position:absolute;left:0;top:0;width:var(--b,120px);height:var(--b,120px);will-change:transform}
+.sp-ball svg{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 0 calc(var(--b,120px)*.12) rgba(255,140,40,var(--glow,0))) drop-shadow(0 6px 8px rgba(0,0,0,.45))}
+.sp-balllayer{position:absolute;inset:0;pointer-events:none}
+.sp-fx{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.sp-vignette{position:absolute;inset:0;pointer-events:none;background:radial-gradient(120% 90% at 50% 45%,transparent 55%,rgba(0,0,0,.55) 100%)}
+.sp-lights{position:absolute;left:0;right:0;top:0;height:30%;will-change:transform}
+.sp-lights i{position:absolute;top:8%;width:90px;height:90px;margin-left:-45px;border-radius:50%;background:radial-gradient(closest-side,rgba(255,250,230,.55),rgba(255,240,200,.12) 45%,rgba(255,240,200,0));}
+.sp-lights i:nth-child(1){left:8%}.sp-lights i:nth-child(2){left:26%;top:3%}.sp-lights i:nth-child(3){left:44%}.sp-lights i:nth-child(4){left:62%;top:3%}.sp-lights i:nth-child(5){left:80%}.sp-lights i:nth-child(6){left:98%;top:3%}
+.sp-title{position:absolute;left:0;right:0;bottom:15%;display:flex;flex-direction:column;align-items:center;gap:8px;color:#fff;text-align:center;pointer-events:none}
+.sp-title>*{opacity:0}
+.sp-title img{width:64px;height:64px;border-radius:16px;box-shadow:0 6px 22px rgba(224,87,29,.45),0 2px 8px rgba(0,0,0,.4)}
+.sp-title b{font-family:var(--display);font-size:38px;letter-spacing:.05em;text-transform:uppercase;line-height:1;text-shadow:0 2px 14px rgba(0,0,0,.5)}
+.sp-title span{font-size:12px;letter-spacing:.22em;text-transform:uppercase;color:#ff8a52;font-weight:700}
 </style><style>
 html{-webkit-text-size-adjust:100%}
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -513,81 +516,129 @@ img{max-width:100%}
 </head>
 <body>
 <div id="splash" aria-hidden="true" hidden>
-  <div class="sp-stage" id="spStage">
-    <div class="sp-world" id="spWorld">
+  <div class="sp-lights" id="spLights"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="sp-world" id="spWorld">
     <svg class="sp-goal" id="spGoal" viewBox="0 0 320 220">
-      <defs><linearGradient id="spFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3140"/><stop offset="1" stop-color="#11202a" stop-opacity="0"/></linearGradient></defs>
-      <path d="M-200 200 L520 200 L620 330 L-300 330Z" fill="url(#spFloor)"/>
-      <g id="spNet" class="sp-net" stroke="#ffffff" stroke-width="1.2" opacity=".35" fill="none">
-        <path d="M70 60 H250 M70 85 H250 M70 110 H250 M70 135 H250 M70 160 H250 M70 185 H250"/>
-        <path d="M70 60 V200 M100 60 V200 M130 60 V200 M160 60 V200 M190 60 V200 M220 60 V200 M250 60 V200"/>
-        <path d="M40 30 L70 60 M280 30 L250 60 M40 200 L70 200 M280 200 L250 200 M40 115 L70 130 M280 115 L250 130"/>
+      <defs>
+        <linearGradient id="spFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#20384a"/><stop offset=".5" stop-color="#172b38"/><stop offset="1" stop-color="#11202a" stop-opacity="0"/></linearGradient>
+        <linearGradient id="spWall" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0d1a22" stop-opacity="0"/><stop offset="1" stop-color="#0d1a22"/></linearGradient>
+        <pattern id="spStripe" width="28" height="28" patternUnits="userSpaceOnUse"><rect width="28" height="14" fill="#ffffff"/><rect y="14" width="28" height="14" fill="#e0571d"/></pattern>
+        <pattern id="spStripeH" width="28" height="28" patternUnits="userSpaceOnUse"><rect width="14" height="28" fill="#ffffff"/><rect x="14" width="14" height="28" fill="#e0571d"/></pattern>
+      </defs>
+      <rect x="-900" y="-400" width="2120" height="600" fill="url(#spWall)"/>
+      <path d="M-1400 200 L1720 200 L2600 900 L-2300 900Z" fill="url(#spFloor)"/>
+      <g fill="none" stroke="#ffffff" stroke-linecap="round">
+        <path d="M-1400 200 H1720" stroke-width="3" opacity=".55"/>
+        <path d="M-440 200 A480 140 0 0 0 40 340 L280 340 A480 140 0 0 0 760 200" fill="#e0571d" fill-opacity=".10" stroke-width="4" opacity=".75"/>
+        <path d="M-680 200 A720 210 0 0 0 40 410 L280 410 A720 210 0 0 0 1000 200" stroke-width="4" stroke-dasharray="26 22" opacity=".55"/>
+        <path d="M150 455 H170" stroke-width="5" opacity=".7"/>
       </g>
-      <path d="M40 200 V30 H280 V200" fill="none" stroke="#ffffff" stroke-width="9" stroke-linejoin="round"/>
-      <path d="M40 30 H280" stroke="#e0571d" stroke-width="9" stroke-dasharray="24 24"/>
-      <path d="M40 30 V200 M280 30 V200" stroke="#e0571d" stroke-width="9" stroke-dasharray="24 24"/>
+      <ellipse cx="160" cy="203" rx="150" ry="10" fill="#000" opacity=".35"/>
+      <g id="spNet" class="sp-net">
+        <path d="M70 62 L250 62 L250 200 L70 200Z" fill="#ffffff" fill-opacity=".04"/>
+        <g stroke="#ffffff" stroke-width="1.1" opacity=".38" fill="none">
+          <path d="M70 62 H250 M70 85 H250 M70 108 H250 M70 131 H250 M70 154 H250 M70 177 H250 M70 200 H250"/>
+          <path d="M70 62 V200 M92.5 62 V200 M115 62 V200 M137.5 62 V200 M160 62 V200 M182.5 62 V200 M205 62 V200 M227.5 62 V200 M250 62 V200"/>
+          <path d="M44 34 L70 62 M276 34 L250 62 M44 80 L70 99 M276 80 L250 99 M44 126 L70 136 M276 126 L250 136 M44 172 L70 174 M276 172 L250 174 M44 200 L70 200 M276 200 L250 200"/>
+          <path d="M70 62 L44 34 M57 48 H263 M66 57 H254" opacity=".7"/>
+        </g>
+      </g>
+      <rect x="35" y="25" width="10" height="177" fill="url(#spStripe)"/>
+      <rect x="275" y="25" width="10" height="177" fill="url(#spStripe)"/>
+      <rect x="35" y="25" width="250" height="10" fill="url(#spStripeH)"/>
+      <path d="M35 25 H285 V202 H275 V35 H45 V202 H35Z" fill="none" stroke="#0b151b" stroke-width="1" opacity=".5"/>
     </svg>
-    <div class="sp-shadow" id="spShadow"></div>
+  </div>
+  <canvas class="sp-fx" id="spFx"></canvas>
+  <div class="sp-balllayer">
     <div class="sp-ball" id="spBall"><svg viewBox="-130 -130 260 260"><g id="spBallG"><circle r="124" fill="#e0571d"/><clipPath id="spcb"><circle r="124"/></clipPath>
 <g clip-path="url(#spcb)" fill="none" stroke="#11202a" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"><path d="M0.0,-44.6 L38.7,-22.3 L38.7,22.3 L0.0,44.6 L-38.7,22.3 L-38.7,-22.3Z" fill="#11202a" fill-opacity=".12"/><path d="M0.0,-44.6 Q-11.2,-84.8 -24.8,-130.2"/><path d="M38.7,-22.3 Q67.9,-52.1 100.4,-86.6"/><path d="M38.7,22.3 Q79.0,32.7 125.2,43.6"/><path d="M0.0,44.6 Q11.2,84.8 24.8,130.2"/><path d="M-38.7,22.3 Q-67.9,52.1 -100.4,86.6"/><path d="M-38.7,-22.3 Q-79.0,-32.7 -125.2,-43.6"/></g>
-<circle r="124" fill="none" stroke="#11202a" stroke-width="12.1"/><path d="M-76.9,-69.4 A99.2,99.2 0 0 1 -19.8,-99.2" stroke="#fff" stroke-width="12.1" stroke-linecap="round" fill="none" opacity=".5"/></g></svg></div>
-    </div>
-    <div class="sp-flash" id="spFlash"></div>
-    <div class="sp-title" id="spTitle"><img src="icon-192.png" alt="" width="64" height="64"><b>Carnet de tirs</b><span>Analyse handball</span></div>
+<circle r="124" fill="none" stroke="#11202a" stroke-width="12.1"/><path d="M-76.9,-69.4 A99.2,99.2 0 0 1 -19.8,-99.2" stroke="#fff" stroke-width="12.1" stroke-linecap="round" fill="none" opacity=".5"/></g><circle r="118" fill="none" stroke="#ffd9b8" stroke-width="5" opacity=".25" stroke-dasharray="90 650" transform="rotate(-140)"/></svg></div>
   </div>
-</div>
-<script>
-/* Animation d'ouverture : caméra sur le ballon en flammes, qui recule jusqu'à voir le but (une fois par lancement) */
+  <div class="sp-vignette"></div>
+  <div class="sp-title" id="spTitle"><img src="icon-192.png" alt="" width="64" height="64"><b>Carnet de tirs</b><span>Analyse handball</span></div>
+</div><script>
+/* Animation d'ouverture : caméra sur le ballon en flammes (à l'horizontale), qui recule pendant qu'il remonte dans la lucarne */
 (function(){
   const sp=document.getElementById("splash");if(!sp)return;
   let seen=false;try{seen=sessionStorage.getItem("hb-splash")==="1";sessionStorage.setItem("hb-splash","1")}catch(e){}
   const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(seen||reduce||!sp.animate||/[?&](code|token_hash|type)=/.test(location.search+location.hash)){sp.remove();return}
   sp.hidden=false;
-  let done=false;const end=()=>{if(done)return;done=true;sp.animate([{opacity:1},{opacity:0}],{duration:320,easing:"ease-in",fill:"forwards"}).onfinish=()=>sp.remove()};
+  let done=false,raf=0;const end=()=>{if(done)return;done=true;sp.animate([{opacity:1},{opacity:0}],{duration:340,easing:"ease-in",fill:"forwards"}).onfinish=()=>{cancelAnimationFrame(raf);sp.remove()}};
   sp.addEventListener("click",end);
   requestAnimationFrame(()=>{
-    const vw=innerWidth,vh=innerHeight,$=id=>document.getElementById(id);
-    const world=$("spWorld"),ball=$("spBall"),goal=$("spGoal"),net=$("spNet"),sh=$("spShadow"),fl=$("spFlash"),title=$("spTitle"),st=$("spStage");
+    const vw=innerWidth,vh=innerHeight,$=id=>document.getElementById(id),dpr=Math.min(2,devicePixelRatio||1);
+    const world=$("spWorld"),ball=$("spBall"),goal=$("spGoal"),net=$("spNet"),lights=$("spLights"),title=$("spTitle"),cv=$("spFx"),ctx=cv.getContext("2d");
+    cv.width=Math.round(vw*dpr);cv.height=Math.round(vh*dpr);
     const B=Math.round(Math.min(vw*.26,150));sp.style.setProperty("--b",B+"px");
-    const r=goal.getBoundingClientRect(),gx=r.left+r.width*250/320,gy=r.top+r.height*62/220,floor=r.top+r.height*200/220,sEnd=(r.width*.13)/B;
-    // trajectoire (coordonnées du « monde » = écran final) : courbe de Bézier
-    // d'abord à l'horizontale de gauche à droite, puis la trajectoire remonte vers la lucarne
-    const P0=[gx-vw*1.6,vh*.86],P1=[gx-vw*.15,vh*.86],P2=[gx+vw*.02,vh*.62],P3=[gx,gy];
-    const bz=(t,i)=>{const u=1-t;return u*u*u*P0[i]+3*u*u*t*P1[i]+3*u*t*t*P2[i]+t*t*t*P3[i]};
-    const lerp=(a,b,t)=>a+(b-a)*t,sm=t=>t*t*(3-2*t);
-    const D=1400,Z0=2.6,t0=performance.now()+80;let last=0;
+    const r=goal.getBoundingClientRect(),U=r.width/320,gx=r.left+250*U,gy=r.top+64*U,floor=r.top+200*U,backY=r.top+190*U,sEnd=(r.width*.12)/B;
+    // sprites pré-dessinés (feu, fumée) : rapide à afficher à chaque image
+    const sprite=(stops)=>{const c=document.createElement("canvas");c.width=c.height=64;const g=c.getContext("2d"),gr=g.createRadialGradient(32,32,0,32,32,32);stops.forEach(([o,col])=>gr.addColorStop(o,col));g.fillStyle=gr;g.fillRect(0,0,64,64);return c};
+    const FIRE=sprite([[0,"rgba(255,255,235,1)"],[.18,"rgba(255,226,120,.95)"],[.45,"rgba(255,130,30,.75)"],[.75,"rgba(210,50,10,.35)"],[1,"rgba(150,20,0,0)"]]);
+    const EMBER=sprite([[0,"rgba(255,170,60,.9)"],[.5,"rgba(230,70,20,.45)"],[1,"rgba(120,20,0,0)"]]);
+    const SMOKE=sprite([[0,"rgba(120,130,140,.35)"],[.6,"rgba(80,90,100,.15)"],[1,"rgba(60,70,80,0)"]]);
+    // trajectoire : horizontale de gauche à droite, puis remontée vers la lucarne (Bézier, vitesse lissée)
+    const P=[[gx-vw*1.7,floor-r.height*.02],[gx-vw*.35,floor+r.height*.02],[gx+vw*.06,floor-r.height*.25],[gx,gy]];
+    const bz=(t,i)=>{const u=1-t;return u*u*u*P[0][i]+3*u*u*t*P[1][i]+3*u*t*t*P[2][i]+t*t*t*P[3][i]};
+    const lerp=(a,b,t)=>a+(b-a)*t,cl=(x,a=0,b=1)=>Math.min(b,Math.max(a,x)),ss=t=>t*t*t*(t*(t*6-15)+10);
+    const D=1500,Z0=2.8,parts=[];let cam={x:P[0][0],y:P[0][1],z:Z0},t0=0,lastNow=0,phase="fly",shake=0,impactAt=0,bx=0,by=0,bs=1,brot=0;
+    const emit=(o)=>parts.push(o);
+    const camT=()=>{const sx=(Math.random()-.5)*shake,sy=(Math.random()-.5)*shake;return [vw*.5+sx-(cam.x)*cam.z,vh*.5+sy-(cam.y)*cam.z]};
     const frame=now=>{
-      if(done)return;
-      let t=Math.min(1,Math.max(0,(now-t0)/D));const p=t<.5?t*.9:.45+(t-.5)*1.1;   // le ballon accélère
-      const x=bz(p,0),y=bz(p,1),sc=lerp(1.35,sEnd,Math.pow(p,.8)),rot=p*900;
-      // caméra : zoom serré sur le ballon au départ, recule jusqu'à la vue complète
-      const c=sm(Math.min(1,Math.max(0,(t-.15)/.85))),z=lerp(Z0,1,c),th=0;
-      const Cx=lerp(vw*.5,x,c),Cy=lerp(vh*.5,y,c);
-      // écran = C + rotation(th) · zoom · (monde − ballon)
-      world.style.transform=`translate(${Cx.toFixed(1)}px,${Cy.toFixed(1)}px) rotate(${th.toFixed(2)}deg) scale(${z.toFixed(4)}) translate(${(-x).toFixed(1)}px,${(-y).toFixed(1)}px)`;
-      ball.style.transform=`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(0)}deg)`;
-      sh.style.transform=`translate(${(x-B/2).toFixed(1)}px,${lerp(vh*1.2,floor,p).toFixed(1)}px) scale(${(sc*1.2).toFixed(3)})`;sh.style.opacity=(.15+.3*p).toFixed(2);
-      // flammes : braises posées dans le monde, derrière le ballon
-      if(t<1&&now-last>14){last=now;const sz=B*sc;for(let k=0;k<3;k++){const f=document.createElement("i");f.className="sp-fire";const d=sz*(.75+Math.random()*.55);
-        f.style.width=f.style.height=d+"px";f.style.left=(x-d/2+(Math.random()-.5)*sz*.3)+"px";f.style.top=(y-d/2+(Math.random()-.5)*sz*.3)+"px";world.insertBefore(f,ball);
-        const bx=bz(Math.max(0,p-.04),0)-x,by=bz(Math.max(0,p-.04),1)-y;
-        f.animate([{opacity:.95,transform:"scale(1)"},{opacity:0,transform:`translate(${(bx*1.6).toFixed(1)}px,${(by*1.6-sz*.15).toFixed(1)}px) scale(.2)`}],{duration:240+Math.random()*160,easing:"ease-out",fill:"forwards"}).onfinish=()=>f.remove()}}
-      if(t<1){requestAnimationFrame(frame);return}
-      world.style.transform="none";impact();
+      if(done)return;if(!t0){t0=now;lastNow=now}
+      const dt=Math.min(.05,(now-lastNow)/1000);lastNow=now;
+      const t=cl((now-t0)/D),p=lerp(t,ss(t),.55);
+      if(phase==="fly"){
+        bx=bz(p,0);by=bz(p,1);bs=lerp(1.3,sEnd,Math.pow(cl((p-.35)/.65),.85));brot+=dt*(900+600*(1-p));
+        // vitesse (pour orienter flammes et traits)
+        const q=Math.min(1,p+.01),vx=bz(q,0)-bx,vy=bz(q,1)-by,vl=Math.hypot(vx,vy)||1,ux=vx/vl,uy=vy/vl,rad=B*bs/2;
+        for(let k=0;k<4;k++){const a=Math.random()*Math.PI*2,rr=Math.random()*rad*.45;
+          emit({x:bx+Math.cos(a)*rr-ux*rad*.75,y:by+Math.sin(a)*rr-uy*rad*.75,vx:-ux*rad*(2+Math.random()*2.5)+(Math.random()-.5)*rad,vy:-uy*rad*(2+Math.random()*2.5)+(Math.random()-.5)*rad-rad*.9,life:0,max:.2+Math.random()*.2,s:rad*(.95+Math.random()*.6),k:"f"})}
+        if(Math.random()<.5)emit({x:bx-ux*rad,y:by-uy*rad,vx:-ux*rad*1.5,vy:-uy*rad*1.5-rad*.6,life:0,max:.6+Math.random()*.3,s:rad*1.2,k:"s"});
+        if(Math.random()<.35)emit({x:bx,y:by,vx:-ux*rad*6+(Math.random()-.5)*rad*3,vy:-uy*rad*6+(Math.random()-.5)*rad*3,life:0,max:.35,s:rad*.12,k:"e"});
+        // caméra : gros plan qui suit, puis recul progressif (amorti)
+        const c=ss(cl((t-.32)/.62));cam.z=lerp(Z0,1,c);
+        // la caméra colle au ballon (légèrement en avance pour voir la flamme derrière), puis se recentre sur le but
+        cam.x=lerp(bx-vw*.1/cam.z,vw*.5,c);cam.y=lerp(by,vh*.5,c);
+        sp.style.setProperty("--glow",(.85*(1-c*.5)).toFixed(2));
+        if(t>=1){phase="impact";impactAt=now;shake=14;cam={x:vw*.5,y:vh*.5,z:1};
+          for(let k=0;k<46;k++){const a=-Math.PI*(.05+Math.random()*.9),sp2=(.4+Math.random())*r.width*.9;emit({x:gx,y:gy,vx:Math.cos(a)*sp2,vy:Math.sin(a)*sp2*.8,life:0,max:.45+Math.random()*.4,s:2+Math.random()*2.5,k:"k"})}
+          for(let k=0;k<8;k++)emit({x:gx+(Math.random()-.5)*20,y:gy+(Math.random()-.5)*20,vx:(Math.random()-.5)*60,vy:-20-Math.random()*40,life:0,max:.9+Math.random()*.5,s:r.width*.12,k:"s"});
+          net.animate([{transform:"none"},{transform:"translate(6px,-8px) scale(1.07)"},{transform:"translate(-3px,3px) scale(.985)"},{transform:"translate(1px,-1px) scale(1.01)"},{transform:"none"}],{duration:700,easing:"ease-out"});
+          const tt=title.children;[...tt].forEach((el,i)=>el.animate([{opacity:0,transform:"translateY(16px) scale(.92)"},{opacity:1,transform:"none"}],{duration:420,delay:180+i*110,easing:"cubic-bezier(.2,.9,.3,1.3)",fill:"forwards"}));
+          setTimeout(end,1250)}
+      }else{
+        // le ballon tape le filet, retombe et rebondit au fond du but
+        const it=(now-impactAt)/1000;
+        if(it<.12){const u=it/.12;bx=gx+r.width*.025*u;by=gy-r.height*.02*u;bs=sEnd*lerp(1,.82,u)}
+        else{const u=it-.12,g=r.height*3.2,fy=backY-B*bs/2;let y=gy-r.height*.02+40*u+.5*g*u*u;if(y>fy){const over=y-fy;y=fy-Math.abs(Math.sin(over/(r.height*.25)*Math.PI))*r.height*.06*Math.exp(-u*3)}
+          by=y;bx=gx+r.width*.025-r.width*.05*Math.min(1,u*1.5);bs=sEnd*.84}
+        brot+=dt*300*Math.max(0,1-it);sp.style.setProperty("--glow","0");
+      }
+      shake*=Math.pow(.002,dt);
+      const [ox,oy]=camT();
+      world.style.transform=`translate(${ox.toFixed(2)}px,${oy.toFixed(2)}px) scale(${cam.z.toFixed(4)})`;
+      lights.style.transform=`translate(${((vw*.5-cam.x)*.08).toFixed(1)}px,0) scale(${(1+(cam.z-1)*.15).toFixed(3)})`;
+      ball.style.transform=`translate(${(ox+bx*cam.z-B/2).toFixed(2)}px,${(oy+by*cam.z-B/2).toFixed(2)}px) scale(${(bs*cam.z).toFixed(4)}) rotate(${brot.toFixed(1)}deg)`;
+      // particules (dessinées avec la même caméra que le monde)
+      ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,cv.width,cv.height);
+      ctx.setTransform(dpr*cam.z,0,0,dpr*cam.z,dpr*ox,dpr*oy);
+      for(let i=parts.length-1;i>=0;i--){const o=parts[i];o.life+=dt;if(o.life>=o.max){parts.splice(i,1);continue}
+        const L=o.life/o.max;o.x+=o.vx*dt;o.y+=o.vy*dt;
+        if(o.k==="k"){o.vy+=r.height*2.2*dt;o.vx*=Math.pow(.3,dt);ctx.globalCompositeOperation="lighter";ctx.strokeStyle=`rgba(255,${(200-120*L)|0},60,${(1-L).toFixed(2)})`;ctx.lineWidth=o.s/cam.z*1.2;ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(o.x-o.vx*.03,o.y-o.vy*.03);ctx.stroke();continue}
+        o.vx*=Math.pow(.15,dt);o.vy*=Math.pow(.15,dt);
+        const sz=o.k==="s"?o.s*(1+L*1.6):o.s*(1-L*.65),img=o.k==="f"?FIRE:o.k==="e"?EMBER:SMOKE;
+        ctx.globalCompositeOperation=o.k==="s"?"source-over":"lighter";ctx.globalAlpha=o.k==="s"?(1-L)*.8:o.k==="f"?(1-L)*.75:(1-L);
+        ctx.drawImage(img,o.x-sz/2,o.y-sz/2,sz,sz)}
+      ctx.globalAlpha=1;ctx.globalCompositeOperation="source-over";
+      // traits de vitesse pendant le gros plan
+      if(phase==="fly"&&p<.55){const rad=B*bs/2;ctx.strokeStyle="rgba(255,255,255,.35)";ctx.lineWidth=rad*.05;
+        for(let k=0;k<4;k++){const oy2=by+(k-1.5)*rad*.55,len=rad*(2.5+((k*37+now/7)%3));ctx.beginPath();ctx.moveTo(bx-rad*1.2,oy2);ctx.lineTo(bx-rad*1.2-len,oy2);ctx.stroke()}}
+      raf=requestAnimationFrame(frame);
     };
-    requestAnimationFrame(frame);
-    const tf=(x,y,s,a)=>`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${s.toFixed(3)}) rotate(${a}deg)`;
-    function impact(){
-      ball.animate([{transform:tf(gx,gy,sEnd,900)},{transform:tf(gx+r.width*.02,gy-r.height*.02,sEnd*.82,960)},{transform:tf(gx-r.width*.03,floor-r.height*.12,sEnd*.86,1080)}],{duration:600,easing:"cubic-bezier(.2,.7,.4,1)",fill:"forwards"});
-      net.animate([{transform:"none"},{transform:"translate(5px,-7px) scale(1.06)"},{transform:"translate(-2px,2px) scale(.99)"},{transform:"none"}],{duration:560,easing:"ease-out"});
-      fl.style.left=gx+"px";fl.style.top=gy+"px";
-      fl.animate([{opacity:0,transform:"scale(.3)"},{opacity:.9,transform:"scale(1)"},{opacity:0,transform:"scale(1.8)"}],{duration:480,easing:"ease-out"});
-      st.animate([{transform:"translate(0,0)"},{transform:"translate(-6px,3px)"},{transform:"translate(4px,-2px)"},{transform:"translate(0,0)"}],{duration:240});
-      title.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:350,delay:150,easing:"ease-out",fill:"forwards"});
-      setTimeout(end,1000);
-    }
-    setTimeout(end,5000);
+    raf=requestAnimationFrame(frame);
+    setTimeout(end,6000);
   });
 })();
 </script>
@@ -697,7 +748,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 37</span>
+      <span class="status" id="appVersion">Version 38</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
