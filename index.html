@@ -552,18 +552,20 @@ img{max-width:100%}
     const B=Math.round(Math.min(vw*.26,150));sp.style.setProperty("--b",B+"px");
     const r=goal.getBoundingClientRect(),gx=r.left+r.width*250/320,gy=r.top+r.height*62/220,floor=r.top+r.height*200/220,sEnd=(r.width*.13)/B;
     // trajectoire (coordonnées du « monde » = écran final) : courbe de Bézier
-    const P0=[vw*-.35,vh*1.15],P1=[vw*.05,vh*.15],P2=[vw*.55,vh*.05],P3=[gx,gy];
+    // d'abord à l'horizontale de gauche à droite, puis la trajectoire remonte vers la lucarne
+    const P0=[gx-vw*1.6,vh*.86],P1=[gx-vw*.15,vh*.86],P2=[gx+vw*.02,vh*.62],P3=[gx,gy];
     const bz=(t,i)=>{const u=1-t;return u*u*u*P0[i]+3*u*u*t*P1[i]+3*u*t*t*P2[i]+t*t*t*P3[i]};
     const lerp=(a,b,t)=>a+(b-a)*t,sm=t=>t*t*(3-2*t);
-    const D=1150,Z0=2.6,t0=performance.now()+80;let last=0;
+    const D=1400,Z0=2.6,t0=performance.now()+80;let last=0;
     const frame=now=>{
       if(done)return;
-      let t=Math.min(1,Math.max(0,(now-t0)/D));const p=Math.pow(t,1.35);   // le ballon accélère
+      let t=Math.min(1,Math.max(0,(now-t0)/D));const p=t<.5?t*.9:.45+(t-.5)*1.1;   // le ballon accélère
       const x=bz(p,0),y=bz(p,1),sc=lerp(1.35,sEnd,Math.pow(p,.8)),rot=p*900;
       // caméra : zoom serré sur le ballon au départ, recule jusqu'à la vue complète
-      const c=sm(Math.min(1,t*1.08)),z=lerp(Z0,1,c);
-      const Cx=lerp(vw/2,x,c),Cy=lerp(vh*.48,y,c);
-      world.style.transform=`translate(${(Cx-x*z).toFixed(1)}px,${(Cy-y*z).toFixed(1)}px) scale(${z.toFixed(4)})`;
+      const c=sm(Math.min(1,Math.max(0,(t-.15)/.85))),z=lerp(Z0,1,c),th=0;
+      const Cx=lerp(vw*.5,x,c),Cy=lerp(vh*.5,y,c);
+      // écran = C + rotation(th) · zoom · (monde − ballon)
+      world.style.transform=`translate(${Cx.toFixed(1)}px,${Cy.toFixed(1)}px) rotate(${th.toFixed(2)}deg) scale(${z.toFixed(4)}) translate(${(-x).toFixed(1)}px,${(-y).toFixed(1)}px)`;
       ball.style.transform=`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(0)}deg)`;
       sh.style.transform=`translate(${(x-B/2).toFixed(1)}px,${lerp(vh*1.2,floor,p).toFixed(1)}px) scale(${(sc*1.2).toFixed(3)})`;sh.style.opacity=(.15+.3*p).toFixed(2);
       // flammes : braises posées dans le monde, derrière le ballon
@@ -695,7 +697,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 35</span>
+      <span class="status" id="appVersion">Version 37</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
