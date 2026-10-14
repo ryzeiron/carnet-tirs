@@ -487,6 +487,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mute
 #splash{position:fixed;inset:0;z-index:9999;background:radial-gradient(120% 90% at 50% 30%,#1a3040 0%,#11202a 60%,#0b161d 100%);overflow:hidden;cursor:pointer}
 #splash[hidden]{display:none}
 .sp-stage{position:absolute;inset:0}
+.sp-world{position:absolute;inset:0;transform-origin:0 0;will-change:transform}
 .sp-goal{position:absolute;left:50%;top:40%;width:min(86vw,560px);transform:translate(-50%,-50%);overflow:visible}
 .sp-net{transform-box:fill-box;transform-origin:50% 50%}
 .sp-ball{position:absolute;left:0;top:0;width:var(--b,120px);height:var(--b,120px);will-change:transform,filter;filter:drop-shadow(0 6px 10px rgba(0,0,0,.45))}
@@ -513,6 +514,7 @@ img{max-width:100%}
 <body>
 <div id="splash" aria-hidden="true" hidden>
   <div class="sp-stage" id="spStage">
+    <div class="sp-world" id="spWorld">
     <svg class="sp-goal" id="spGoal" viewBox="0 0 320 220">
       <defs><linearGradient id="spFloor" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1b3140"/><stop offset="1" stop-color="#11202a" stop-opacity="0"/></linearGradient></defs>
       <path d="M-200 200 L520 200 L620 330 L-300 330Z" fill="url(#spFloor)"/>
@@ -529,50 +531,61 @@ img{max-width:100%}
     <div class="sp-ball" id="spBall"><svg viewBox="-130 -130 260 260"><g id="spBallG"><circle r="124" fill="#e0571d"/><clipPath id="spcb"><circle r="124"/></clipPath>
 <g clip-path="url(#spcb)" fill="none" stroke="#11202a" stroke-width="11" stroke-linejoin="round" stroke-linecap="round"><path d="M0.0,-44.6 L38.7,-22.3 L38.7,22.3 L0.0,44.6 L-38.7,22.3 L-38.7,-22.3Z" fill="#11202a" fill-opacity=".12"/><path d="M0.0,-44.6 Q-11.2,-84.8 -24.8,-130.2"/><path d="M38.7,-22.3 Q67.9,-52.1 100.4,-86.6"/><path d="M38.7,22.3 Q79.0,32.7 125.2,43.6"/><path d="M0.0,44.6 Q11.2,84.8 24.8,130.2"/><path d="M-38.7,22.3 Q-67.9,52.1 -100.4,86.6"/><path d="M-38.7,-22.3 Q-79.0,-32.7 -125.2,-43.6"/></g>
 <circle r="124" fill="none" stroke="#11202a" stroke-width="12.1"/><path d="M-76.9,-69.4 A99.2,99.2 0 0 1 -19.8,-99.2" stroke="#fff" stroke-width="12.1" stroke-linecap="round" fill="none" opacity=".5"/></g></svg></div>
+    </div>
     <div class="sp-flash" id="spFlash"></div>
     <div class="sp-title" id="spTitle"><img src="icon-192.png" alt="" width="64" height="64"><b>Carnet de tirs</b><span>Analyse handball</span></div>
   </div>
 </div>
 <script>
-/* Animation d'ouverture : le ballon file dans la lucarne (une fois par lancement de l'appli) */
+/* Animation d'ouverture : caméra sur le ballon en flammes, qui recule jusqu'à voir le but (une fois par lancement) */
 (function(){
   const sp=document.getElementById("splash");if(!sp)return;
   let seen=false;try{seen=sessionStorage.getItem("hb-splash")==="1";sessionStorage.setItem("hb-splash","1")}catch(e){}
   const reduce=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
   if(seen||reduce||!sp.animate||/[?&](code|token_hash|type)=/.test(location.search+location.hash)){sp.remove();return}
   sp.hidden=false;
-  let done=false;const end=()=>{if(done)return;done=true;sp.animate([{opacity:1},{opacity:0}],{duration:350,easing:"ease-in",fill:"forwards"}).onfinish=()=>sp.remove()};
+  let done=false;const end=()=>{if(done)return;done=true;sp.animate([{opacity:1},{opacity:0}],{duration:320,easing:"ease-in",fill:"forwards"}).onfinish=()=>sp.remove()};
   sp.addEventListener("click",end);
   requestAnimationFrame(()=>{
-    const vw=innerWidth,vh=innerHeight,ball=document.getElementById("spBall"),goal=document.getElementById("spGoal"),net=document.getElementById("spNet"),
-      sh=document.getElementById("spShadow"),fl=document.getElementById("spFlash"),title=document.getElementById("spTitle"),st=document.getElementById("spStage");
-    const B=Math.round(Math.min(vw*.3,170));sp.style.setProperty("--b",B+"px");
+    const vw=innerWidth,vh=innerHeight,$=id=>document.getElementById(id);
+    const world=$("spWorld"),ball=$("spBall"),goal=$("spGoal"),net=$("spNet"),sh=$("spShadow"),fl=$("spFlash"),title=$("spTitle"),st=$("spStage");
+    const B=Math.round(Math.min(vw*.26,150));sp.style.setProperty("--b",B+"px");
     const r=goal.getBoundingClientRect(),gx=r.left+r.width*250/320,gy=r.top+r.height*62/220,floor=r.top+r.height*200/220,sEnd=(r.width*.13)/B;
-    const P=[[vw*-.12,vh*1.02,2.8,0],[vw*.18,vh*.62,1.9,240],[vw*.42,vh*.30,1.05,520],[gx,gy,sEnd,800]];
-    const tf=([x,y,s,a])=>`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${s.toFixed(3)}) rotate(${a}deg)`;
-    const kf=P.map((p,i)=>({transform:tf(p),offset:[0,.32,.66,1][i]}));
-    kf[0].filter="blur(4px) drop-shadow(0 6px 10px rgba(0,0,0,.45))";kf[3].filter="blur(0px) drop-shadow(0 3px 4px rgba(0,0,0,.4))";
-    const D=520,DL=120,ease="cubic-bezier(.25,.1,.45,1)";
-    const fly=ball.animate(kf,{duration:D,delay:DL,easing:ease,fill:"both"});
-    // flamme : des braises naissent derrière le ballon à chaque image
-    let burning=true;const fire=()=>{if(!burning)return;const bb=ball.getBoundingClientRect();
-      if(bb.width>2&&bb.right>0&&bb.top<vh){for(let k=0;k<2;k++){const f=document.createElement("i");f.className="sp-fire";const sz=bb.width*(.7+Math.random()*.5);
-        f.style.width=f.style.height=sz+"px";f.style.left=(bb.left+bb.width/2-sz/2+(Math.random()-.5)*bb.width*.25)+"px";f.style.top=(bb.top+bb.height/2-sz/2+(Math.random()-.5)*bb.height*.25)+"px";st.insertBefore(f,ball);
-        f.animate([{opacity:.95,transform:"scale(1)"},{opacity:0,transform:`translate(${-bb.width*.5}px,${bb.height*.35}px) scale(.25)`}],{duration:260+Math.random()*140,easing:"ease-out",fill:"forwards"}).onfinish=()=>f.remove()}}
-      requestAnimationFrame(fire)};
-    setTimeout(()=>requestAnimationFrame(fire),DL);
-    sh.animate([{transform:`translate(${vw*-.12-B/2}px,${vh*.98}px) scale(2.4,2.4)`,opacity:.0},{transform:`translate(${vw*.3-B/2}px,${floor+20}px) scale(1.2,1.2)`,opacity:.5,offset:.5},{transform:`translate(${gx-B/2}px,${floor}px) scale(${sEnd*1.4},${sEnd*1.4})`,opacity:.35}],{duration:D,delay:DL,easing:ease,fill:"both"});
-    fly.onfinish=()=>{burning=false;
-      // le ballon s'écrase dans le filet puis retombe
-      ball.animate([{transform:tf([gx,gy,sEnd,800])},{transform:tf([gx+r.width*.02,gy-r.height*.02,sEnd*.82,860])},{transform:tf([gx-r.width*.03,floor-r.height*.12,sEnd*.86,980])}],{duration:650,easing:"cubic-bezier(.2,.7,.4,1)",fill:"forwards"});
-      net.animate([{transform:"none"},{transform:"translate(5px,-7px) scale(1.06)"},{transform:"translate(-2px,2px) scale(.99)"},{transform:"none"}],{duration:600,easing:"ease-out"});
+    // trajectoire (coordonnées du « monde » = écran final) : courbe de Bézier
+    const P0=[vw*-.35,vh*1.15],P1=[vw*.05,vh*.15],P2=[vw*.55,vh*.05],P3=[gx,gy];
+    const bz=(t,i)=>{const u=1-t;return u*u*u*P0[i]+3*u*u*t*P1[i]+3*u*t*t*P2[i]+t*t*t*P3[i]};
+    const lerp=(a,b,t)=>a+(b-a)*t,sm=t=>t*t*(3-2*t);
+    const D=1150,Z0=2.6,t0=performance.now()+80;let last=0;
+    const frame=now=>{
+      if(done)return;
+      let t=Math.min(1,Math.max(0,(now-t0)/D));const p=Math.pow(t,1.35);   // le ballon accélère
+      const x=bz(p,0),y=bz(p,1),sc=lerp(1.35,sEnd,Math.pow(p,.8)),rot=p*900;
+      // caméra : zoom serré sur le ballon au départ, recule jusqu'à la vue complète
+      const c=sm(Math.min(1,t*1.08)),z=lerp(Z0,1,c);
+      const Cx=lerp(vw/2,x,c),Cy=lerp(vh*.48,y,c);
+      world.style.transform=`translate(${(Cx-x*z).toFixed(1)}px,${(Cy-y*z).toFixed(1)}px) scale(${z.toFixed(4)})`;
+      ball.style.transform=`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${sc.toFixed(3)}) rotate(${rot.toFixed(0)}deg)`;
+      sh.style.transform=`translate(${(x-B/2).toFixed(1)}px,${lerp(vh*1.2,floor,p).toFixed(1)}px) scale(${(sc*1.2).toFixed(3)})`;sh.style.opacity=(.15+.3*p).toFixed(2);
+      // flammes : braises posées dans le monde, derrière le ballon
+      if(t<1&&now-last>14){last=now;const sz=B*sc;for(let k=0;k<3;k++){const f=document.createElement("i");f.className="sp-fire";const d=sz*(.75+Math.random()*.55);
+        f.style.width=f.style.height=d+"px";f.style.left=(x-d/2+(Math.random()-.5)*sz*.3)+"px";f.style.top=(y-d/2+(Math.random()-.5)*sz*.3)+"px";world.insertBefore(f,ball);
+        const bx=bz(Math.max(0,p-.04),0)-x,by=bz(Math.max(0,p-.04),1)-y;
+        f.animate([{opacity:.95,transform:"scale(1)"},{opacity:0,transform:`translate(${(bx*1.6).toFixed(1)}px,${(by*1.6-sz*.15).toFixed(1)}px) scale(.2)`}],{duration:240+Math.random()*160,easing:"ease-out",fill:"forwards"}).onfinish=()=>f.remove()}}
+      if(t<1){requestAnimationFrame(frame);return}
+      world.style.transform="none";impact();
+    };
+    requestAnimationFrame(frame);
+    const tf=(x,y,s,a)=>`translate(${(x-B/2).toFixed(1)}px,${(y-B/2).toFixed(1)}px) scale(${s.toFixed(3)}) rotate(${a}deg)`;
+    function impact(){
+      ball.animate([{transform:tf(gx,gy,sEnd,900)},{transform:tf(gx+r.width*.02,gy-r.height*.02,sEnd*.82,960)},{transform:tf(gx-r.width*.03,floor-r.height*.12,sEnd*.86,1080)}],{duration:600,easing:"cubic-bezier(.2,.7,.4,1)",fill:"forwards"});
+      net.animate([{transform:"none"},{transform:"translate(5px,-7px) scale(1.06)"},{transform:"translate(-2px,2px) scale(.99)"},{transform:"none"}],{duration:560,easing:"ease-out"});
       fl.style.left=gx+"px";fl.style.top=gy+"px";
-      fl.animate([{opacity:0,transform:"scale(.3)"},{opacity:.9,transform:"scale(1)"},{opacity:0,transform:"scale(1.8)"}],{duration:520,easing:"ease-out"});
-      st.animate([{transform:"translate(0,0)"},{transform:"translate(-5px,3px)"},{transform:"translate(4px,-2px)"},{transform:"translate(0,0)"}],{duration:260});
+      fl.animate([{opacity:0,transform:"scale(.3)"},{opacity:.9,transform:"scale(1)"},{opacity:0,transform:"scale(1.8)"}],{duration:480,easing:"ease-out"});
+      st.animate([{transform:"translate(0,0)"},{transform:"translate(-6px,3px)"},{transform:"translate(4px,-2px)"},{transform:"translate(0,0)"}],{duration:240});
       title.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:350,delay:150,easing:"ease-out",fill:"forwards"});
       setTimeout(end,1000);
-    };
-    setTimeout(end,4500);
+    }
+    setTimeout(end,5000);
   });
 })();
 </script>
@@ -682,7 +695,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 34</span>
+      <span class="status" id="appVersion">Version 35</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
