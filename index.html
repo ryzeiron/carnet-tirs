@@ -339,6 +339,7 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .pk-squad .warn{color:#d23b3b}
 .pk-actions{position:sticky;bottom:0;display:flex;gap:10px;justify-content:space-between;flex-wrap:wrap;padding:12px 0 calc(12px + env(safe-area-inset-bottom));background:var(--bg)}
 .pk-actions .btn.primary{flex:1 1 220px;font-size:17px;padding:12px}
+.applogo{display:block;width:56px;height:56px;border-radius:14px;margin-bottom:12px;box-shadow:0 2px 8px rgba(17,32,42,.18)}
 .lc-kicker{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
 .login-card{width:100%;max-width:420px;display:flex;flex-direction:column;gap:14px;padding:26px 22px}
 .lc-brand h1{font-family:var(--display);font-weight:700;font-size:40px;line-height:1;margin:6px 0 8px;text-transform:uppercase}
@@ -483,7 +484,7 @@ img{max-width:100%}
 
 <section class="screen" id="viewLogin" hidden>
   <div class="login-card panel">
-    <div class="lc-brand"><span class="lc-kicker">Handball · analyse</span><h1>Carnet de tirs</h1><p>Tes stats de match et d'entraînement, synchronisées sur tous tes appareils.</p></div>
+    <div class="lc-brand"><img class="applogo" src="icon-192.png" alt="" width="64" height="64"><span class="lc-kicker">Handball · analyse</span><h1>Carnet de tirs</h1><p>Tes stats de match et d'entraînement, synchronisées sur tous tes appareils.</p></div>
     <div class="tabs lc-tabs" id="lcTabs"><button class="tab" type="button" data-lc="login" aria-selected="true">Connexion</button><button class="tab" type="button" data-lc="signup" aria-selected="false">Créer un compte</button></div>
     <h2 class="lc-title" id="lcTitle" hidden></h2>
     <form id="lcForm" class="stack" autocomplete="on" novalidate>
@@ -503,7 +504,7 @@ img{max-width:100%}
 
 <section class="screen" id="viewHub" hidden>
   <div class="hub">
-    <div class="hub-top"><span class="lc-kicker">Carnet de tirs</span><h1>On fait quoi aujourd'hui ?</h1><p class="hint" id="hubWho"></p></div>
+    <div class="hub-top"><img class="applogo" src="icon-192.png" alt="" width="56" height="56"><span class="lc-kicker">Carnet de tirs</span><h1>On fait quoi aujourd'hui ?</h1><p class="hint" id="hubWho"></p></div>
     <label class="hub-space panel"><span class="lbl">Espace</span><select id="hubSpace"></select><span class="hint" id="hubSpaceHint"></span></label>
     <div class="hub-cards">
       <button class="hubcard" type="button" data-go="team"><span class="hc-n">01</span><b>Mon équipe</b><span>Choisir l'équipe, gérer le staff et les invitations</span></button>
@@ -585,7 +586,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 27</span>
+      <span class="status" id="appVersion">Version 28</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>

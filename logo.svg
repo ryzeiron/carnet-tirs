@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#11202a"/>
+<g stroke="#fff" stroke-width="5" opacity=".25"><path d="M150 150 V396 M204 150 V396 M258 150 V396 M312 150 V396 M366 150 V396 M96 200 H416 M96 250 H416 M96 300 H416 M96 350 H416"/></g>
+<path d="M96 396 V150 H416 V396" fill="none" stroke="#fff" stroke-width="18" stroke-linejoin="round"/>
+<g transform="translate(318 208) rotate(-10)"><circle r="90" fill="#e0571d"/><clipPath id="cb90"><circle r="90"/></clipPath>
+<g clip-path="url(#cb90)" fill="none" stroke="#11202a" stroke-width="9" stroke-linejoin="round" stroke-linecap="round"><path d="M0.0,-32.4 L28.1,-16.2 L28.1,16.2 L0.0,32.4 L-28.1,16.2 L-28.1,-16.2Z" fill="#11202a" fill-opacity=".12"/><path d="M0.0,-32.4 Q-8.1,-61.6 -18.0,-94.5"/><path d="M28.1,-16.2 Q49.3,-37.8 72.8,-62.8"/><path d="M28.1,16.2 Q57.4,23.8 90.8,31.7"/><path d="M0.0,32.4 Q8.1,61.6 18.0,94.5"/><path d="M-28.1,16.2 Q-49.3,37.8 -72.8,62.8"/><path d="M-28.1,-16.2 Q-57.4,-23.8 -90.8,-31.7"/></g>
+<circle r="90" fill="none" stroke="#11202a" stroke-width="9.9"/><path d="M-55.8,-50.4 A72.0,72.0 0 0 1 -14.4,-72.0" stroke="#fff" stroke-width="9.9" stroke-linecap="round" fill="none" opacity=".5"/></g></svg>
