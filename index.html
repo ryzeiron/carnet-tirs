@@ -263,7 +263,22 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .landico{font-size:52px;line-height:1}
 .landcard h2{font-size:21px;text-wrap:balance}
 .landcard p{margin:0;font-size:16px}
-.danger-zone{margin-top:18px;padding-top:12px;border-top:1px solid var(--line);display:flex;flex-direction:column;gap:10px}
+.fold>.panel-head{cursor:pointer;user-select:none;-webkit-user-select:none;flex-wrap:wrap;gap:4px 10px;margin-bottom:0}
+.fold>.panel-head h2::before{content:"▸";display:inline-block;margin-right:8px;color:var(--accent);transition:transform .15s}
+.fold.open>.panel-head h2::before{transform:rotate(90deg)}
+.fold.open>.panel-head{margin-bottom:12px}
+.fold:not(.open)>:not(.panel-head){display:none!important}
+.fsum{color:var(--muted);font-size:13px;flex:1 1 auto;text-align:right}
+.fold.open .fsum{display:none}
+.fold:not(.open)>.panel-head .btn{display:none}
+.subfold{border-top:1px solid var(--line);margin-top:12px;padding-top:10px}
+.subfold>summary{cursor:pointer;font-weight:700;font-size:15px;padding:4px 0;list-style:none}
+.subfold>summary::-webkit-details-marker{display:none}
+.subfold>summary::before{content:"▸";display:inline-block;margin-right:8px;color:var(--accent);transition:transform .15s}
+.subfold[open]>summary::before{transform:rotate(90deg)}
+.subfold>[data-foldbody]{margin-top:8px}
+.dangerfold>summary{color:var(--r-arret)}
+.danger-zone{margin-top:8px;display:flex;flex-direction:column;gap:10px}
 .danger-zone .btn.danger{border-color:var(--r-arret)}
 .danger-zone .btn.danger:not(:disabled){background:var(--r-arret);color:#fff}
 .danger-zone .btn:disabled{opacity:.45;cursor:not-allowed}
@@ -537,7 +552,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 24</span>
+      <span class="status" id="appVersion">Version 25</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -632,8 +647,8 @@ img{max-width:100%}
   <!-- ================= ANALYSE ================= -->
   <section id="viewTeam" hidden>
     <div class="teamgrid">
-      <div class="panel" id="accPanel">
-        <div class="panel-head"><h2>Mon compte</h2></div>
+      <div class="panel fold" id="accPanel">
+        <div class="panel-head"><h2>Mon compte</h2><span class="fsum" id="fsAcc"></span></div>
         <div id="accOut">
           <p class="hint">Connecte-toi avec ton e-mail pour partager une équipe avec ton staff. Tu reçois un code à 6 chiffres par e-mail, sans mot de passe.</p>
           <form id="loginForm" class="stack" autocomplete="on">
@@ -658,32 +673,33 @@ img{max-width:100%}
         <p class="hint" id="accMsg"></p>
       </div>
 
-      <div class="panel" id="wsPanel">
-        <div class="panel-head"><h2>Mes équipes</h2><button class="btn small" type="button" id="syncNow" hidden>Synchroniser</button></div>
+      <div class="panel fold" id="wsPanel">
+        <div class="panel-head"><h2>Mes équipes</h2><span class="fsum" id="fsWs"></span><button class="btn small" type="button" id="syncNow" hidden>Synchroniser</button></div>
         <p class="hint" id="wsHelp">Touche une équipe pour y entrer : les matchs, joueurs et stats que tu vois sont alors ceux de l'équipe, partagés avec tout le staff.</p>
         <ul class="wslist" id="wsList"></ul>
         <div class="syncinfo" id="syncInfo" hidden></div>
         <button class="btn small" type="button" id="mergeLocal" hidden>Copier les données de « Mon espace » dans cette équipe</button>
-        <form id="newTeamForm" class="stack" hidden autocomplete="off">
-          <div class="subhead">Créer une équipe</div>
-          <label class="fld"><span class="lbl">Nom de l'équipe</span><input type="text" id="teamName" maxlength="80" placeholder="ex. Seniors Garçons" required></label>
+        <details class="subfold"><summary>Créer une équipe</summary>
+        <form data-foldbody id="newTeamForm" class="stack" hidden autocomplete="off">
+                    <label class="fld"><span class="lbl">Nom de l'équipe</span><input type="text" id="teamName" maxlength="80" placeholder="ex. Seniors Garçons" required></label>
           <label class="ckline"><input type="checkbox" id="teamImport"> Copier dedans mes joueurs, matchs et actions actuels</label>
           <button class="btn primary" type="submit">Créer l'équipe</button>
         </form>
+        </details>
       </div>
 
-      <div class="panel" id="supPanel" hidden>
-        <div class="panel-head"><h2>Administration · toutes les équipes</h2><button class="btn small" type="button" id="supRefresh">Actualiser</button></div>
+      <div class="panel fold" id="supPanel" hidden>
+        <div class="panel-head"><h2>Administration</h2><span class="fsum" id="fsSup"></span><button class="btn small" type="button" id="supRefresh">Actualiser</button></div>
         <p class="hint">Tu es super-administrateur : tu vois toutes les équipes de l'appli, tu peux y entrer, gérer leur staff et les supprimer. Les espaces perso des utilisateurs restent privés.</p>
         <ul class="wslist suplist" id="supList"></ul>
       </div>
 
-      <div class="panel" id="memPanel" hidden>
-        <div class="panel-head"><h2>Staff de <span id="memTeam"></span></h2></div>
+      <div class="panel fold" id="memPanel" hidden>
+        <div class="panel-head"><h2>Staff de <span id="memTeam"></span></h2><span class="fsum" id="fsMem"></span></div>
         <ul class="memlist" id="memList"></ul>
-        <form id="inviteForm" class="stack" autocomplete="off" hidden>
-          <div class="subhead">Inviter quelqu'un</div>
-          <label class="fld"><span class="lbl">E-mail</span><input type="email" id="invEmail" placeholder="coach@exemple.fr" required></label>
+        <details class="subfold"><summary>Inviter quelqu'un</summary>
+        <form data-foldbody id="inviteForm" class="stack" autocomplete="off" hidden>
+                    <label class="fld"><span class="lbl">E-mail</span><input type="email" id="invEmail" placeholder="coach@exemple.fr" required></label>
           <div class="fld"><span class="lbl">Rôle</span><select id="invRole">
             <option value="analyste">Analyste : saisit les matchs</option>
             <option value="lecteur">Lecteur : consulte les stats</option>
@@ -691,12 +707,14 @@ img{max-width:100%}
           <button class="btn primary" type="submit">Inviter</button>
           <p class="hint">La personne reçoit un code par e-mail. Elle ouvre l'appli, va dans « Équipe » et se connecte avec cette adresse.</p>
         </form>
-        <div class="danger-zone" id="dangerZone" hidden>
-          <div class="subhead">Supprimer l'équipe</div>
-          <p class="hint">Tout sera effacé pour <b>tout le staff</b> : joueurs, matchs, actions et invitations. C'est définitif. Fais d'abord une <b>sauvegarde</b> si tu veux garder les données.</p>
+        </details>
+        <details class="subfold dangerfold"><summary>Supprimer l'équipe</summary>
+        <div data-foldbody class="danger-zone" id="dangerZone" hidden>
+                    <p class="hint">Tout sera effacé pour <b>tout le staff</b> : joueurs, matchs, actions et invitations. C'est définitif. Fais d'abord une <b>sauvegarde</b> si tu veux garder les données.</p>
           <label class="fld"><span class="lbl">Pour confirmer, tape le nom de l'équipe</span><input type="text" id="delTeamName" autocomplete="off"></label>
           <button class="btn danger" type="button" id="delTeamBtn" disabled>Supprimer définitivement l'équipe</button>
         </div>
+        </details>
       </div>
     </div>
   </section>
@@ -2052,6 +2070,7 @@ function renderTeam(){
   $("memPanel").hidden=!(on&&t&&!t.perso);
   if(on&&t&&!t.perso){$("memTeam").textContent=t.name;$("inviteForm").hidden=t.role!=="admin";$("dangerZone").hidden=t.role!=="admin";
     if($("delTeamName").dataset.ws!==WS){$("delTeamName").value="";$("delTeamName").dataset.ws=WS}checkDelName();loadMembers()}
+  applyFolds();foldSummaries();
 }
 async function loadMembers(){
   const t=TEAMS.find(x=>x.id===WS);if(!t||!sb)return;
@@ -2060,10 +2079,23 @@ async function loadMembers(){
   const me=(session.user.email||"").toLowerCase(),admin=t.role==="admin";
   $("memList").innerHTML=data.map(m=>`<li><span class="nm">${esc(m.email)}${m.email===me?" (toi)":""}<br><small class="hint">${m.user_id?"Compte actif":"Invitation en attente"}</small></span>
     ${admin&&m.email!==me?`<select data-mrole="${esc(m.email)}" aria-label="Rôle">${["admin","analyste","lecteur"].map(r=>`<option value="${r}" ${r===m.role?"selected":""}>${ROLE_LABEL[r]}</option>`).join("")}</select><button class="btn small danger" type="button" data-mdelm="${esc(m.email)}">Retirer</button>`:`<span class="rolep">${ROLE_LABEL[m.role]}</span>`}</li>`).join("");
+  foldSummaries();
 }
 function purgeTeamLocal(id){try{const ks=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.endsWith("@"+id))ks.push(k)}ks.forEach(k=>localStorage.removeItem(k))}catch(e){}}
 function checkDelName(){const t=TEAMS.find(x=>x.id===WS);$("delTeamBtn").disabled=!t||$("delTeamName").value.trim().toLowerCase()!==t.name.trim().toLowerCase()}
+let FOLDS=lsGet("hb-folds",{wsPanel:true});
+function applyFolds(){document.querySelectorAll("#viewTeam .fold").forEach(p=>p.classList.toggle("open",!!FOLDS[p.id]||(p.id==="accPanel"&&!session)));
+  document.querySelectorAll("#viewTeam details.subfold").forEach(d=>{const b=d.querySelector("[data-foldbody]");d.hidden=!b||b.hidden})}
+function foldSummaries(){
+  const on=!!session,t=TEAMS.find(x=>x.id===WS);
+  $("fsAcc").textContent=on?session.user.email:"pas connecté";
+  $("fsWs").textContent=t?(t.perso?"Mon espace":t.name)+(TEAMS.length>1?` · ${TEAMS.length} espaces`:""):"Cet appareil";
+  $("fsSup").textContent=`${SUP_TEAMS.length} équipe${SUP_TEAMS.length>1?"s":""}`;
+  const n=$("memList").children.length;$("fsMem").textContent=n?`${n} membre${n>1?"s":""}`:"";
+}
 function bindTeam(){
+  document.querySelectorAll("#viewTeam .fold>.panel-head").forEach(h=>h.addEventListener("click",e=>{if(e.target.closest("button,a,input,select"))return;
+    const p=h.parentElement;FOLDS[p.id]=!FOLDS[p.id];lsSet("hb-folds",FOLDS);applyFolds()}));
   $("supRefresh").onclick=async()=>{await loadTeams();renderTeam();toast("Liste actualisée",false)};
   $("supList").addEventListener("click",async e=>{
     const g=e.target.closest("[data-supgo]");if(g){enterTeam(g.dataset.supgo);return}
