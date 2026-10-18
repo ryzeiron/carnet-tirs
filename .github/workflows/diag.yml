@@ -1,0 +1,28 @@
+name: diag
+on:
+  push:
+    paths: [".github/workflows/diag.yml"]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: apcsdghdmzspovxdlmbv
+    steps:
+      - run: |
+          mkdir out
+          q(){ python3 -c 'import json,sys;print(json.dumps({"query":sys.argv[1]}))' "$1" > body.json
+               curl -sS -X POST "https://api.supabase.com/v1/projects/$REF/database/query" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @body.json; echo; }
+          {
+          echo "== equipes d'Antonin"
+          q "select t.id, case when t.name='__perso__' then 'PERSO' else t.name end as name, m.role, (select count(*) from members x where x.team_id=t.id) as membres, (select count(*) from items i where i.team_id=t.id and i.kind='match' and not i.deleted) as matchs, (select count(*) from items i where i.team_id=t.id and i.kind='shot' and not i.deleted) as actions, (select max(updated_at) from items i where i.team_id=t.id) as derniere_maj from members m join teams t on t.id=m.team_id where m.email='antoningiolda@gmail.com' order by t.created_at"
+          echo "== membres des equipes partagees d'Antonin"
+          q "select case when t.name='__perso__' then 'PERSO' else t.name end as team, m.email, m.role, m.user_id is not null as compte_actif from members m join teams t on t.id=m.team_id where t.name<>'__perso__' and t.id in (select team_id from members where email='antoningiolda@gmail.com') order by 1,2"
+          echo "== matchs Dunkerque (toutes equipes)"
+          q "select i.team_id, case when t.name='__perso__' then 'PERSO' else t.name end as team, (select string_agg(email,',') from members where team_id=t.id) as membres, i.id, i.data->>'adv' as adv, i.data->>'date' as date, i.deleted, i.updated_at, (select count(*) from items s where s.team_id=i.team_id and s.kind='shot' and not s.deleted and s.data->>'match'=i.id) as actions from items i join teams t on t.id=i.team_id where i.kind='match' and (i.data->>'adv' ilike '%dunk%' or i.data->>'comp' ilike '%dunk%' or i.data->>'salle' ilike '%dunk%')"
+          echo "== activite des 4 derniers jours par equipe"
+          q "select case when t.name='__perso__' then 'PERSO' else t.name end as team, (select string_agg(email,',') from members where team_id=t.id) as membres, i.kind, count(*), max(i.updated_at) from items i join teams t on t.id=i.team_id where i.updated_at > now() - interval '4 days' group by 1,2,3 order by 5 desc"
+          } > out/diag.txt 2>&1
+          cd out && git init -q && git checkout -q -b diag-out && git config user.email bot@x && git config user.name bot && git add -A && git commit -qm out && git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-out
