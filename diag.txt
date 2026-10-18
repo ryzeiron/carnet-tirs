@@ -1,0 +1,6 @@
+== matchs Dunkerque
+[{"id":"mff2640785","date":"2026-12-12","updated_at":"2026-10-14 09:38:40.811657+00","actions":0},{"id":"mff2640770","date":"2026-10-18","updated_at":"2026-10-18 11:09:12.748493+00","actions":0}]
+== activite depuis 14h (heure de Paris) par equipe
+[{"team":"-18 France","kind":"cfg","count":1,"max":"2026-10-18 12:55:21.933094+00"},{"team":"-18 France","kind":"player","count":2,"max":"2026-10-18 12:19:03.733596+00"}]
+== derniers logins
+[{"email":"enzo.bebin@cbmhandball.fr","last_sign_in_at":"2026-10-18 12:55:18.329244+00"},{"email":"antoningiolda@gmail.com","last_sign_in_at":"2026-10-14 10:08:35.531089+00"},{"email":"charly.lebel@cbmhandball.fr","last_sign_in_at":"2026-10-13 08:56:31.098514+00"}]
