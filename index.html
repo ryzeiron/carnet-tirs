@@ -338,6 +338,37 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .pickscreen{align-items:flex-start}
 .tpnew{display:flex;flex-direction:column;gap:10px}
 .tpnew .btn.primary{font-size:17px;padding:12px;align-self:stretch}
+.livebox{display:grid;gap:10px}
+.livebox:empty{display:none}
+#viewMatch .livebox{margin-bottom:14px}
+.livecard{background:var(--panel);border:1.5px solid #d23b3b;border-radius:14px;padding:14px 16px;display:grid;gap:6px;box-shadow:0 0 0 4px rgba(210,59,59,.08)}
+.lvtop{display:flex;align-items:center;gap:8px;font-size:13px;letter-spacing:.08em;color:#d23b3b}
+.lvwho{margin-left:auto;color:var(--muted);letter-spacing:0;font-size:12.5px}
+.lvmain{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.lvadv{font-family:var(--display);font-weight:700;font-size:24px;text-transform:uppercase;line-height:1.05}
+.lvsc{font-family:var(--display);font-weight:700;font-size:34px;white-space:nowrap}
+.lvsc i{font-style:normal;color:var(--muted);margin:0 4px}
+.lvsub{color:var(--muted);font-size:13px}
+.livecard .btn{justify-self:start}
+.livedot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#d23b3b;box-shadow:0 0 0 0 rgba(210,59,59,.6);animation:lvpulse 1.4s infinite}
+@keyframes lvpulse{0%{box-shadow:0 0 0 0 rgba(210,59,59,.55)}70%{box-shadow:0 0 0 9px rgba(210,59,59,0)}100%{box-shadow:0 0 0 0 rgba(210,59,59,0)}}
+@media (prefers-reduced-motion:reduce){.livedot{animation:none}}
+.hublive{display:inline-flex;align-items:center;gap:6px;color:#d23b3b!important;font-weight:700;font-size:13px!important}
+.lvstate{display:inline-flex;align-items:center;gap:6px}
+.lvboard{padding:16px;margin-bottom:14px}
+.lvteams{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;text-align:center}
+.lvteams>div{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.lvn{font-size:13px;font-weight:700;text-transform:uppercase;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.lvbig{font-family:var(--display);font-weight:700;font-size:56px;line-height:1;background:var(--ink);color:var(--bg);border-radius:10px;padding:4px 14px;min-width:84px}
+.lvbig.adv{background:var(--r-perte);color:#fff}
+.lvclock{font-family:var(--display);font-weight:700}
+.lvclock span{font-size:38px;line-height:1}
+.lvclock small{display:block;font-size:12px;color:var(--muted);font-family:inherit;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.lvtm{margin-top:10px;text-align:center;font-weight:700;color:var(--accent)}
+.lvgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:14px;align-items:start}
+.lvfeed li.goal b{color:var(--r-but)}
+.lvtop5{list-style:none;margin:0 0 12px;padding:0}
+.lvtop5 li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font-size:14px}
 .pk-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 .pk-sec{font-family:var(--display);font-weight:600;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:6px 2px -4px}
 .pkf .chip{padding:7px 13px;font-size:14px}
@@ -668,10 +699,11 @@ img{max-width:100%}
   <div class="hub">
     <div class="hub-top"><img class="applogo" src="icon-192.png" alt="" width="56" height="56"><span class="lc-kicker">Carnet de tirs</span><h1>On fait quoi aujourd'hui ?</h1><p class="hint" id="hubWho"></p></div>
     <label class="hub-space panel"><span class="lbl">Espace</span><select id="hubSpace"></select><span class="hint" id="hubSpaceHint"></span></label>
+    <div id="hubLiveBox" class="livebox"></div>
     <div class="hub-cards">
       <button class="hubcard" type="button" data-go="team"><span class="hc-n">01</span><b>Mon équipe</b><span>Choisir l'équipe, gérer le staff et les invitations</span></button>
       <button class="hubcard" type="button" data-go="roster"><span class="hc-n">02</span><b>Effectif</b><span>Joueurs par catégorie (-18 région, -18 France…) et calendrier FFHB</span></button>
-      <button class="hubcard" type="button" data-go="match"><span class="hc-n">03</span><b>Match</b><span>Saisie en direct, chrono, score, analyses et exports</span></button>
+      <button class="hubcard" type="button" data-go="match"><span class="hc-n">03</span><b>Match</b><span>Saisie en direct, chrono, score, analyses et exports</span><span class="hublive" id="hubLive" hidden><span class="livedot"></span> En direct</span></button>
       <button class="hubcard" type="button" data-go="train"><span class="hc-n">04</span><b>Entraînement</b><span>Tirs au poste : impact dans la cage et style de tir</span></button>
     </div>
     <div class="hub-foot"><button type="button" class="linkbtn" id="hubLogin" hidden>Se connecter pour synchroniser</button><button type="button" class="linkbtn" id="hubLogout" hidden>Se déconnecter</button></div>
@@ -683,6 +715,14 @@ img{max-width:100%}
     <div class="pk-head"><button class="btn small" type="button" id="pkHome">← Accueil</button><span class="hint" id="pkSpace"></span></div>
     <div class="hub-top"><span class="lc-kicker" id="pkKicker">Match</span><h1 id="pkTitle">Quel match ?</h1><p class="hint" id="pkSub"></p></div>
     <div id="pkBody"></div>
+  </div>
+</section>
+
+<section class="screen pickscreen" id="viewLive" hidden>
+  <div class="hub">
+    <div class="pk-head"><button class="btn small" type="button" id="lvBack">← Retour</button><span class="hint lvstate" id="lvState"></span></div>
+    <div class="hub-top"><span class="lc-kicker">Match en direct</span><h1 id="lvTitle">Match</h1></div>
+    <div id="lvBody"></div>
   </div>
 </section>
 
@@ -748,7 +788,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 38</span>
+      <span class="status" id="appVersion">Version 39</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -916,6 +956,7 @@ img{max-width:100%}
   </section>
 
   <section id="viewMatch" hidden>
+    <div id="mLiveBox" class="livebox"></div>
     <div class="panel season">
       <div class="panel-head"><h2>Saison</h2><button class="btn primary small" type="button" id="newMatchBtn2">+ Nouveau match</button></div>
       <div class="kpis" id="seasonKpis"></div>
@@ -1411,6 +1452,7 @@ function render(){if(typeof renderCtx==="function"&&MODE==="app")renderCtx();
   if(MODE==="train"){renderTrain();return}
   if(MODE==="hub"){renderHub();return}
   if(MODE==="pick"){renderPick();return}
+  if(MODE==="live"){renderLive();return}
   if(tab==="entry")renderEntry();else if(tab==="match")renderMatches();else if(tab==="roster")renderRoster();else if(tab==="team")renderTeam();else renderAnalysis();
 }
 const SEC_TITLE={entry:"Saisie",ana:"Analyse",match:"Matchs",roster:"Effectif",team:"Mon équipe"};
@@ -1428,7 +1470,7 @@ const fmtT=sec=>{sec=Math.max(0,Math.floor(sec));return `${String(Math.floor(sec
 function clk(m){if(!m.clock)m.clock={half:1,base:0,run:null};return m.clock}
 function halfElapsed(m){const c=clk(m);return Math.min(HALF,c.base+(c.run?(Date.now()-c.run)/1000:0))}
 function matchTime(m){if(!m)return null;return (clk(m).half-1)*HALF+halfElapsed(m)}
-function setClock(m,patch){Object.assign(clk(m),patch);saveLocal()}
+function setClock(m,patch){Object.assign(clk(m),patch);markLive(m);saveLocal()}
 const TM_LIMIT={1:1,2:2},TM_LEN=60;
 let audioCtx=null;
 function beep(){try{if(!audioCtx)return;const t=audioCtx.currentTime;[0,0.35,0.7].forEach(d=>{const o=audioCtx.createOscillator(),g=audioCtx.createGain();o.frequency.value=880;o.connect(g);g.connect(audioCtx.destination);g.gain.setValueAtTime(.0001,t+d);g.gain.exponentialRampToValueAtTime(.4,t+d+.02);g.gain.exponentialRampToValueAtTime(.0001,t+d+.28);o.start(t+d);o.stop(t+d+.3)})}catch(e){}}
@@ -1514,7 +1556,7 @@ function timeline(id){
 let mDelArm=null,editId=null,mLieu="dom",mShowAll=false,mSub=lsGet("hb-msub","up");const openTL=new Set();
 function sancTxt(l){const c=k=>l.filter(s=>s.res===k).length;const parts=[[c("s2min"),"× 2'"],[c("sjaune"),"J"],[c("srouge"),"R"],[c("sbleu"),"B"]].filter(x=>x[0]).map(x=>x[0]+" "+x[1]);return parts.join(" · ")||"–"}
 function renderMatches(){
-  const ms=sortedMatches();
+  const ms=sortedMatches();$("mLiveBox").innerHTML=liveCards();
   const played=ms.filter(m=>matchScore(m.id).any),rec={V:0,N:0,D:0};let bp=0,bc=0;
   played.forEach(m=>{const sc=matchScore(m.id);rec[sc.r]++;bp+=sc.n;bc+=sc.a});
   const nous=S.shots.filter(s=>teamOf(s)==="nous"),adv=S.shots.filter(s=>teamOf(s)==="adv");
@@ -1860,7 +1902,7 @@ function renderPick(){
     const up=upcomingMatches().filter(ok),past=sortedMatches().filter(m=>!isUpcoming(m)&&ok(m));
     const curM=matchById(S.cur);
     const upS=PK.moreUp?up:up.slice(0,6),pastS=PK.morePast?past:past.slice(0,9);
-    body.innerHTML=(gs.length?`<div class="chipwrap pkf">${[["","Toutes les catégories"],...gs.map(g=>[g.id,g.name])].map(([id,n])=>`<button type="button" class="chip" data-pkg="${esc(id)}" aria-pressed="${PK.grp===id}">${esc(n)}</button>`).join("")}</div>`:"")+
+    body.innerHTML=(liveMatches().length?`<div class="livebox">${liveCards()}</div>`:"")+(gs.length?`<div class="chipwrap pkf">${[["","Toutes les catégories"],...gs.map(g=>[g.id,g.name])].map(([id,n])=>`<button type="button" class="chip" data-pkg="${esc(id)}" aria-pressed="${PK.grp===id}">${esc(n)}</button>`).join("")}</div>`:"")+
       (curM&&ok(curM)&&!upS.includes(curM)&&!pastS.includes(curM)?`<div class="pk-sec">Match en cours</div><div class="hub-cards">${pickCard(curM)}</div>`:"")+
       `<div class="tabs teamsw msub">${[["up","Matchs à venir",up.length],["past","Matchs joués",past.length]].map(([k,l,n])=>`<button type="button" class="tab" data-pksub="${k}" aria-selected="${PK.sub===k}">${l} <span class="cnt">${n}</span></button>`).join("")}</div>`+
       (PK.sub==="past"?(past.length?`<div class="hub-cards">${pastS.map(pickCard).join("")}</div>`+(past.length>pastS.length?`<button class="btn small pk-more" type="button" data-pkmore="past">Voir les ${past.length-pastS.length} autres matchs joués</button>`:""):`<p class="hint">Aucun match joué pour l'instant.</p>`):
@@ -1905,6 +1947,59 @@ function bindPick(){
       if(S.players.length){m.squad=roster("nous").map(p=>p.id).filter(id=>PK.sel.has(id))}
       S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);E=blankEntry();saveLocal();showMode("app");setTab("entry");toast(`C'est parti : ${matchLabel(m.id)}`,false)}
   });
+}
+
+/* ---------- EN DIRECT : voir la saisie d'un match faite par quelqu'un d'autre ---------- */
+const LV={id:""};
+const meLabel=()=>session&&session.user&&session.user.email?session.user.email.split("@")[0]:"";
+function markLive(m){if(!m)return;m.lastAct=Date.now();const me=meLabel();if(me)m.liveBy=me}
+function isLive(m){if(!m)return false;const now=Date.now(),c=m.clock;
+  return (m.lastAct&&now-m.lastAct<20*60e3)||(c&&c.run&&now-c.run<3*3600e3&&halfElapsed(m)<HALF)}
+function liveMatches(){return S.matches.filter(isLive).sort((a,b)=>(b.lastAct||0)-(a.lastAct||0))}
+function liveCards(){const ls=liveMatches();if(!ls.length)return "";
+  return ls.map(m=>{const sc=matchScore(m.id),c=clk(m),run=!!c.run;
+    return `<div class="livecard"><div class="lvtop"><span class="livedot"></span><b>EN DIRECT</b><span class="lvwho">${m.liveBy?"saisi par "+esc(m.liveBy):""}</span></div>
+      <div class="lvmain"><span class="lvadv">${m.lieu==="ext"?"à ":"vs "}${esc(m.adv)}</span><span class="lvsc">${sc.n}<i>-</i>${sc.a}</span></div>
+      <div class="lvsub">${fmtT(matchTime(m))} · ${c.half===1?"1re":"2e"} mi-temps${run?"":" · chrono à l'arrêt"}</div>
+      <button class="btn primary" type="button" data-live="${esc(m.id)}">Suivre en direct →</button></div>`}).join("")}
+function openLive(id){LV.id=id;showMode("live")}
+function renderLive(){
+  const m=matchById(LV.id);if(!m){$("lvBody").innerHTML=`<p class="hint">Ce match n'existe plus.</p>`;return}
+  const sc=matchScore(m.id),c=clk(m),t=TEAMS.find(x=>x.id===WS),nous=t&&!t.perso?t.name:"Nous";
+  $("lvTitle").textContent=`${m.lieu==="ext"?"à":"vs"} ${m.adv}`;
+  $("lvState").innerHTML=isLive(m)?`<span class="livedot"></span> En direct${m.liveBy?" · saisi par "+esc(m.liveBy):""}`:`Pas d'activité depuis ${m.lastAct?Math.round((Date.now()-m.lastAct)/60e3)+" min":"un moment"}`;
+  const l=S.shots.filter(s=>s.match===m.id),a=stats(l.filter(s=>teamOf(s)==="nous")),b=stats(l.filter(s=>teamOf(s)==="adv"));
+  const scorers={};l.filter(s=>teamOf(s)==="nous"&&s.res==="but").forEach(s=>scorers[s.p]=(scorers[s.p]||0)+1);
+  const top=Object.entries(scorers).sort((x,y)=>y[1]-x[1]).slice(0,5);
+  const feed=[...l,...(m.tms||[]).map(x=>({res:"tm",team:x.team,mt:x.mt,t:x.t}))].sort((x,y)=>((y.mt??-1)-(x.mt??-1))||((y.t||0)-(x.t||0))).slice(0,25);
+  let n=sc.n,ad=sc.a;
+  const rows=feed.map(s=>{const adv=teamOf(s)==="adv",row=`<li class="${adv?"adv":""}${s.res==="but"?" goal":""}"><span class="tm">${s.mt!=null?fmtT(s.mt):"–"}</span><span class="dot" style="background:${s.res==="tm"?"var(--muted)":(RES[s.res]?.c||"var(--r-hors)")}"></span><span><b>${TL_LABEL[s.res]||s.res}</b> <span class="who">· ${s.res==="tm"?(adv?esc(m.adv):"Nous"):esc(pName(s.p))}</span></span><span class="sc">${s.res==="but"?`${n}-${ad}`:""}</span></li>`;
+    if(s.res==="but"){if(adv)ad--;else n--}return row}).join("");
+  $("lvBody").innerHTML=`<div class="panel lvboard">
+      <div class="lvteams"><div><span class="lvn">${esc(nous)}</span><span class="lvbig" id="lvN">${sc.n}</span></div><div class="lvclock"><span id="lvClock">${fmtT(matchTime(m))}</span><small id="lvHalf">${c.half===1?"1re mi-temps":"2e mi-temps"}${c.run?"":" · arrêt"}</small></div><div><span class="lvn">${esc(m.adv)}</span><span class="lvbig adv" id="lvA">${sc.a}</span></div></div>
+      ${m.tmActive&&m.tmActive.until>Date.now()?`<div class="lvtm">⏱ Temps mort ${m.tmActive.team==="adv"?esc(m.adv):esc(nous)}</div>`:""}
+    </div>
+    <div class="lvgrid">
+      <div class="panel"><div class="panel-head"><h2>Actions</h2><span class="hint">${l.length} au total · la plus récente en haut</span></div>${rows?`<ul class="tl lvfeed">${rows}</ul>`:`<p class="hint">Aucune action saisie pour l'instant.</p>`}</div>
+      <div class="panel"><div class="panel-head"><h2>Stats</h2></div>
+        <div class="mstats"><span></span><span class="h">${esc(nous)}</span><span class="h">${esc(m.adv)}</span>
+          <span>Tirs</span><span>${a.g}/${a.t} · ${pct(a.g,a.t)} %</span><span>${b.g}/${b.t} · ${pct(b.g,b.t)} %</span>
+          <span>Arrêts GB</span><span>${b.arret}/${b.arret+b.g} · ${pct(b.arret,b.arret+b.g)} %</span><span>${a.arret}/${a.arret+a.g} · ${pct(a.arret,a.arret+a.g)} %</span>
+          <span>Pertes</span><span>${a.perte}</span><span>${b.perte}</span>
+          <span>Sanctions</span><span>${sancTxt(l.filter(s=>teamOf(s)==="nous"))}</span><span>${sancTxt(l.filter(s=>teamOf(s)==="adv"))}</span></div>
+        ${top.length?`<div class="subhead">Buteurs</div><ul class="lvtop5">${top.map(([p,k])=>`<li><span>${esc(pName(p))}</span><b>${k}</b></li>`).join("")}</ul>`:""}
+        <button class="btn small" type="button" data-lvstats>Stats détaillées du match</button>
+      </div>
+    </div>`;
+}
+function tickLive(){if(MODE!=="live")return;const m=matchById(LV.id);if(!m)return;const el=$("lvClock");if(el)el.textContent=fmtT(matchTime(m));}
+function bindLive(){
+  $("lvBack").onclick=()=>showMode(LV.from||"hub");
+  $("lvBody").addEventListener("click",e=>{if(e.target.closest("[data-lvstats]")){A.match=LV.id;A.sel=null;showMode("app");setTab("ana")}});
+  document.addEventListener("click",e=>{const b=e.target.closest("[data-live]");if(!b)return;LV.from=MODE==="app"?"app":MODE;openLive(b.dataset.live)});
+  setInterval(()=>{tickLive();
+    // rafraîchit les bandeaux « en direct » (apparition/disparition) sans tout redessiner
+    const n=liveMatches().length;if(n!==tickLive.n){tickLive.n=n;if(MODE==="hub")renderHub();else if(MODE==="pick"&&PK.kind==="match"&&PK.step==="match")renderPick();else if(MODE==="app"&&tab==="match")renderMatches()}},1000);
 }
 
 /* ---------- ENTRAÎNEMENT : choix / création de la séance puis des présents ---------- */
@@ -2017,6 +2112,7 @@ function bind(){
     const m=S.cur;
     const s={team:E.team,p:E.p,res:E.res,kind:E.phase,x:E.x,y:E.y,zone:E.zone,dist:E.dist,gx:E.gx,gy:E.gy,cell:E.cell,play:E.play||null,style:E.res==="perte"?null:(E.style||null),gk:E.team==="adv"&&E.res!=="perte"&&!isSancId(E.res)?(E.gk||null):null,mt:E.mt,match:m,t:Date.now()};
     $("saveBtn").disabled=true;
+    markLive(matchById(m));
     try{await addShot(s);E=blankEntry(E.team);render();toast(`${s.mt!=null?fmtT(s.mt)+" · ":""}${TL_LABEL[s.res]||RES[s.res].label} · ${pName(s.p)}`,false)}
     catch(err){toast(saveError(err),false);render()}
   };
@@ -2547,10 +2643,10 @@ async function landingSendCode(email){
 let MODE="app";
 function showMode(m){
   MODE=m;lsSet("hb-mode",m==="login"?"hub":m);
-  $("viewLogin").hidden=m!=="login";$("viewHub").hidden=m!=="hub";$("viewPick").hidden=m!=="pick";$("viewTrain").hidden=m!=="train";$("appWrap").hidden=m!=="app";
+  $("viewLogin").hidden=m!=="login";$("viewHub").hidden=m!=="hub";$("viewPick").hidden=m!=="pick";$("viewLive").hidden=m!=="live";$("viewTrain").hidden=m!=="train";$("appWrap").hidden=m!=="app";
   $("savebar").hidden=!(m==="app"&&tab==="entry");
   document.body.dataset.mode=m;window.scrollTo(0,0);
-  if(m==="hub")renderHub();else if(m==="pick")renderPick();else if(m==="train")renderTrain();else if(m==="login")lcSet(lcState||"login");else render();
+  if(m==="hub")renderHub();else if(m==="pick")renderPick();else if(m==="live")renderLive();else if(m==="train")renderTrain();else if(m==="login")lcSet(lcState||"login");else render();
 }
 function renderHub(){
   const on=!!session;
@@ -2560,6 +2656,7 @@ function renderHub(){
   const cur=TEAMS.find(t=>t.id===WS);
   $("hubSpaceHint").textContent=!on?"":cur&&cur.perso?"Synchronisé sur tous tes appareils":cur?"Partagé avec le staff de l'équipe":"";
   $("hubLogin").hidden=on;$("hubLogout").hidden=!on;
+  const lv=liveMatches();$("hubLive").hidden=!lv.length;$("hubLiveBox").innerHTML=liveCards();
 }
 /* --- page de connexion --- */
 let lcState="login",lcEmailSaved="";
@@ -2807,7 +2904,7 @@ function start(){
   bind();
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
-  bindMatches();bindClock();bindRoster();bindPick();bindTPick();
+  bindMatches();bindClock();bindRoster();bindPick();bindTPick();bindLive();
   $("ctxBtns").addEventListener("click",e=>{const b=e.target.closest("[data-ctx]");if(!b)return;const k=b.dataset.ctx;
     if(k==="pick")openPick();else if(k==="stats"){A.match=S.cur;A.sel=null;setTab("ana");window.scrollTo(0,0)}else if(k==="matchs")setTab("match")});
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
