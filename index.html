@@ -788,7 +788,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 39</span>
+      <span class="status" id="appVersion">Version 40</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -914,6 +914,7 @@ img{max-width:100%}
         <p class="hint" id="wsHelp">Touche une équipe pour y entrer : les matchs, joueurs et stats que tu vois sont alors ceux de l'équipe, partagés avec tout le staff.</p>
         <ul class="wslist" id="wsList"></ul>
         <div class="syncinfo" id="syncInfo" hidden></div>
+        <button class="btn small" type="button" id="fullSync" hidden>Tout resynchroniser</button>
         <button class="btn small" type="button" id="mergeLocal" hidden>Copier les données de « Mon espace » dans cette équipe</button>
         <details class="subfold"><summary>Créer une équipe</summary>
         <form data-foldbody id="newTeamForm" class="stack" hidden autocomplete="off">
@@ -1081,6 +1082,16 @@ img{max-width:100%}
   </form>
 </div>
 <div class="updbar" id="updBar" hidden>Une nouvelle version de l'appli est prête. <button class="btn small primary" type="button" id="updBtn">Mettre à jour</button><button class="btn small" type="button" id="updLater">Plus tard</button></div>
+<div class="sheet-bg" id="moveSheet" hidden>
+  <form class="sheet panel" id="moveForm" autocomplete="off">
+    <h2>Déplacer le match</h2>
+    <p class="hint" id="mvInfo"></p>
+    <label class="fld"><span class="lbl">Vers</span><select id="mvTeam"></select></label>
+    <label class="fld"><span class="lbl">Dans quel match ?</span><select id="mvMatch"></select></label>
+    <p class="hint">Les actions suivent le match. Les joueurs sont retrouvés dans l'équipe par leur nom (et numéro) ; ceux qui n'y sont pas encore y sont ajoutés.</p>
+    <div class="sheet-actions"><button class="btn" type="button" id="mvCancel">Annuler</button><button class="btn primary" type="submit">Déplacer</button></div>
+  </form>
+</div>
 <div class="sheet-bg" id="trSheet" hidden>
   <form class="sheet panel" id="trSheetForm" autocomplete="off">
     <h2 id="trSheetTitle">Nouvelle séance</h2>
@@ -1585,6 +1596,7 @@ function renderMatches(){
         <button class="btn small" data-mcur="${esc(m.id)}" type="button">${m.id===S.cur?"Continuer la saisie":"Saisir dans ce match"}</button>
         <button class="btn small" data-mtl="${esc(m.id)}" type="button">${openTL.has(m.id)?"Masquer le déroulé":"Déroulé du match"}</button>
         <button class="btn small" data-medit="${esc(m.id)}" type="button">Modifier</button>
+        ${ROLE!=="lecteur"&&TEAMS.some(t=>t.id&&t.id!==WS&&t.role!=="lecteur"&&!t.sup)?`<button class="btn small" data-mmove="${esc(m.id)}" type="button">Déplacer…</button>`:""}
         <button class="btn small danger" data-mdel="${esc(m.id)}" type="button">${arm?`Confirmer : supprimer avec ${l.length} action${l.length>1?"s":""}`:"Supprimer"}</button>
       </div></article>`};
   const sw=`<div class="tabs teamsw msub">${[["up","Matchs à venir",up.length],["past","Matchs joués",past.length]].map(([k,l,n])=>`<button type="button" class="tab" data-msub="${k}" aria-selected="${mSub===k}">${l} <span class="cnt">${n}</span></button>`).join("")}</div>`;
@@ -1642,6 +1654,7 @@ function bindMatches(){
     if(t.dataset.mstats){A.match=t.dataset.mstats;A.sel=null;setTab("ana");window.scrollTo(0,0);return}
     if(t.dataset.mcur){S.cur=t.dataset.mcur;lsSet(K("hb-curMatch"),S.cur);setTab("entry");window.scrollTo(0,0);return}
     if(t.dataset.medit){openMatchForm(t.dataset.medit);return}
+    if(t.dataset.mmove){openMoveSheet(t.dataset.mmove);return}
     if(t.dataset.mtl){const id=t.dataset.mtl;openTL.has(id)?openTL.delete(id):openTL.add(id);renderMatches();return}
     if(t.dataset.mdel){const id=t.dataset.mdel;
       if(mDelArm!==id){mDelArm=id;renderMatches();setTimeout(()=>{if(mDelArm===id){mDelArm=null;if(tab==="match")renderMatches()}},5000);return}
@@ -1947,6 +1960,102 @@ function bindPick(){
       if(S.players.length){m.squad=roster("nous").map(p=>p.id).filter(id=>PK.sel.has(id))}
       S.cur=m.id;lsSet(K("hb-curMatch"),S.cur);E=blankEntry();saveLocal();showMode("app");setTab("entry");toast(`C'est parti : ${matchLabel(m.id)}`,false)}
   });
+}
+
+/* ---------- SYNCHRO DE TOUS LES ESPACES + RÉPARATION + DÉPLACEMENT DE MATCH ---------- */
+function wsData(id){const k=n=>n+"@"+id,D=lsGet(k("hb-data"),{players:[],shots:[]}),Tr=lsGet(k("hb-train"),{trains:[],tshots:[]});
+  return {players:D.players||[],shots:D.shots||[],matches:lsGet(k("hb-matches"),[]),cfg:lsGet(k("hb-cfg"),{plays:[],styles:[]}),trains:Tr.trains||[],tshots:Tr.tshots||[]}}
+function itemsOf(d,sy){const m=new Map();(d.players||[]).forEach(p=>m.set("player:"+p.id,p));(d.matches||[]).forEach(x=>m.set("match:"+x.id,x));(d.shots||[]).forEach(x=>m.set("shot:"+x.id,x));
+  (d.trains||[]).forEach(x=>m.set("train:"+x.id,x));(d.tshots||[]).forEach(x=>m.set("tshot:"+x.id,x));
+  const c=d.cfg||{};if((c.plays||[]).length||(c.styles||[]).length||("cfg:lists" in sy))m.set("cfg:lists",{plays:c.plays||[],styles:c.styles||[]});
+  if((c.groups||[]).length||("cfg:groups" in sy))m.set("cfg:groups",{groups:c.groups||[]});return m}
+const hasWsData=id=>{try{return localStorage.getItem("hb-data@"+id)!==null||localStorage.getItem("hb-matches@"+id)!==null||localStorage.getItem("hb-train@"+id)!==null}catch(e){return false}};
+function pendingOf(id){if(!hasWsData(id))return 0;const sy=lsGet("hb-synced@"+id,{});let n=0;itemsOf(wsData(id),sy).forEach((o,k)=>{if(sy[k]!==stab(o))n++});return n}
+// envoie ce qui attend dans les AUTRES espaces de cet appareil (ajouts et modifications seulement, jamais de suppression)
+let pushingOthers=false;
+async function pushOthers(){
+  if(!sb||!session||pushingOthers)return 0;pushingOthers=true;let sent=0;
+  try{for(const t of TEAMS){const id=t.id;if(!id||id===WS||t.role==="lecteur"||!hasWsData(id))continue;
+    const sy=lsGet("hb-synced@"+id,{}),rows=[],pend={};
+    itemsOf(wsData(id),sy).forEach((o,k)=>{const h=stab(o);if(sy[k]!==h){const i=k.indexOf(":");rows.push({team_id:id,kind:k.slice(0,i),id:k.slice(i+1),data:o,deleted:false});pend[k]=h}});
+    for(let i=0;i<rows.length;i+=400){const chunk=rows.slice(i,i+400);const {error}=await sb.from("items").upsert(chunk,{onConflict:"team_id,kind,id"});if(error)throw error;
+      chunk.forEach(r=>{sy[r.kind+":"+r.id]=pend[r.kind+":"+r.id]});lsSet("hb-synced@"+id,sy);sent+=chunk.length}}}
+  catch(e){lastErr=(e&&e.message)||"erreur"}
+  finally{pushingOthers=false}
+  return sent;
+}
+async function fetchAll(team){const all=[];let since=null;
+  for(let g=0;g<500;g++){let q=sb.from("items").select("kind,id,data,deleted,updated_at").eq("team_id",team).order("updated_at",{ascending:true}).limit(1000);if(since)q=q.gt("updated_at",since);
+    const {data,error}=await q;if(error)throw error;all.push(...data);if(data.length<1000)break;since=data[data.length-1].updated_at}
+  return all}
+// compare tout l'espace courant avec le serveur : récupère ce qui manque ici, renvoie ce qui manque là-bas
+async function repairSync(manual){
+  if(!WS||!sb||!session)return null;
+  try{
+    const all=await fetchAll(WS),srv=new Map(all.map(r=>[r.kind+":"+r.id,r])),loc=localItems();let got=0,toSend=0;
+    all.forEach(r=>{const k=r.kind+":"+r.id,lo=loc.get(k);
+      if(lo&&(k in SY)&&SY[k]!==stab(lo))return;              // modification faite ici, pas encore envoyée : elle reste
+      if(lo&&r.data&&!r.deleted&&stab(r.data)===stab(lo)){SY[k]=stab(lo);return}
+      if(applyRemote(r,true))got++});
+    localItems().forEach((o,k)=>{const r=srv.get(k);if(!r||(!r.deleted&&!r.data)){delete SY[k];toSend++}});
+    all.forEach(r=>{if(r.updated_at>CURSOR)CURSOR=r.updated_at});
+    lsSet(K("hb-synced"),SY);lsSet(K("hb-cursor"),CURSOR);afterApply();await pushNow();
+    const others=await pushOthers();
+    if(manual||got||toSend||others)toast(`Synchronisation complète : ${got} élément(s) récupéré(s), ${toSend+others} envoyé(s)`,false);
+    return {got,toSend,others};
+  }catch(e){lastErr=(e&&e.message)||"erreur";syncLabel();if(manual)toast("Synchronisation impossible : vérifie la connexion internet",false);return null}
+}
+// déplacer un match (et ses actions) vers un autre espace, en retrouvant les mêmes joueurs par numéro + nom
+let mvId="";
+async function openMoveSheet(id){
+  const m=matchById(id);if(!m)return;mvId=id;
+  const targets=TEAMS.filter(t=>t.id&&t.id!==WS&&t.role!=="lecteur"&&!t.sup);
+  if(!targets.length){toast("Aucun autre espace disponible",false);return}
+  $("mvInfo").textContent=`${matchLabel(id)} · ${S.shots.filter(s=>s.match===id).length} action(s)`;
+  $("mvTeam").innerHTML=targets.map(t=>`<option value="${esc(t.id)}">${t.perso?"👤 Mon espace":"👥 "+esc(t.name)}</option>`).join("");
+  $("moveSheet").hidden=false;await mvLoadTarget();
+}
+let mvTarget=null;
+async function mvLoadTarget(){
+  const tid=$("mvTeam").value,m=matchById(mvId);$("mvMatch").innerHTML=`<option value="">Chargement…</option>`;mvTarget=null;
+  try{const rows=await fetchAll(tid),alive=rows.filter(r=>!r.deleted&&r.data);
+    mvTarget={id:tid,players:alive.filter(r=>r.kind==="player").map(r=>({...r.data,id:r.id})),matches:alive.filter(r=>r.kind==="match").map(r=>({...r.data,id:r.id}))};
+    const near=mvTarget.matches.filter(x=>x.date&&m.date&&Math.abs(new Date(x.date)-new Date(m.date))<=864e5*2).sort((a,b)=>(a.date||"").localeCompare(b.date||""));
+    $("mvMatch").innerHTML=`<option value="">Ajouter ce match tel quel</option>`+near.map(x=>`<option value="${esc(x.id)}" ${x.date===m.date?"selected":""}>Fusionner avec : ${esc(fmtDate(x.date))} · ${x.lieu==="ext"?"à":"vs"} ${esc(x.adv)}</option>`).join("");
+  }catch(e){$("mvMatch").innerHTML=`<option value="">Ajouter ce match tel quel</option>`;toast("Impossible de lire l'équipe choisie : vérifie la connexion",false)}
+}
+async function doMove(){
+  const m=matchById(mvId),tid=$("mvTeam").value,into=$("mvMatch").value;if(!m||!tid)return;
+  if(!mvTarget||mvTarget.id!==tid){toast("Patiente : chargement de l'équipe…",false);return}
+  const shots=S.shots.filter(s=>s.match===m.id),norm=x=>String(x||"").trim().toLowerCase();
+  // correspondance des joueurs
+  const pmap={},newPlayers=[];
+  const usedIds=new Set([...shots.map(s=>s.p),...shots.map(s=>s.gk)].filter(x=>x&&!String(x).startsWith("adv:")));
+  (Array.isArray(m.squad)?m.squad:[]).forEach(x=>usedIds.add(x));
+  usedIds.forEach(pid=>{const p=S.players.find(x=>x.id===pid);if(!p)return;
+    const hit=mvTarget.players.find(x=>norm(x.name)===norm(p.name)&&(x.num==null||p.num==null||x.num===p.num))||mvTarget.players.find(x=>norm(x.name)===norm(p.name));
+    if(hit)pmap[pid]=hit.id;else{pmap[pid]=pid;newPlayers.push({...p})}});
+  const mid=into||m.id,mp=id=>id&&pmap[id]?pmap[id]:id;
+  const k=n=>n+"@"+tid,D=lsGet(k("hb-data"),{players:[],shots:[]}),Ms=lsGet(k("hb-matches"),[]);
+  const pl=[...(D.players||[])];mvTarget.players.forEach(p=>{if(!pl.some(x=>x.id===p.id))pl.push(p)});newPlayers.forEach(p=>{if(!pl.some(x=>x.id===p.id))pl.push(p)});
+  const sh=[...(D.shots||[]),...shots.map(s=>({...s,match:mid,p:mp(s.p),gk:mp(s.gk)}))];
+  let ms=[...Ms];
+  if(into){const tm=mvTarget.matches.find(x=>x.id===into);if(tm&&!ms.some(x=>x.id===into))ms.push(tm);
+    const t=ms.find(x=>x.id===into);if(t&&!Array.isArray(t.squad)&&Array.isArray(m.squad))t.squad=m.squad.map(mp);}
+  else if(!ms.some(x=>x.id===m.id))ms.push({...m,squad:Array.isArray(m.squad)?m.squad.map(mp):m.squad,grp:""});
+  lsSet(k("hb-data"),{players:pl,shots:sh});lsSet(k("hb-matches"),ms);
+  // retire le match d'ici
+  S.shots=S.shots.filter(s=>s.match!==m.id);S.matches=S.matches.filter(x=>x.id!==m.id);if(S.cur===m.id)S.cur="";saveLocal();
+  $("moveSheet").hidden=true;render();
+  const n=await pushOthers();const t=TEAMS.find(x=>x.id===tid);
+  toast(`Match déplacé dans ${t&&t.perso?"Mon espace":"« "+(t?t.name:"")+" »"} : ${shots.length} action(s)${n?" envoyées":""}`,false);
+}
+function bindSync40(){
+  $("mvTeam").addEventListener("change",mvLoadTarget);
+  $("mvCancel").onclick=()=>{$("moveSheet").hidden=true};
+  $("moveSheet").addEventListener("click",e=>{if(e.target===$("moveSheet"))$("moveSheet").hidden=true});
+  $("moveForm").addEventListener("submit",e=>{e.preventDefault();doMove()});
+  $("fullSync").onclick=async()=>{$("fullSync").disabled=true;$("fullSync").textContent="Synchronisation…";await repairSync(true);$("fullSync").disabled=false;$("fullSync").textContent="Tout resynchroniser";renderSyncInfo()};
 }
 
 /* ---------- EN DIRECT : voir la saisie d'un match faite par quelqu'un d'autre ---------- */
@@ -2340,9 +2449,10 @@ function dirtyRows(){const rows=[],pend={},loc=localItems();
   return {rows,pend}}
 let lastPushAt=0,lastPullAt=0,noTrainSync=false;
 function renderSyncInfo(){const el=$("syncInfo");if(!el)return;const t=TEAMS.find(x=>x.id===WS);
+  $("fullSync").hidden=!(WS&&t&&session);
   if(!WS||!t){el.hidden=true;return}el.hidden=false;
   const hm=ts=>ts?new Date(ts).toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",second:"2-digit"}):"jamais";
-  el.innerHTML=`Dans l'équipe sur cet appareil : <b>${S.players.length}</b> joueur(s), <b>${S.matches.length}</b> match(s), <b>${S.shots.length}</b> action(s).<br>Dernier envoi : <b>${hm(lastPushAt)}</b> · Dernière réception : <b>${hm(lastPullAt)}</b>${pendingN?` · <b>${pendingN}</b> en attente`:""}${lastErr?`<br><span class="err">Problème : ${esc(lastErr)}</span>`:""}`}
+  el.innerHTML=`Dans l'équipe sur cet appareil : <b>${S.players.length}</b> joueur(s), <b>${S.matches.length}</b> match(s), <b>${S.shots.length}</b> action(s).<br>Dernier envoi : <b>${hm(lastPushAt)}</b> · Dernière réception : <b>${hm(lastPullAt)}</b>${pendingN?` · <b>${pendingN}</b> en attente`:""}${(()=>{const o=TEAMS.filter(x=>x.id&&x.id!==WS).map(x=>[x,pendingOf(x.id)]).filter(x=>x[1]);return o.length?`<br>À envoyer depuis d'autres espaces de cet appareil : ${o.map(([x,n])=>`<b>${n}</b> dans ${x.perso?"Mon espace":esc(x.name)}`).join(", ")}`:""})()}${lastErr?`<br><span class="err">Problème : ${esc(lastErr)}</span>`:""}`}
 async function pushNow(){
   if(!WS||!sb||!session)return;
   if(ROLE==="lecteur"){pendingN=0;syncLabel();return}
@@ -2361,9 +2471,9 @@ async function pushNow(){
   finally{pushing=false;syncLabel();if(pushAgain){pushAgain=false;scheduleSync()}}
 }
 const COLL={player:"players",match:"matches",shot:"shots",train:"trains",tshot:"tshots"};
-function applyRemote(r){
+function applyRemote(r,force){
   const k=r.kind+":"+r.id,loc=localItems(),lo=loc.get(k);
-  const dirty=lo?SY[k]!==stab(lo):(k in SY);
+  const dirty=!force&&(lo?SY[k]!==stab(lo):(k in SY));
   if(r.updated_at&&r.updated_at>CURSOR)CURSOR=r.updated_at;
   if(r.kind==="cfg"&&dirty&&!(k in SY)&&r.data&&!r.deleted){
     // réglages jamais synchronisés sur cet appareil : on fusionne au lieu d'écraser ceux de l'équipe
@@ -2404,8 +2514,10 @@ function stopSync(){if(chan&&sb){sb.removeChannel(chan);chan=null}clearInterval(
 function startSync(){
   stopSync();if(!WS||!sb||!session)return syncLabel();
   chan=sb.channel("items-"+WS).on("postgres_changes",{event:"*",schema:"public",table:"items",filter:"team_id=eq."+WS},p=>{if(p.new&&p.new.kind&&applyRemote(p.new))afterApply()}).subscribe();
-  pullTimer=setInterval(()=>{pullNow();scheduleSync()},30000);
-  pullNow().then(()=>scheduleSync());
+  pullTimer=setInterval(()=>{pullNow();scheduleSync();pushOthers()},30000);
+  pullNow().then(()=>{scheduleSync();pushOthers();
+    // une fois par espace et par appareil : vérification complète avec le serveur
+    if(!lsGet(K("hb-repair40"),false))repairSync(false).then(r=>{if(r)lsSet(K("hb-repair40"),true)})});
 }
 function loadScript(src){return new Promise((res,rej)=>{const sc=document.createElement("script");sc.src=src;sc.onload=res;sc.onerror=rej;document.head.appendChild(sc)})}
 async function sbInit(){
@@ -2904,7 +3016,7 @@ function start(){
   bind();
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
-  bindMatches();bindClock();bindRoster();bindPick();bindTPick();bindLive();
+  bindMatches();bindClock();bindRoster();bindPick();bindTPick();bindLive();bindSync40();
   $("ctxBtns").addEventListener("click",e=>{const b=e.target.closest("[data-ctx]");if(!b)return;const k=b.dataset.ctx;
     if(k==="pick")openPick();else if(k==="stats"){A.match=S.cur;A.sel=null;setTab("ana");window.scrollTo(0,0)}else if(k==="matchs")setTab("match")});
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
