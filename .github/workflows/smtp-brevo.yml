@@ -1,0 +1,30 @@
+name: cle-smtp-brevo
+# Met la clé SMTP Brevo (secret BREVO_SMTP_KEY) dans Supabase, après avoir vérifié qu'elle fonctionne.
+on:
+  workflow_dispatch:
+  push:
+    paths: ["supabase/smtp-run.txt"]
+jobs:
+  smtp:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      KEY: ${{ secrets.BREVO_SMTP_KEY }}
+      REF: apcsdghdmzspovxdlmbv
+    steps:
+      - name: Vérifier puis installer la clé
+        run: |
+          if [ -z "$KEY" ]; then echo "Secret BREVO_SMTP_KEY absent"; exit 1; fi
+          python3 - <<'PY'
+          import smtplib,ssl,json,os,urllib.request
+          ref,tok,key=os.environ["REF"],os.environ["TOKEN"],os.environ["KEY"].strip()
+          cfg=json.load(urllib.request.urlopen(urllib.request.Request(f"https://api.supabase.com/v1/projects/{ref}/config/auth",headers={"Authorization":"Bearer "+tok})))
+          user=cfg["smtp_user"]
+          s=smtplib.SMTP("smtp-relay.brevo.com",587,timeout=20);s.starttls(context=ssl.create_default_context())
+          try: s.login(user,key)
+          except Exception as e: raise SystemExit(f"La clé ne marche pas avec l'identifiant {user} : {e}")
+          s.quit();print("Clé Brevo valide")
+          body=json.dumps({"smtp_pass":key}).encode()
+          r=urllib.request.urlopen(urllib.request.Request(f"https://api.supabase.com/v1/projects/{ref}/config/auth",data=body,method="PATCH",headers={"Authorization":"Bearer "+tok,"Content-Type":"application/json"}))
+          print("Supabase mis à jour",r.status)
+          PY
