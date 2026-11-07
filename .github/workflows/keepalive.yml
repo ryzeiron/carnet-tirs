@@ -1,0 +1,24 @@
+name: garder-le-serveur-actif
+# Supabase (version gratuite) met le serveur en pause après 7 jours sans activité.
+# Ce job le sollicite tous les 3 jours, et le relance tout seul s'il est quand même en pause.
+on:
+  schedule:
+    - cron: "17 6 */3 * *"
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: apcsdghdmzspovxdlmbv
+    steps:
+      - name: État du serveur et relance si besoin
+        run: |
+          ST=$(curl -sS "https://api.supabase.com/v1/projects/$REF" -H "Authorization: Bearer $TOKEN" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("status",""))')
+          echo "état : $ST"
+          if [ "$ST" = "INACTIVE" ] || [ "$ST" = "PAUSED" ]; then curl -sS -X POST "https://api.supabase.com/v1/projects/$REF/restore" -H "Authorization: Bearer $TOKEN"; echo "relance demandée"; exit 0; fi
+      - name: Petite requête pour garder le serveur actif
+        run: |
+          curl -sS -o /dev/null -w "API %{http_code}\n" "https://$REF.supabase.co/rest/v1/teams?select=id&limit=1" -H "apikey: sb_publishable_OAt73IQCwvpDrIff_mE_Cg_eAJ-205M" || true
+          python3 -c 'import json;print(json.dumps({"query":"select 1"}))' > q.json
+          curl -sS -X POST "https://api.supabase.com/v1/projects/$REF/database/query" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" --data @q.json || true
