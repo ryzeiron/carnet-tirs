@@ -1,0 +1,16 @@
+== etat
+ACTIVE_HEALTHY
+== smtp (sans mot de passe)
+{'smtp_host': 'smtp-relay.brevo.com', 'smtp_port': '587', 'smtp_user': 'bdef77001@smtp-brevo.com', 'smtp_admin_email': 'antoningiolda@gmail.com', 'smtp_sender_name': 'Antonin Giolda', 'external_email_enabled': True, 'rate_limit_email_sent': 30, 'smtp_max_frequency': 60, 'mailer_otp_exp': 3600}
+pass: 64 car., commence par 63c2497ba
+== (ancienne requete)
+Table "auth_logs" does not exist.
+0 lignes
+== essai d'envoi de code (vers l'admin)
+== journaux auth
+-- auth_logs
+{"error":"Table \"auth_logs\" does not exist."}
+-- auth_audit_logs
+{"error":"Table \"auth_audit_logs\" does not exist."}
+-- edge_logs
+{"error":"Table \"edge_logs\" does not exist."}
