@@ -1,0 +1,34 @@
+name: diag
+on:
+  push:
+    paths: [".github/workflows/diag.yml"]
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    env:
+      TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      REF: apcsdghdmzspovxdlmbv
+    steps:
+      - run: |
+          mkdir out
+          {
+          echo "== etat"; curl -sS "https://api.supabase.com/v1/projects/$REF" -H "Authorization: Bearer $TOKEN" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("status"))'
+          echo "== smtp (sans mot de passe)"; curl -sS "https://api.supabase.com/v1/projects/$REF/config/auth" -H "Authorization: Bearer $TOKEN" | python3 -c 'import json,sys;d=json.load(sys.stdin);print({k:d.get(k) for k in ["smtp_host","smtp_port","smtp_user","smtp_admin_email","smtp_sender_name","external_email_enabled","rate_limit_email_sent","smtp_max_frequency","mailer_otp_exp"]});print("pass set:",bool(d.get("smtp_pass")))'
+          echo "== journaux auth (2 dernieres heures)"
+          S=$(date -u -d '-3 hours' +%Y-%m-%dT%H:%M:%SZ); E=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          curl -sS -G "https://api.supabase.com/v1/projects/$REF/analytics/endpoints/logs.all" -H "Authorization: Bearer $TOKEN" \
+            --data-urlencode "sql=select timestamp, event_message from auth_logs order by timestamp desc limit 60" --data-urlencode "iso_timestamp_start=$S" --data-urlencode "iso_timestamp_end=$E" \
+            | python3 -c 'import json,sys;d=json.load(sys.stdin);rs=d.get("result") or [];print(d.get("error",""));[print(r.get("timestamp"),str(r.get("event_message"))[:400]) for r in rs if any(w in str(r.get("event_message")).lower() for w in ["error","smtp","mail","otp","535","550","fail"])]'
+          echo "== test SMTP Brevo"
+          python3 - <<'PY'
+          import smtplib,ssl,json,os,urllib.request
+          req=urllib.request.Request(f"https://api.supabase.com/v1/projects/{os.environ['REF']}/config/auth",headers={"Authorization":"Bearer "+os.environ["TOKEN"]})
+          d=json.load(urllib.request.urlopen(req))
+          try:
+              s=smtplib.SMTP(d["smtp_host"],int(d["smtp_port"]),timeout=20);s.starttls(context=ssl.create_default_context());s.login(d["smtp_user"],d["smtp_pass"]);print("connexion SMTP OK");s.quit()
+          except Exception as e: print("ERREUR SMTP:",type(e).__name__,str(e)[:300])
+          PY
+          } > out/diag.txt 2>&1
+          cd out && git init -q && git checkout -q -b diag-out && git config user.email bot@x && git config user.name bot && git add -A && git commit -qm out && git push -fq "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" diag-out
