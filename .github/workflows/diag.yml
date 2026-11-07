@@ -15,12 +15,12 @@ jobs:
           mkdir out
           {
           echo "== etat"; curl -sS "https://api.supabase.com/v1/projects/$REF" -H "Authorization: Bearer $TOKEN" | python3 -c 'import json,sys;print(json.load(sys.stdin).get("status"))'
-          echo "== smtp (sans mot de passe)"; curl -sS "https://api.supabase.com/v1/projects/$REF/config/auth" -H "Authorization: Bearer $TOKEN" | python3 -c 'import json,sys;d=json.load(sys.stdin);print({k:d.get(k) for k in ["smtp_host","smtp_port","smtp_user","smtp_admin_email","smtp_sender_name","external_email_enabled","rate_limit_email_sent","smtp_max_frequency","mailer_otp_exp"]});print("pass set:",bool(d.get("smtp_pass")))'
+          echo "== smtp (sans mot de passe)"; curl -sS "https://api.supabase.com/v1/projects/$REF/config/auth" -H "Authorization: Bearer $TOKEN" | python3 -c 'import json,sys;d=json.load(sys.stdin);print({k:d.get(k) for k in ["smtp_host","smtp_port","smtp_user","smtp_admin_email","smtp_sender_name","external_email_enabled","rate_limit_email_sent","smtp_max_frequency","mailer_otp_exp"]});p=d.get("smtp_pass") or "";print("pass:",len(p),"car., commence par",p[:9])'
           echo "== journaux auth (2 dernieres heures)"
           S=$(date -u -d '-3 hours' +%Y-%m-%dT%H:%M:%SZ); E=$(date -u +%Y-%m-%dT%H:%M:%SZ)
           curl -sS -G "https://api.supabase.com/v1/projects/$REF/analytics/endpoints/logs.all" -H "Authorization: Bearer $TOKEN" \
             --data-urlencode "sql=select timestamp, event_message from auth_logs order by timestamp desc limit 60" --data-urlencode "iso_timestamp_start=$S" --data-urlencode "iso_timestamp_end=$E" \
-            | python3 -c 'import json,sys;d=json.load(sys.stdin);rs=d.get("result") or [];print(d.get("error",""));[print(r.get("timestamp"),str(r.get("event_message"))[:400]) for r in rs if any(w in str(r.get("event_message")).lower() for w in ["error","smtp","mail","otp","535","550","fail"])]'
+            | python3 -c 'import json,sys;d=json.load(sys.stdin);rs=d.get("result") or [];print(d.get("error",""));print(len(rs),"lignes");[print(r.get("timestamp"),str(r.get("event_message"))[:300]) for r in rs[:25]]'
           echo "== test SMTP Brevo"
           python3 - <<'PY'
           import smtplib,ssl,json,os,urllib.request
