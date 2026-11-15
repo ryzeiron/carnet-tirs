@@ -788,7 +788,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 40</span>
+      <span class="status" id="appVersion">Version 41</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -2790,6 +2790,8 @@ function lcSet(st,info){
 }
 function lcError(m){$("lcErr").textContent=m;$("lcSubmit").disabled=false}
 function authMsg(e){const m=(e&&e.message)||"";
+  if(/load failed|failed to fetch|networkerror|network request failed|fetch/i.test(m))return navigator.onLine===false?"Pas de connexion internet sur cet appareil.":"Impossible de joindre le serveur depuis ce réseau. Essaie en passant du Wi-Fi à la 4G/5G (ou l'inverse), et désactive un éventuel VPN ou bloqueur de pubs.";
+  if(/sending .*email|magic link/i.test(m))return "L'e-mail avec le code n'a pas pu partir. Réessaie dans une minute ; si ça continue, préviens l'admin.";
   if(/invalid login/i.test(m))return "E-mail ou mot de passe incorrect. Si tu t'es inscrit avec un code, touche « Mot de passe oublié ? » pour créer ton mot de passe.";
   if(/not confirmed/i.test(m))return "Ton e-mail n'est pas encore confirmé.";
   if(/rate|seconds|too many/i.test(m))return "Trop de tentatives. Patiente une minute puis réessaie.";
