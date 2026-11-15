@@ -338,6 +338,8 @@ body.ro #tabEntry,body.ro .x,body.ro #restoreLbl,body.ro [data-mdel],body.ro [da
 .pickscreen{align-items:flex-start}
 .tpnew{display:flex;flex-direction:column;gap:10px}
 .tpnew .btn.primary{font-size:17px;padding:12px;align-self:stretch}
+.installhint{display:grid;grid-template-columns:1fr auto;gap:4px 12px;align-items:center;background:var(--panel);border:1.5px dashed var(--accent);border-radius:14px;padding:12px 14px;font-size:14px;line-height:1.4}
+.installhint>b{grid-column:1/-1}
 .livebox{display:grid;gap:10px}
 .livebox:empty{display:none}
 #viewMatch .livebox{margin-bottom:14px}
@@ -699,6 +701,7 @@ img{max-width:100%}
   <div class="hub">
     <div class="hub-top"><img class="applogo" src="icon-192.png" alt="" width="56" height="56"><span class="lc-kicker">Carnet de tirs</span><h1>On fait quoi aujourd'hui ?</h1><p class="hint" id="hubWho"></p></div>
     <label class="hub-space panel"><span class="lbl">Espace</span><select id="hubSpace"></select><span class="hint" id="hubSpaceHint"></span></label>
+    <div class="installhint" id="hubInstall" hidden><b>📲 Pour rester connecté sur iPhone</b><span>Installe l'appli : touche <b>Partager</b> puis <b>Sur l'écran d'accueil</b>, et ouvre-la toujours depuis l'icône. Dans Safari, l'iPhone efface la connexion après 7 jours sans visite.</span><button class="btn small" type="button" id="hubInstallX">OK</button></div>
     <div id="hubLiveBox" class="livebox"></div>
     <div class="hub-cards">
       <button class="hubcard" type="button" data-go="team"><span class="hc-n">01</span><b>Mon équipe</b><span>Choisir l'équipe, gérer le staff et les invitations</span></button>
@@ -788,7 +791,7 @@ img{max-width:100%}
       <label class="btn small filebtn" id="restoreLbl">Restaurer<input type="file" id="restoreInput" accept=".json,application/json"></label>
       <button class="btn small" id="exportBtn" type="button">Exporter CSV</button>
       <span class="status syncst" id="syncStatus" hidden></span>
-      <span class="status" id="appVersion">Version 41</span>
+      <span class="status" id="appVersion">Version 42</span>
       <span class="status" id="status">Chargement…</span>
     </div>
   </header>
@@ -2438,6 +2441,7 @@ function localItems(){const m=new Map();S.players.forEach(p=>m.set("player:"+p.i
   if((S.cfg.groups||[]).length||("cfg:groups" in SY))m.set("cfg:groups",{groups:S.cfg.groups||[]});return m}
 function setSync(state,txt){const el=$("syncStatus");if(!WS){el.hidden=true;return}el.hidden=false;el.className="status syncst "+state;el.textContent=txt}
 function syncLabel(){const t=TEAMS.find(x=>x.id===WS);const nm=t?(t.perso?"Mon espace":t.name):"Équipe";
+  if(!session&&(authWaiting||storedAuth()))return setSync("warn",`☁ ${nm} · hors connexion, reconnexion automatique${pendingN?` · ${pendingN} en attente`:""}`);
   if(!session)return setSync("warn",`☁ ${nm} · connecte-toi dans « Équipe »`);
   if(lastErr)return setSync("err",`☁ ${nm} · ${navigator.onLine?"serveur injoignable":"hors ligne"}${pendingN?` · ${pendingN} en attente`:""}`);
   setSync(pendingN?"warn":"ok",`☁ ${nm} · ${pendingN?pendingN+" en attente":"synchronisé"}`)}
@@ -2526,11 +2530,27 @@ async function sbInit(){
   }catch(e){sbFailed=true;syncLabel();if(tab==="team")renderTeam();window.addEventListener("online",()=>{if(!sb){sbFailed=false;sbInit()}},{once:true});return}
   sbFailed=false;
   const {data}=await sb.auth.getSession();session=data.session;
+  // session gardée sur l'appareil mais pas de réseau pour la renouveler : on reste connecté et on réessaie tout seul
+  if(!session&&storedAuth()){authWaiting=true;startAuthRetry()}
   if(tab==="team")renderTeam();
-  sb.auth.onAuthStateChange((ev,s)=>{const was=!!session;session=s;if(!!s!==was){if(s)afterLogin();else{stopSync();syncLabel();if(tab==="team")renderTeam()}}});
-  if(session)afterLogin();else{syncLabel();if(MODE!=="login"&&!lsGet("hb-nologin",false))showMode("login")}
-  window.addEventListener("online",()=>{pullNow();scheduleSync()});
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){pullNow();scheduleSync()}});
+  sb.auth.onAuthStateChange((ev,s)=>{const was=!!session;session=s;if(s){authWaiting=false;clearInterval(authTimer);lsSet("hb-lastEmail",s.user&&s.user.email||"")}
+    if(!!s!==was){if(s)afterLogin();else{stopSync();syncLabel();if(tab==="team")renderTeam();if(MODE==="hub")renderHub()}}});
+  if(session)afterLogin();else if(authWaiting){syncLabel();if(MODE==="hub")renderHub()}else{syncLabel();if(MODE!=="login"&&!lsGet("hb-nologin",false))showMode("login")}
+  window.addEventListener("online",()=>{retryAuth();pullNow();scheduleSync()});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"){retryAuth();pullNow();scheduleSync()}});
+}
+/* --- rester connecté : la session est gardée sur l'appareil ; sans réseau on attend et on la renouvelle plus tard --- */
+let authWaiting=false,authTimer=null;
+function storedAuth(){try{const r=localStorage.getItem("hb-auth");if(!r)return null;const j=JSON.parse(r);return j&&j.refresh_token?j:null}catch(e){return null}}
+function startAuthRetry(){clearInterval(authTimer);authTimer=setInterval(retryAuth,20000)}
+async function retryAuth(){
+  if(!authWaiting||!sb||session)return;const st=storedAuth();
+  if(!st){authWaiting=false;clearInterval(authTimer);syncLabel();if(!lsGet("hb-nologin",false))showMode("login");return}
+  try{const {data}=await sb.auth.refreshSession({refresh_token:st.refresh_token});
+    if(data&&data.session){if(!session){session=data.session;authWaiting=false;clearInterval(authTimer);afterLogin()}return}
+    // connexion vraiment refusée par le serveur (et pas un simple manque de réseau) : il faut se reconnecter
+    if(!storedAuth()){authWaiting=false;clearInterval(authTimer);syncLabel();if(!lsGet("hb-nologin",false)){lcState="login";showMode("login")}}
+  }catch(e){}
 }
 function hasLocalData(){const d=lsGet("hb-data",{players:[],shots:[]});return !!((lsGet("hb-train",{tshots:[]}).tshots||[]).length||(d.players||[]).length||(d.shots||[]).length||lsGet("hb-matches",[]).length)}
 function moveLocalInto(id){
@@ -2609,8 +2629,8 @@ function renderTeamBar(){
 }
 function enterTeam(id){const t=TEAMS.find(x=>x.id===id);setWorkspace(id);setTab(ROLE==="lecteur"?"ana":"match");window.scrollTo(0,0);toast(!id?"Données de cet appareil":t&&t.perso?"Tu es dans « Mon espace »":`Tu es dans l'équipe « ${t?t.name:""} »`,false)}
 function renderTeam(){
-  const on=!!session;
-  $("accOut").hidden=on;$("accIn").hidden=!on;if(on)$("accEmail").textContent=session.user.email;
+  const on=!!session||authWaiting||!!storedAuth();
+  $("accOut").hidden=on;$("accIn").hidden=!on;if(on)$("accEmail").textContent=session?session.user.email:(((storedAuth()||{}).user||{}).email||lsGet("hb-lastEmail",""))+" (hors connexion)";
   if(sbFailed)$("accMsg").textContent="La connexion au serveur n'a pas pu démarrer. Vérifie le réseau, puis ferme et rouvre l'appli.";
   else if(!sb)$("accMsg").textContent="Connexion au serveur…";
   else if(/connexion au serveur/i.test($("accMsg").textContent))$("accMsg").textContent="";
@@ -2761,13 +2781,15 @@ function showMode(m){
   if(m==="hub")renderHub();else if(m==="pick")renderPick();else if(m==="live")renderLive();else if(m==="train")renderTrain();else if(m==="login")lcSet(lcState||"login");else render();
 }
 function renderHub(){
-  const on=!!session;
-  $("hubWho").textContent=on?`Connecté avec ${session.user.email}`:"Sans compte : les données restent sur cet appareil.";
+  const wait=!session&&(authWaiting||!!storedAuth()),on=!!session||wait,em=session?session.user.email:((storedAuth()||{}).user||{}).email||lsGet("hb-lastEmail","");
+  $("hubWho").textContent=session?`Connecté avec ${em}`:wait?`Connecté avec ${em} · hors connexion, tes saisies partiront dès que le réseau revient`:"Sans compte : les données restent sur cet appareil.";
   const spaces=on&&TEAMS.length?TEAMS:[{id:"",name:"Cet appareil",role:null}];
   $("hubSpace").innerHTML=spaces.map(t=>`<option value="${esc(t.id)}" ${t.id===WS?"selected":""}>${t.perso?"👤 Mon espace (perso)":t.id?"👥 "+esc(t.name)+" · "+ROLE_LABEL[t.role]:"📱 Cet appareil"}</option>`).join("");
   const cur=TEAMS.find(t=>t.id===WS);
   $("hubSpaceHint").textContent=!on?"":cur&&cur.perso?"Synchronisé sur tous tes appareils":cur?"Partagé avec le staff de l'équipe":"";
   $("hubLogin").hidden=on;$("hubLogout").hidden=!on;
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent)||(navigator.platform==="MacIntel"&&navigator.maxTouchPoints>1);
+  $("hubInstall").hidden=!(ios&&!navigator.standalone&&!lsGet("hb-installHint",false));
   const lv=liveMatches();$("hubLive").hidden=!lv.length;$("hubLiveBox").innerHTML=liveCards();
 }
 /* --- page de connexion --- */
@@ -2850,7 +2872,7 @@ async function lcSubmit(e){
     }
   }catch(err){lcError(authMsg(err))}
 }
-function authDone(){lcState="login";$("lcSubmit").disabled=false;$("lcPass").value="";$("lcPass2").value="";lsSet("hb-nologin",false);justLoggedIn=true;showMode("hub");}
+function authDone(){try{if(session&&session.user)lsSet("hb-lastEmail",session.user.email)}catch(e){}lcState="login";$("lcSubmit").disabled=false;$("lcPass").value="";$("lcPass2").value="";lsSet("hb-nologin",false);justLoggedIn=true;showMode("hub");}
 function bindNav(){
   $("lcForm").addEventListener("submit",lcSubmit);
   $("lcTabs").addEventListener("click",e=>{const b=e.target.closest("[data-lc]");if(b)lcSet(b.dataset.lc)});
@@ -3019,6 +3041,7 @@ function start(){
   $("backupBtn").onclick=backup;
   $("restoreInput").addEventListener("change",e=>{const f=e.target.files&&e.target.files[0];if(f)restore(f);e.target.value=""});
   bindMatches();bindClock();bindRoster();bindPick();bindTPick();bindLive();bindSync40();
+  $("hubInstallX").onclick=()=>{lsSet("hb-installHint",true);$("hubInstall").hidden=true};
   $("ctxBtns").addEventListener("click",e=>{const b=e.target.closest("[data-ctx]");if(!b)return;const k=b.dataset.ctx;
     if(k==="pick")openPick();else if(k==="stats"){A.match=S.cur;A.sel=null;setTab("ana");window.scrollTo(0,0)}else if(k==="matchs")setTab("match")});
   $("updBtn").onclick=()=>location.reload();$("updLater").onclick=()=>{$("updBar").hidden=true};
@@ -3028,6 +3051,9 @@ function start(){
   bindNav();bindTrain();
   const hasAuth=(()=>{try{return !!localStorage.getItem("hb-auth")}catch(e){return false}})();
   showMode(hasAuth||lsGet("hb-nologin",false)?"hub":"login");
+  {const le=lsGet("hb-lastEmail","");if(le&&!$("lcEmail").value)$("lcEmail").value=le}
+  // demande au navigateur de ne pas effacer les données de l'appli
+  try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
   const landing=checkLanding();
   sbInit().then(()=>{if(landing)landingSendCode(landing)});
   try{navigator.storage&&navigator.storage.persist&&navigator.storage.persist()}catch(e){}
