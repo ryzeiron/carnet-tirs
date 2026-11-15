@@ -1,0 +1,1 @@
+{'jwt_exp': 3600, 'refresh_token_rotation_enabled': True, 'security_refresh_token_reuse_interval': 10, 'sessions_timebox': 0, 'sessions_inactivity_timeout': 0, 'sessions_single_per_user': False}
